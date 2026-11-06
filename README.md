@@ -7,6 +7,14 @@ npm start          # mở http://localhost:5178
 npm test           # unit test parser + chỉ số
 ```
 
+### Icon bấm là chạy
+
+```bash
+bash scripts/make-app.sh          # tạo /Applications/YouTube Research.app
+```
+
+Bấm icon: nếu server chưa chạy thì bật nền (log ở `data/server.log`), rồi mở trình duyệt. Server chạy tiếp tới khi tắt máy hoặc `pkill -f src/server.js`. Đổi đường dẫn repo hay cài lại Node thì chạy lại lệnh trên.
+
 ## Lấy dữ liệu thế nào
 
 Gọi API nội bộ mà chính youtube.com dùng (`youtubei/v1`), không đăng nhập — giống cách actor TikTok trong `~/tiktok-keyword-comments-actor`:
