@@ -1,0 +1,14 @@
+{
+  "name": "youtube-research",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Nghiên cứu YouTube trên máy: tìm video, lọc kênh, phân tích kênh, lấy comment. Không cần key, không tốn phí.",
+  "type": "module",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/server.js",
+    "research": "node --disable-warning=ExperimentalWarning src/cli.js research",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
+  }
+}

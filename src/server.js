@@ -1,0 +1,178 @@
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { ROOT, records, saved, settingsStore } from './db.js';
+import { configure, getConfig, stats } from './yt/innertube.js';
+import { startJob, getJob, listJobs } from './jobs.js';
+import * as svc from './services.js';
+import { researchMarkdown, channelMarkdown, commentsMarkdown, toCsv } from './analysis/report.js';
+
+const PORT = Number(process.env.PORT) || 5178;
+const HOST = process.env.HOST || '127.0.0.1';
+const PUBLIC = path.join(ROOT, 'public');
+
+configure(settingsStore.all());
+
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' };
+
+function send(res, status, body, type = 'application/json; charset=utf-8', extra = {}) {
+  res.writeHead(status, { 'content-type': type, 'cache-control': 'no-store', ...extra });
+  res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
+}
+const json = (res, body, status = 200) => send(res, status, body);
+const download = (res, name, body, type) => send(res, 200, body, type, { 'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(name)}` });
+
+async function readBody(req) {
+  const chunks = [];
+  for await (const c of req) chunks.push(c);
+  const s = Buffer.concat(chunks).toString('utf8');
+  return s ? JSON.parse(s) : {};
+}
+
+const slug = (s) => String(s || 'export').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').toLowerCase().slice(0, 50) || 'export';
+const stamp = () => new Date().toISOString().slice(0, 10);
+
+const VIDEO_COLS = [
+  { key: 'title', label: 'Tiêu đề' },
+  { key: 'url', label: 'Link' },
+  { key: 'channelTitle', label: 'Kênh' },
+  { key: 'channelSubs', label: 'Sub kênh' },
+  { key: 'views', label: 'View' },
+  { key: 'outlier', label: 'Vượt kênh (view/sub)' },
+  { key: 'viewsPerDay', label: 'View/ngày' },
+  { key: 'likes', label: 'Like' },
+  { key: 'durationSec', label: 'Dài (giây)' },
+  { key: 'age', label: 'Tuổi (ngày)' },
+  { key: 'publishedAt', label: 'Ngày đăng' },
+  { key: 'published', label: 'Đăng (YouTube ghi)' },
+  { label: 'Từ khoá', get: (v) => (v.queries || []).join('; ') },
+];
+const CHANNEL_COLS = [
+  { key: 'title', label: 'Kênh' },
+  { key: 'handle', label: 'Handle' },
+  { key: 'url', label: 'Link' },
+  { key: 'subs', label: 'Sub' },
+  { key: 'videoCount', label: 'Số video' },
+  { key: 'totalViews', label: 'Tổng view' },
+  { key: 'medianViews', label: 'View trung vị 30 video' },
+  { key: 'viewSubRatio', label: 'View trung vị / sub' },
+  { key: 'views7d', label: 'View video đăng 7 ngày' },
+  { key: 'views30d', label: 'View video đăng 30 ngày' },
+  { key: 'uploadsPerWeek', label: 'Video/tuần' },
+  { key: 'lastUploadDays', label: 'Đăng gần nhất (ngày)' },
+  { key: 'country', label: 'Quốc gia' },
+  { key: 'joined', label: 'Ngày tạo kênh' },
+];
+const COMMENT_COLS = [
+  { key: 'text', label: 'Comment' },
+  { key: 'likes', label: 'Like' },
+  { key: 'replies', label: 'Trả lời' },
+  { key: 'published', label: 'Đăng' },
+  { label: 'Là trả lời', get: (c) => (c.isReply ? 'Có' : '') },
+  { label: 'Câu hỏi', get: (c) => (c.question ? 'Có' : '') },
+  { key: 'videoTitle', label: 'Video' },
+];
+
+// Routes: [method, regex, handler(req, res, match, body, url)]
+const JOBS = {
+  video_search: (b, p) => svc.videoSearch(b, p),
+  channel_search: (b, p) => svc.channelSearch(b, p),
+  channel_analysis: (b, p) => svc.analyzeChannel(b.input, { max: Number(b.max) || 120 }, p),
+  research: (b, p) => svc.research(b, p),
+  research_comments: (b, p) => svc.researchComments(Number(b.recordId), b, p),
+  comments: (b, p) => svc.fetchComments(b, p),
+  idea_check: (b, p) => svc.ideaCheck(b, p),
+  keywords: async (b, p) => {
+    const list = await svc.keywordIdeas(b.seed, { gl: b.gl }, p);
+    const id = records.add('keywords', b.seed, { params: b, data: { seed: b.seed, list } });
+    return { id, seed: b.seed, list };
+  },
+};
+
+const routes = [
+  ['POST', /^\/api\/jobs\/(\w+)$/, async (req, res, m, body) => {
+    const fn = JOBS[m[1]];
+    if (!fn) return json(res, { error: 'Không có tác vụ này' }, 404);
+    const title = body.keywords || body.topic || body.input || body.seed || body.ideas || body.videos || m[1];
+    const job = startJob(m[1], String(title).slice(0, 80), (p) => fn(body, p));
+    json(res, { id: job.id });
+  }],
+  ['GET', /^\/api\/jobs$/, (req, res) => json(res, listJobs())],
+  ['GET', /^\/api\/jobs\/(\d+)$/, (req, res, m) => {
+    const j = getJob(m[1]);
+    if (!j) return json(res, { error: 'Không thấy tác vụ' }, 404);
+    json(res, { ...j, result: j.status === 'done' ? { id: j.result?.id ?? null } : null });
+  }],
+  ['GET', /^\/api\/records$/, (req, res, m, b, url) => json(res, records.list(url.searchParams.get('kind'), Number(url.searchParams.get('limit')) || 50))],
+  ['GET', /^\/api\/records\/(\d+)$/, (req, res, m) => {
+    const r = records.get(Number(m[1]));
+    r ? json(res, r) : json(res, { error: 'Không thấy' }, 404);
+  }],
+  ['DELETE', /^\/api\/records\/(\d+)$/, (req, res, m) => {
+    records.remove(Number(m[1]));
+    json(res, { ok: true });
+  }],
+  ['GET', /^\/api\/records\/(\d+)\/export\.(md|csv)$/, (req, res, m, b, url) => {
+    const r = records.get(Number(m[1]));
+    if (!r) return json(res, { error: 'Không thấy' }, 404);
+    const name = `${slug(r.title)}-${stamp()}`;
+    const what = url.searchParams.get('what');
+    if (m[2] === 'md') {
+      const md = r.kind === 'research' ? researchMarkdown(r.data) : r.kind === 'channel_analysis' ? channelMarkdown(r.data) : r.kind === 'comments' ? commentsMarkdown(r.data) : '```json\n' + JSON.stringify(r.data, null, 2) + '\n```\n';
+      return url.searchParams.get('inline') ? send(res, 200, md, 'text/markdown; charset=utf-8') : download(res, `${name}.md`, md, 'text/markdown; charset=utf-8');
+    }
+    let csv;
+    if (r.kind === 'channel_search') csv = toCsv(r.data.channels, CHANNEL_COLS);
+    else if (r.kind === 'comments') csv = toCsv(r.data.comments.map((c) => ({ ...c, videoTitle: r.data.video.title })), COMMENT_COLS);
+    else if (r.kind === 'research' && what === 'comments') csv = toCsv([...(r.data.comments?.insights.top || [])], COMMENT_COLS);
+    else if (r.kind === 'keywords') csv = toCsv(r.data.list, [{ key: 'keyword', label: 'Từ khoá' }, { key: 'hits', label: 'Số lần xuất hiện' }, { key: 'bestRank', label: 'Thứ hạng' }]);
+    else csv = toCsv(r.data.videos || [], VIDEO_COLS);
+    download(res, `${name}.csv`, csv, 'text/csv; charset=utf-8');
+  }],
+  ['POST', /^\/api\/compare$/, (req, res, m, body) => json(res, svc.compareChannels(body.ids || []))],
+  ['GET', /^\/api\/saved$/, (req, res, m, b, url) => json(res, saved.list(url.searchParams.get('kind')))],
+  ['GET', /^\/api\/saved\/keys$/, (req, res) => json(res, saved.keys())],
+  ['POST', /^\/api\/saved$/, (req, res, m, body) => {
+    saved.put(body.kind, body.ref, body.title, body.data || {}, body.note || '');
+    json(res, { ok: true });
+  }],
+  ['PATCH', /^\/api\/saved$/, (req, res, m, body) => {
+    saved.note(body.kind, body.ref, body.note || '');
+    json(res, { ok: true });
+  }],
+  ['DELETE', /^\/api\/saved$/, (req, res, m, body) => {
+    saved.remove(body.kind, body.ref);
+    json(res, { ok: true });
+  }],
+  ['GET', /^\/api\/settings$/, (req, res) => json(res, { ...settingsStore.all(), aiKey: settingsStore.all().aiKey ? '••••' : '' })],
+  ['POST', /^\/api\/settings$/, (req, res, m, body) => {
+    if (body.aiKey === '••••') delete body.aiKey;
+    const s = settingsStore.set(body);
+    configure(s);
+    json(res, { ...s, aiKey: s.aiKey ? '••••' : '' });
+  }],
+  ['GET', /^\/api\/status$/, (req, res) => json(res, { ...getConfig(), requests: stats.requests, failures: stats.failures, counts: records.counts(), running: listJobs().filter((j) => j.status === 'running').length })],
+];
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  try {
+    if (url.pathname.startsWith('/api/')) {
+      for (const [method, re, handler] of routes) {
+        const m = url.pathname.match(re);
+        if (m && req.method === method) {
+          const body = ['POST', 'PATCH', 'DELETE'].includes(req.method) ? await readBody(req) : {};
+          return await handler(req, res, m, body, url);
+        }
+      }
+      return json(res, { error: 'Not found' }, 404);
+    }
+    let file = path.normalize(path.join(PUBLIC, url.pathname === '/' ? 'index.html' : url.pathname));
+    if (!file.startsWith(PUBLIC) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(PUBLIC, 'index.html');
+    send(res, 200, fs.readFileSync(file), MIME[path.extname(file)] || 'application/octet-stream');
+  } catch (e) {
+    json(res, { error: e.message }, 500);
+  }
+});
+
+server.listen(PORT, HOST, () => console.log(`YouTube Research → http://localhost:${PORT}`));
