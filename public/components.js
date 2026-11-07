@@ -16,7 +16,7 @@ const range = (s) => {
 };
 const inRange = (x, lo, hi) => x != null && (lo == null || x >= lo) && (hi == null || x < hi);
 
-export const VIDEO_FILTER_DEFAULT = { subs: '', subsMin: '', subsMax: '', views: '', outlier: '', age: '', noShorts: true, q: '', sort: 'views', view: 'table' };
+export const VIDEO_FILTER_DEFAULT = { region: '', subs: '', subsMin: '', subsMax: '', views: '', outlier: '', age: '', noShorts: true, q: '', sort: 'views', view: 'table' };
 
 export function filterVideos(videos, f) {
   const [slo, shi] = range(f.subs);
@@ -24,6 +24,7 @@ export function filterVideos(videos, f) {
   const smax = f.subsMax !== '' ? Number(f.subsMax) * 1000 : null;
   const q = (f.q || '').toLowerCase().trim();
   let list = videos.filter((v) => {
+    if (f.region && !(v.regions || []).includes(f.region)) return false;
     if (f.subs && !inRange(v.channelSubs, slo, shi)) return false;
     if (smin != null && !(v.channelSubs >= smin)) return false;
     if (smax != null && !(v.channelSubs <= smax)) return false;
@@ -46,8 +47,9 @@ export function filterVideos(videos, f) {
   return list;
 }
 
-export function videoFilterPanel(f) {
+export function videoFilterPanel(f, regions = []) {
   return `<div class="filter-table">
+    ${regions.length > 1 ? `<div class="filter-row"><div class="fr-label" data-tip="Chỉ giữ video xuất hiện trong kết quả tìm ở nước này">Hiện ở nước ⓘ</div>${chips('region', regions.map((r) => ({ v: r, label: r })), f.region)}<div></div></div>` : ''}
     <div class="filter-row"><div class="fr-label">Sub của kênh</div>${chips('subs', SUB_RANGES, f.subs)}
       <div class="range"><input class="input sm" data-f="subsMin" placeholder="Min (N)" value="${esc(f.subsMin)}"> – <input class="input sm" data-f="subsMax" placeholder="Max (N)" value="${esc(f.subsMax)}"></div></div>
     <div class="filter-row"><div class="fr-label">Lượt xem</div>${chips('views', [{ v: 10000, label: '10N+' }, { v: 50000, label: '50N+' }, { v: 100000, label: '100N+' }, { v: 500000, label: '500N+' }, { v: 1000000, label: '1Tr+' }], f.views)}<div></div></div>
@@ -109,7 +111,7 @@ export function videoTable(list, { selected = new Set(), rankOffset = 0 } = {}) 
       <td class="muted num">${i + 1 + rankOffset}</td>
       <td class="thumb"><a href="${ytVideo(v.id)}" target="_blank" rel="noopener"><img loading="lazy" src="${thumb(v.id)}" alt=""></a></td>
       <td class="title-cell"><a href="${ytVideo(v.id)}" target="_blank" rel="noopener">${esc(v.title)}</a>
-        <div class="meta"><a href="#/channel?input=${encodeURIComponent(v.channelId || '')}" style="display:inline" data-tip="Phân tích kênh này">${esc(v.channelTitle)}</a>${v.likes != null ? ` · ${fmt(v.likes)} like` : ''}${v.queries?.length ? ` · <span class="tag">${esc(v.queries[0])}</span>` : ''}</div></td>
+        <div class="meta"><a href="#/channel?input=${encodeURIComponent(v.channelId || '')}" style="display:inline" data-tip="Phân tích kênh này">${esc(v.channelTitle)}</a>${v.likes != null ? ` · ${fmt(v.likes)} like` : ''}${v.regions?.length > 1 ? ` · <span class="tag" data-tip="Video hiện trong kết quả tìm ở các nước này">🌐 ${esc(v.regions.join(' '))}</span>` : ''}${v.queries?.length ? ` · <span class="tag">${esc(v.queries[0])}</span>` : ''}</div></td>
       <td class="r num"><b>${fmt(v.views)}</b></td>
       <td class="r">${outlierBadge(v.outlier)}</td>
       <td class="r num">${fmt(v.viewsPerDay)}</td>
@@ -132,7 +134,7 @@ export function videoGrid(list, { selected = new Set() } = {}) {
         <label class="ov sel"><input type="checkbox" data-sel="${v.id}" ${selected.has(v.id) ? 'checked' : ''}></label></div>
       <div class="body"><a class="t1" href="${ytVideo(v.id)}" target="_blank" rel="noopener">${esc(v.title)}</a>
         <div class="stats"><b>${fmt(v.views)}</b> lượt xem · ${fmt(v.viewsPerDay)}/ngày · ${ageText(v.age, v.ageExact)}</div>
-        <div class="stats">${esc(v.channelTitle)} · ${fmt(v.channelSubs)} sub</div>
+        <div class="stats">${esc(v.channelTitle)} · ${fmt(v.channelSubs)} sub${v.regions?.length > 1 ? ` · 🌐 ${esc(v.regions.join(' '))}` : ''}</div>
         <div class="foot"><a class="btn sm" href="#/channel?input=${encodeURIComponent(v.channelId || '')}">${icon('bars')} Kênh</a>
           <button class="btn sm" data-comment="${v.id}">${icon('message')} Comment</button>
           <button class="icon-btn ${isSaved('video', v.id) ? 'on' : ''}" data-save="${v.id}" title="Lưu">${icon('bookmark')}</button></div></div>
@@ -145,11 +147,12 @@ export function videoGrid(list, { selected = new Set() } = {}) {
  * Full interactive video results block. Returns { el, getSelected }.
  * opts: { key (filter storage key), extraActions(html) }
  */
-export function mountVideoResults(container, videos, { key = 'vf', onComments } = {}) {
+export function mountVideoResults(container, videos, { key = 'vf', onComments, regions = [] } = {}) {
   const f = store(key, VIDEO_FILTER_DEFAULT);
+  if (f.region && !regions.includes(f.region)) f.region = '';
   const selected = new Set();
   container.innerHTML = `<div data-filters></div><div class="card" style="margin-top:14px"><div data-toolbar></div><div data-sel-bar></div><div data-list></div></div>`;
-  container.querySelector('[data-filters]').innerHTML = videoFilterPanel(f);
+  container.querySelector('[data-filters]').innerHTML = videoFilterPanel(f, regions);
   bindVideoFilters(container.querySelector('[data-filters]'), f, key, render);
   bindTips(container);
 

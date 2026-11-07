@@ -116,7 +116,7 @@ export const saved = {
   },
 };
 
-export const DEFAULT_SETTINGS = { gl: 'US', concurrency: 4, delayMs: 200, minSubsForOutlier: 500, outlierMultiple: 3, aiProvider: '', aiKey: '' };
+export const DEFAULT_SETTINGS = { gl: 'US', concurrency: 4, delayMs: 200, minSubsForOutlier: 500, outlierMultiple: 3, globalRegions: 'US,GB,IN,CA,AU,PH,VN,ID', aiProvider: '', aiKey: '' };
 export const settingsStore = {
   all() {
     const rows = db.prepare('SELECT key, value FROM settings').all();

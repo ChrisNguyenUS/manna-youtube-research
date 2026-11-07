@@ -128,7 +128,7 @@ export async function mount(root, params) {
           <div class="chips">${d.suggestions.map((s) => `<a class="chip" href="#/videos?q=${encodeURIComponent(s.keyword)}&run=1">${esc(s.keyword)}</a>`).join('')}</div></div>`;
       } else if (t === 'all') {
         body.innerHTML = '<div style="padding:14px" data-all></div>';
-        mountVideoResults(body.querySelector('[data-all]'), d.videos, { key: 'vf-research', onComments: (ids) => window.__go('/comments', { videos: ids.join(',') }) });
+        mountVideoResults(body.querySelector('[data-all]'), d.videos, { key: 'vf-research', regions: [...new Set(d.videos.flatMap((v) => v.regions || []))], onComments: (ids) => window.__go('/comments', { videos: ids.join(',') }) });
       }
     }
 

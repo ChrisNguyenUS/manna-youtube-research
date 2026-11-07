@@ -17,7 +17,7 @@ export const UPLOAD_CHIPS = [
   { v: 'any', label: 'Mọi lúc' },
 ];
 export const REGIONS = [
-  ['', 'Theo Cài đặt'], ['VN', 'Việt Nam'], ['US', 'Mỹ'], ['GB', 'Anh'], ['CA', 'Canada'], ['AU', 'Úc'], ['IN', 'Ấn Độ'], ['PH', 'Philippines'], ['ID', 'Indonesia'], ['JP', 'Nhật'], ['KR', 'Hàn'], ['DE', 'Đức'], ['FR', 'Pháp'], ['BR', 'Brazil'],
+  ['', 'Theo Cài đặt'], ['GLOBAL', '🌐 Toàn cầu (nhiều nước)'], ['VN', 'Việt Nam'], ['US', 'Mỹ'], ['GB', 'Anh'], ['CA', 'Canada'], ['AU', 'Úc'], ['IN', 'Ấn Độ'], ['PH', 'Philippines'], ['ID', 'Indonesia'], ['JP', 'Nhật'], ['KR', 'Hàn'], ['DE', 'Đức'], ['FR', 'Pháp'], ['BR', 'Brazil'],
 ];
 export function durToSeconds(st) {
   let min = st.minDur !== '' && st.minDur != null ? Number(st.minDur) : null;
@@ -101,11 +101,12 @@ export async function mount(root, params) {
         <div class="kpi"><div class="label">Trên 1 triệu view</div><div class="value">${s.over1m}</div><div class="hint">${s.over100k} video trên 100 N</div></div>
         <div class="kpi"><div class="label">Vượt kênh (view ≥ sub)</div><div class="value">${s.outliers}</div><div class="hint accent">nội dung thắng, không nhờ kênh</div></div>
       </div>
-      <div class="row" style="margin:14px 0 0"><span class="muted small">Tìm ${ago(rec.created_at)} · "${esc(d.keywords.join(', '))}"</span><span class="spacer"></span>
+      <div class="row" style="margin:14px 0 0"><span class="muted small">Tìm ${ago(rec.created_at)} · "${esc(d.keywords.join(', '))}"${d.regions?.length > 1 ? ` · 🌐 ${d.regions.length} nước: ${esc(d.regions.join(', '))}` : ''}</span><span class="spacer"></span>
         <a class="btn sm" href="/api/records/${id}/export.csv">${icon('download')} CSV</a></div>
       <div data-results style="margin-top:14px"></div>`;
     mountVideoResults(out.querySelector('[data-results]'), d.videos, {
       key: 'vf-videos',
+      regions: d.regions || [],
       onComments: (ids) => window.__go('/comments', { videos: ids.join(',') }),
     });
   }

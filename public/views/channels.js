@@ -103,7 +103,7 @@ export async function mount(root, params) {
     const all = rec.data.channels;
     const countries = [...new Set(all.map((c) => c.country || '?'))].sort((a, b) => all.filter((c) => (c.country || '?') === b).length - all.filter((c) => (c.country || '?') === a).length);
     out.innerHTML = `
-      <div class="row" style="margin-bottom:10px"><span class="muted">Khoảng <b style="color:var(--accent)">${all.length}</b> kênh cho <b>"${esc(rec.data.keywords.join(', '))}"</b> · tìm ${ago(rec.created_at)}</span><span class="spacer"></span>
+      <div class="row" style="margin-bottom:10px"><span class="muted">Khoảng <b style="color:var(--accent)">${all.length}</b> kênh cho <b>"${esc(rec.data.keywords.join(', '))}"</b>${rec.data.regions?.length > 1 ? ` · 🌐 tìm ở ${rec.data.regions.length} nước` : ''} · tìm ${ago(rec.created_at)}</span><span class="spacer"></span>
         <a class="btn sm" href="/api/records/${id}/export.csv">${icon('download')} CSV</a></div>
       <div class="filter-table" data-filters>
         <div class="filter-row"><div class="fr-label">Người theo dõi</div>${chips('subs', SUBS, f.subs)}

@@ -1,5 +1,5 @@
 // High-level research operations. Used by the HTTP server (as background jobs) and the CLI.
-import { searchVideos, searchChannels, durationBucket } from './yt/search.js';
+import { searchVideosRegions, searchChannelsRegions, regionsFor, durationBucket } from './yt/search.js';
 import { resolveChannelId, getChannelInfo, getChannelVideos, getChannelShorts, getVideoDetails } from './yt/channel.js';
 import { getComments } from './yt/comments.js';
 import { mapLimit, suggest } from './yt/innertube.js';
@@ -88,20 +88,27 @@ export async function videoSearch(params, progress = noop) {
     max: Math.min(Number(params.perKeyword) || 60, 300),
     cc: !!params.cc,
   };
+  const regions = regionsFor(opts.gl, s.globalRegions);
+  const where = regions.length > 1 ? ` · ${regions.length} nước` : '';
+  const total = opts.max * regions.length;
   const all = new Map();
   for (const [i, kw] of keywords.entries()) {
-    progress({ step: `Tìm "${kw}" (${i + 1}/${keywords.length})`, done: 0, total: opts.max });
-    const list = await searchVideos(kw, opts, (n) => progress({ step: `Tìm "${kw}" (${i + 1}/${keywords.length})`, done: n, total: opts.max }));
+    const label = `Tìm "${kw}" (${i + 1}/${keywords.length})${where}`;
+    progress({ step: label, done: 0, total });
+    const list = await searchVideosRegions(kw, opts, regions, (n) => progress({ step: label, done: n, total }));
     for (const v of list) {
-      if (all.has(v.id)) all.get(v.id).queries.push(kw);
-      else all.set(v.id, { ...v, queries: [kw] });
+      const cur = all.get(v.id);
+      if (cur) {
+        cur.queries.push(kw);
+        for (const r of v.regions || []) if (!cur.regions.includes(r)) cur.regions.push(r);
+      } else all.set(v.id, { ...v, queries: [kw] });
     }
   }
   let videos = [...all.values()].filter((v) => !v.isLive);
   videos = videos.filter((v) => v.durationSec == null || ((minDur == null || v.durationSec >= minDur) && (maxDur == null || v.durationSec <= maxDur)));
   videos = await enrichVideos(videos, { exactTop: params.exactTop ?? 30, likes: !!params.likes, minSubs: s.minSubsForOutlier, progress });
   videos.sort((a, b) => (b.views ?? 0) - (a.views ?? 0));
-  const result = { videos, keywords, opts, summary: summarizeVideos(videos) };
+  const result = { videos, keywords, opts, regions, summary: summarizeVideos(videos) };
   const id = records.add('video_search', keywords.join(', '), { params, data: result });
   return { id, ...result };
 }
@@ -129,16 +136,19 @@ export async function channelSearch(params, progress = noop) {
   const source = params.source || 'both';
   const per = Math.min(Number(params.perKeyword) || 40, 200);
   const gl = params.gl || s.gl;
+  const regions = regionsFor(gl, s.globalRegions);
+  // Global: half as many per region, otherwise 8 regions × 3 requests per channel gets slow.
+  const perRegion = regions.length > 1 ? Math.ceil(per / 2) : per;
   const found = new Map(); // id -> { base, hits: [video] }
   for (const [i, kw] of keywords.entries()) {
     const label = `Tìm kênh "${kw}" (${i + 1}/${keywords.length})`;
     if (source !== 'videos') {
-      const list = await searchChannels(kw, { max: per, gl }, (n) => progress({ step: label, done: n, total: per }));
+      const list = await searchChannelsRegions(kw, { max: perRegion }, regions, (n) => progress({ step: label, done: n, total: perRegion * regions.length }));
       for (const c of list) if (!found.has(c.id)) found.set(c.id, { base: c, hits: [], queries: new Set([kw]) });
       else found.get(c.id).queries.add(kw);
     }
     if (source !== 'channels') {
-      const vids = await searchVideos(kw, { sort: 'popularity', upload: params.upload || 'year', max: per, gl }, (n) => progress({ step: `Tìm video "${kw}" để gom kênh`, done: n, total: per }));
+      const vids = await searchVideosRegions(kw, { sort: 'popularity', upload: params.upload || 'year', max: perRegion }, regions, (n) => progress({ step: `Tìm video "${kw}" để gom kênh`, done: n, total: perRegion * regions.length }));
       for (const v of vids) {
         if (!v.channelId) continue;
         if (!found.has(v.channelId)) found.set(v.channelId, { base: { id: v.channelId, title: v.channelTitle, handle: v.channelHandle }, hits: [], queries: new Set([kw]) });
@@ -170,7 +180,7 @@ export async function channelSearch(params, progress = noop) {
   );
   const ok = channels.filter((c) => c && !c.error);
   ok.sort((a, b) => (b.views30d ?? 0) - (a.views30d ?? 0));
-  const result = { channels: ok, keywords, source, failed: channels.length - ok.length };
+  const result = { channels: ok, keywords, source, regions, failed: channels.length - ok.length };
   const id = records.add('channel_search', keywords.join(', '), { params, data: result });
   return { id, ...result };
 }
@@ -336,6 +346,7 @@ export async function research(params, progress = noop) {
     upload,
     suggestions,
     competitors,
+    regions: search.regions,
     summary: summarizeVideos(videos),
     videos: videos.sort((a, b) => (b.outlier ?? -1) - (a.outlier ?? -1)),
     topByOutlier: ranked.slice(0, 15).map((v) => v.id),
@@ -416,7 +427,7 @@ export async function ideaCheck(params, progress = noop) {
   const results = [];
   for (const [i, idea] of ideas.entries()) {
     progress({ step: `Kiểm tra ý tưởng ${i + 1}/${ideas.length}`, done: i, total: ideas.length });
-    const vids = await searchVideos(idea, { sort: 'relevance', upload: 'any', max: 20, gl: params.gl || s.gl });
+    const vids = await searchVideosRegions(idea, { sort: 'relevance', upload: 'any', max: 20 }, regionsFor(params.gl || s.gl, s.globalRegions)).then((l) => l.slice(0, 20)); // verdict thresholds assume 20 results
     const enriched = await enrichVideos(vids.filter((v) => !v.isLive), { exactTop: 0, minSubs: s.minSubsForOutlier });
     const recent = enriched.filter((v) => v.ageDays != null && v.ageDays <= 365);
     const strong = enriched.filter((v) => v.outlier >= 1);

@@ -137,4 +137,57 @@ export async function searchChannels(query, opts = {}, onPage) {
   return out.slice(0, max);
 }
 
+// ---------- Global mode: same query in several regions, merged ----------
+export const GLOBAL = 'GLOBAL';
+
+/** "GLOBAL" -> list of region codes from settings; "VN" -> ["VN"]. */
+export function regionsFor(gl, globalRegions = 'US,GB,IN,CA,AU,PH,VN,ID') {
+  if (gl !== GLOBAL) return [gl || null];
+  const list = String(globalRegions).split(/[,\s]+/).map((x) => x.trim().toUpperCase()).filter((x) => /^[A-Z]{2}$/.test(x));
+  return list.length ? [...new Set(list)] : ['US'];
+}
+
+/**
+ * Merge per-region result lists, dedupe by id, record every region an item appeared in.
+ * Order: round-robin across regions, so each country's top results stay near the top.
+ */
+export function mergeByRegion(perRegion) {
+  const map = new Map();
+  const longest = Math.max(0, ...perRegion.map((r) => r.list.length));
+  for (let i = 0; i < longest; i++) {
+    for (const { gl, list } of perRegion) {
+      const item = list[i];
+      if (!item) continue;
+      const cur = map.get(item.id);
+      if (cur) {
+        if (gl && !cur.regions.includes(gl)) cur.regions.push(gl);
+        if ((item.views ?? -1) > (cur.views ?? -1)) cur.views = item.views; // keep the freshest count
+      } else map.set(item.id, { ...item, regions: gl ? [gl] : [] });
+    }
+  }
+  return [...map.values()];
+}
+
+async function multi(fn, query, opts, regions, onPage) {
+  if (regions.length === 1) return (await fn(query, { ...opts, gl: regions[0] || undefined }, onPage)).map((x) => ({ ...x, regions: regions[0] ? [regions[0]] : [] }));
+  const counts = new Map();
+  const perRegion = await Promise.all(
+    regions.map(async (gl) => {
+      try {
+        const list = await fn(query, { ...opts, gl }, (n) => {
+          counts.set(gl, n);
+          onPage?.([...counts.values()].reduce((a, b) => a + b, 0));
+        });
+        return { gl, list };
+      } catch {
+        return { gl, list: [] }; // one region failing shouldn't kill a global search
+      }
+    }),
+  );
+  return mergeByRegion(perRegion);
+}
+
+export const searchVideosRegions = (query, opts, regions, onPage) => multi(searchVideos, query, opts, regions, onPage);
+export const searchChannelsRegions = (query, opts, regions, onPage) => multi(searchChannels, query, opts, regions, onPage);
+
 export { findFirst };

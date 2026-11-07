@@ -115,3 +115,23 @@ test('Vietnamese title patterns and comment classification', () => {
   assert.equal(classifyComment('Hay quá').question, false);
   assert.deepEqual(tokenize('Kể chuyện #history @abc https://x.y'), ['kể', 'chuyện']);
 });
+
+import { regionsFor, mergeByRegion } from '../src/yt/search.js';
+import { realGl, configure } from '../src/yt/innertube.js';
+
+test('global mode: regions and merge', () => {
+  assert.deepEqual(regionsFor('VN'), ['VN']);
+  assert.deepEqual(regionsFor('GLOBAL', 'us, gb,US,xx1'), ['US', 'GB']);
+  assert.deepEqual(regionsFor('GLOBAL', ''), ['US']);
+  const merged = mergeByRegion([
+    { gl: 'US', list: [{ id: 'a', views: 10 }, { id: 'b', views: 5 }] },
+    { gl: 'VN', list: [{ id: 'c', views: 7 }, { id: 'a', views: 12 }] },
+  ]);
+  assert.deepEqual(merged.map((x) => x.id), ['a', 'c', 'b'], 'round-robin keeps each region top near the top');
+  assert.deepEqual(merged[0].regions, ['US', 'VN']);
+  assert.equal(merged[0].views, 12);
+  configure({ gl: 'GLOBAL' });
+  assert.equal(realGl(), 'US', 'a request never sends GLOBAL to YouTube');
+  assert.equal(realGl('VN'), 'VN');
+  configure({ gl: 'US' });
+});

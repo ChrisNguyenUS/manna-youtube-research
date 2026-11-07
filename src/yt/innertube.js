@@ -9,6 +9,12 @@ const settings = { gl: 'US', concurrency: 4, delayMs: 200 };
 export function configure(opts = {}) {
   for (const k of Object.keys(settings)) if (opts[k] != null && opts[k] !== '') settings[k] = opts[k];
 }
+/** 'GLOBAL' is an app-level mode (several regions merged); a single request always needs a real country. */
+export function realGl(gl) {
+  const g = gl || settings.gl;
+  if (g && g !== 'GLOBAL') return g;
+  return 'US';
+}
 export function getConfig() {
   return { ...settings };
 }
@@ -43,7 +49,7 @@ export async function call(endpoint, body, { gl } = {}) {
           method: 'POST',
           headers: { 'content-type': 'application/json', 'user-agent': UA, 'accept-language': 'en-US,en;q=0.9' },
           body: JSON.stringify({
-            context: { client: { clientName: 'WEB', clientVersion: CLIENT_VERSION, hl: 'en', gl: gl || settings.gl } },
+            context: { client: { clientName: 'WEB', clientVersion: CLIENT_VERSION, hl: 'en', gl: realGl(gl) } },
             ...body,
           }),
           signal: AbortSignal.timeout(20000),
@@ -85,7 +91,7 @@ export async function mapLimit(items, fn, onEach) {
 
 /** YouTube search autocomplete (public suggest endpoint). */
 export async function suggest(q, { gl, hl = 'en' } = {}) {
-  const url = `https://suggestqueries-clients6.youtube.com/complete/search?client=youtube&ds=yt&hl=${hl}&gl=${gl || settings.gl}&q=${encodeURIComponent(q)}`;
+  const url = `https://suggestqueries-clients6.youtube.com/complete/search?client=youtube&ds=yt&hl=${hl}&gl=${realGl(gl)}&q=${encodeURIComponent(q)}`;
   await acquire();
   try {
     await sleep(settings.delayMs * (0.5 + Math.random()));

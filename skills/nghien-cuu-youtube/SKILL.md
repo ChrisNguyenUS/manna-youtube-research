@@ -24,7 +24,7 @@ Hỏi những gì còn thiếu, kèm mặc định để người dùng chỉ c�
 |---|---|
 | Chủ đề (hoặc @kênh nếu là phân tích kênh) | (bắt buộc) |
 | Từ khoá tìm | Tự đề xuất 2–3 cụm từ chủ đề, cho người dùng sửa |
-| Thị trường | Việt Nam → từ khoá tiếng Việt, `--gl VN`. Thị trường Mỹ → từ khoá tiếng Anh, `--gl US` |
+| Thị trường | Việt Nam → từ khoá tiếng Việt, `--gl VN`. Thị trường Mỹ → từ khoá tiếng Anh, `--gl US`. Không giới hạn nước → `--gl GLOBAL` (tìm ở 8 nước rồi gộp, chậm hơn ~3–8 lần; cột Nước trong digest cho biết video hiện ở đâu) |
 | Hướng | `top` (1 năm, nhiều view nhất). `trend` = 7 ngày qua. `keyword` = thêm gợi ý tìm kiếm của YouTube |
 | Độ dài | 4–20 phút (`--min 4 --max 20`). Bỏ nếu người dùng làm video dài/Shorts |
 | Đọc comment | Có — 5 video vượt kênh nhất, 50 comment mỗi video |
