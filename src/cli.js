@@ -69,9 +69,9 @@ if (cmd === 'research') {
   const r = await svc.fetchComments({ videos: pos, max: Number(flags.max) || 100, sort: flags.sort || 'top', replies: !!flags.replies }, progress);
   for (const j of r.jobs) write(`comment-${j.video.id}-${day}.md`, commentsMarkdown(records.get(j.id).data));
 } else if (cmd === 'ideas') {
-  const r = await svc.ideaCheck({ ideas: pos, gl: flags.gl }, progress);
+  const r = await svc.keywordScores({ keywords: pos, gl: flags.gl }, progress);
   process.stderr.write('\r\x1b[K');
-  for (const x of r.results) console.log(`${x.verdict.padEnd(12)} view trung vị ${x.medianViews} · ${x.recentCount} video < 1 năm · ${x.strongCount} vượt kênh — ${x.idea}`);
+  for (const x of r.results) console.log(x.error ? `lỗi: ${x.error} — ${x.keyword}` : `điểm ${String(x.overall).padStart(3)} (volume ${x.volume}, cạnh tranh ${x.competition}) · ${x.verdict.padEnd(11)} · view TB ${Math.round(x.stats.avgViews ?? 0)} · sub TB ${Math.round(x.stats.avgSubs ?? 0)} · mới 7 ngày ${x.stats.added7d}/${x.stats.results} — ${x.keyword}`);
 } else {
   console.log('Lệnh: research | channel | comments | ideas  (xem đầu file src/cli.js)');
   process.exit(1);

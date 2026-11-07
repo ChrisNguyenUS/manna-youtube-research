@@ -39,6 +39,7 @@ const VIDEO_COLS = [
   { key: 'channelSubs', label: 'Sub kênh' },
   { key: 'views', label: 'View' },
   { key: 'outlier', label: 'Vượt kênh (view/sub)' },
+  { key: 'vph', label: 'VPH (view/giờ)' },
   { key: 'viewsPerDay', label: 'View/ngày' },
   { key: 'likes', label: 'Like' },
   { key: 'durationSec', label: 'Dài (giây)' },
@@ -82,6 +83,7 @@ const JOBS = {
   research_comments: (b, p) => svc.researchComments(Number(b.recordId), b, p),
   comments: (b, p) => svc.fetchComments(b, p),
   idea_check: (b, p) => svc.ideaCheck(b, p),
+  keyword_score: (b, p) => svc.keywordScores(b, p),
   keywords: async (b, p) => {
     const list = await svc.keywordIdeas(b.seed, { gl: b.gl }, p);
     const id = records.add('keywords', b.seed, { params: b, data: { seed: b.seed, list } });
@@ -101,7 +103,8 @@ const routes = [
   ['GET', /^\/api\/jobs\/(\d+)$/, (req, res, m) => {
     const j = getJob(m[1]);
     if (!j) return json(res, { error: 'Không thấy tác vụ' }, 404);
-    json(res, { ...j, result: j.status === 'done' ? { id: j.result?.id ?? null } : null });
+    // Inline results (e.g. related-keyword scores) are small and not saved, so send them whole.
+    json(res, { ...j, result: j.status === 'done' ? (j.result?.inline ? j.result : { id: j.result?.id ?? null }) : null });
   }],
   ['GET', /^\/api\/records$/, (req, res, m, b, url) => json(res, records.list(url.searchParams.get('kind'), Number(url.searchParams.get('limit')) || 50))],
   ['GET', /^\/api\/records\/(\d+)$/, (req, res, m) => {
@@ -125,6 +128,11 @@ const routes = [
     if (r.kind === 'channel_search') csv = toCsv(r.data.channels, CHANNEL_COLS);
     else if (r.kind === 'comments') csv = toCsv(r.data.comments.map((c) => ({ ...c, videoTitle: r.data.video.title })), COMMENT_COLS);
     else if (r.kind === 'research' && what === 'comments') csv = toCsv([...(r.data.comments?.insights.top || [])], COMMENT_COLS);
+    else if (r.kind === 'idea_check' && r.data.results[0]?.stats) csv = toCsv(r.data.results.filter((x) => !x.error), [
+      { key: 'keyword', label: 'Từ khoá' }, { key: 'overall', label: 'Điểm tổng' }, { key: 'volume', label: 'Volume' }, { key: 'competition', label: 'Competition' },
+      { label: 'View cao nhất', get: (x) => x.stats.highestViews }, { label: 'View TB', get: (x) => Math.round(x.stats.avgViews ?? 0) }, { label: 'Sub TB', get: (x) => Math.round(x.stats.avgSubs ?? 0) },
+      { label: 'Mới 7 ngày', get: (x) => `${x.stats.added7d}/${x.stats.results}` }, { label: 'CC', get: (x) => `${x.stats.ccCount ?? '–'}/${x.stats.results}` }, { label: 'Tuổi TB (ngày)', get: (x) => Math.round(x.stats.avgAgeDays ?? 0) },
+    ]);
     else if (r.kind === 'keywords') csv = toCsv(r.data.list, [{ key: 'keyword', label: 'Từ khoá' }, { key: 'hits', label: 'Số lần xuất hiện' }, { key: 'bestRank', label: 'Thứ hạng' }]);
     else csv = toCsv(r.data.videos || [], VIDEO_COLS);
     download(res, `${name}.csv`, csv, 'text/csv; charset=utf-8');

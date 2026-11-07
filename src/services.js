@@ -6,6 +6,7 @@ import { mapLimit, suggest } from './yt/innertube.js';
 import { cache, records, settingsStore } from './db.js';
 import { addVideoMetrics, channelStats, durationBuckets, median, sum, round } from './analysis/metrics.js';
 import { titlePhrases, titlePatterns, titleShape, commentInsights } from './analysis/text.js';
+import { scoreKeyword as computeScore, autocompleteMatch, topChannels, normalize as normalizeKw } from './analysis/score.js';
 
 const noop = () => {};
 const splitList = (s) => (Array.isArray(s) ? s : String(s || '').split(/[,\n]/)).map((x) => x.trim()).filter(Boolean);
@@ -419,36 +420,84 @@ export async function keywordIdeas(seed, { gl, hl = 'vi', depth = 'full' } = {},
   return [...counts.values()].filter((k) => k.keyword !== seed).sort((a, b) => a.bestRank - b.bestRank || b.hits - a.hits);
 }
 
-// ---------------- idea check (Thanh Hai step 2: đã có ai làm format này chưa?) ----------------
-export async function ideaCheck(params, progress = noop) {
+// ---------------- keyword score (vidIQ-style, merged with the old "idea check") ----------------
+/** Has someone already made this? Demand = views; supply = recent, strong videos (Thanh Hải step 2). */
+function verdictFor(enriched) {
+  const recent = enriched.filter((v) => (v.age ?? v.ageDays) != null && (v.age ?? v.ageDays) <= 365).length;
+  const strong = enriched.filter((v) => v.outlier >= 1).length;
+  const med = median(enriched.map((v) => v.views));
+  let verdict;
+  if (med != null && med < 2000) verdict = 'low_demand';
+  else if (recent <= 4 && med >= 10000) verdict = 'open';
+  else if (strong >= 8 && recent >= 10) verdict = 'saturated';
+  else verdict = 'competitive';
+  return { verdict, recentYear: recent, strong };
+}
+
+/**
+ * Full: top 20 by relevance + channel subs, CC and captions counts, uploads in the last 30 days
+ * (count + median VPH), top channels, related keywords (names only; scored on demand), verdict.
+ * Lite: top 20 + subs only — used to score related keywords when the user asks.
+ */
+export async function scoreOneKeyword(keyword, { gl, lite = false, autocomplete: knownAc } = {}) {
   const s = settingsStore.all();
-  const ideas = splitList(params.ideas);
-  if (!ideas.length) throw new Error('Nhập ít nhất một ý tưởng');
+  const regions = regionsFor(gl || s.gl, s.globalRegions);
+  const first = regions.slice(0, 1);
+  const hl = /[à-ỹđ]/i.test(keyword) ? 'vi' : 'en';
+  const safe = (p, fallback) => p.catch(() => fallback);
+
+  const [topRaw, ccList, capList, recentRaw, suggestions] = await Promise.all([
+    searchVideosRegions(keyword, { sort: 'relevance', upload: 'any', max: 20 }, regions),
+    lite ? null : safe(searchVideosRegions(keyword, { sort: 'relevance', upload: 'any', max: 20, cc: true }, first), null),
+    lite ? null : safe(searchVideosRegions(keyword, { sort: 'relevance', upload: 'any', max: 20, captions: true }, first), null),
+    lite ? [] : safe(searchVideosRegions(keyword, { sort: 'relevance', upload: 'month', max: 40 }, first), []),
+    knownAc ? [] : safe(suggest(keyword, { gl: first[0] || undefined, hl }), []),
+  ]);
+  const top = topRaw.filter((v) => !v.isLive).slice(0, 20);
+  const enriched = await enrichVideos(top, { exactTop: 0, minSubs: s.minSubsForOutlier });
+  const ids = new Set(enriched.map((v) => v.id));
+  const countIn = (list) => (list ? list.filter((v) => ids.has(v.id)).length : null);
+  const autocomplete = knownAc || autocompleteMatch(keyword, suggestions);
+  const score = computeScore(keyword, enriched, { ccCount: countIn(ccList), captionsCount: countIn(capList), autocomplete });
+  if (lite) return { keyword, overall: score.overall, volume: score.volume, competition: score.competition, bands: score.bands };
+
+  // Fresh uploads: plain numbers instead of a VPH chart (YouTube only says "2 weeks ago", too coarse to plot).
+  const recent = addVideoMetrics(recentRaw.filter((v) => !v.isLive && (v.ageDays ?? 99) <= 31), {});
+  const k = normalizeKw(keyword);
+  return {
+    ...score,
+    ...verdictFor(enriched),
+    regions,
+    recent30: { count: recent.length, medianVph: median(recent.map((v) => v.vph)), best: [...recent].sort((a, b) => (b.vph ?? 0) - (a.vph ?? 0)).slice(0, 3) },
+    topChannels: topChannels(enriched),
+    related: [...new Set(suggestions.filter((x) => normalizeKw(x) !== k))].slice(0, 10).map((kw) => ({ keyword: kw })),
+    top: [...enriched].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 8),
+  };
+}
+
+/** params: { keywords|ideas, gl, lite }. Lite runs are returned inline (not saved): used for related keywords. */
+export async function keywordScores(params, progress = noop) {
+  const s = settingsStore.all();
+  const keywords = splitList(params.keywords ?? params.ideas).slice(0, 30);
+  if (!keywords.length) throw new Error('Nhập ít nhất một từ khoá');
+  const lite = !!params.lite;
   const results = [];
-  for (const [i, idea] of ideas.entries()) {
-    progress({ step: `Kiểm tra ý tưởng ${i + 1}/${ideas.length}`, done: i, total: ideas.length });
-    const vids = await searchVideosRegions(idea, { sort: 'relevance', upload: 'any', max: 20 }, regionsFor(params.gl || s.gl, s.globalRegions)).then((l) => l.slice(0, 20)); // verdict thresholds assume 20 results
-    const enriched = await enrichVideos(vids.filter((v) => !v.isLive), { exactTop: 0, minSubs: s.minSubsForOutlier });
-    const recent = enriched.filter((v) => v.ageDays != null && v.ageDays <= 365);
-    const strong = enriched.filter((v) => v.outlier >= 1);
-    const medViews = median(enriched.map((v) => v.views));
-    // Verdict: demand = views; supply = how many recent, strong videos already exist.
-    let verdict = 'unclear';
-    if (medViews != null && medViews < 2000) verdict = 'low_demand';
-    else if (recent.length <= 4 && medViews >= 10000) verdict = 'open';
-    else if (strong.length >= 8 && recent.length >= 10) verdict = 'saturated';
-    else verdict = 'competitive';
-    results.push({
-      idea,
-      verdict,
-      medianViews: medViews,
-      recentCount: recent.length,
-      strongCount: strong.length,
-      medianSubs: median(enriched.map((v) => v.channelSubs)),
-      oldestTopAgeDays: Math.max(...enriched.map((v) => v.ageDays ?? 0)),
-      top: enriched.sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 6),
-    });
-  }
-  const id = records.add('idea_check', ideas.slice(0, 3).join(' · '), { params, data: { results } });
+  await mapLimit(
+    keywords,
+    async (kw) => {
+      try {
+        results.push(await scoreOneKeyword(kw, { gl: params.gl || s.gl, lite, autocomplete: lite ? 'exact' : undefined }));
+      } catch (e) {
+        results.push({ keyword: kw, error: e.message });
+      }
+    },
+    (done, total) => progress({ step: lite ? 'Chấm điểm từ khoá liên quan' : `Chấm điểm từ khoá ${done}/${total}`, done, total }),
+  );
+  results.sort((a, b) => keywords.indexOf(a.keyword) - keywords.indexOf(b.keyword));
+  if (lite) return { inline: true, results };
+  const id = records.add('idea_check', keywords.slice(0, 3).join(' · ') + (keywords.length > 3 ? ` +${keywords.length - 3}` : ''), { params, data: { results } });
   return { id, results };
 }
+
+/** Old name kept for the CLI and saved jobs. */
+export const ideaCheck = keywordScores;

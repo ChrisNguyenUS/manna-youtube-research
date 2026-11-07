@@ -6,13 +6,13 @@ const KIND = {
   channel_search: ['Tìm kênh', '/channels', 'users'],
   channel_analysis: ['Phân tích kênh', '/channel', 'bars'],
   comments: ['Comment', '/comments', 'message'],
-  idea_check: ['Ý tưởng', '/ideas', 'bulb'],
+  idea_check: ['Chấm điểm', '/ideas', 'bulb'],
   keywords: ['Từ khoá', '/keywords', 'key'],
 };
 
 const STEPS = [
   ['1', 'Tìm ngách', 'Chủ đề bạn thích, làm được lâu dài. Ưu tiên kênh nhiều view nhưng ít sub, video mới trong năm có view tốt.', '#/channels', 'Tìm kênh'],
-  ['2', 'Tìm format thắng', 'Format đã thắng ở lĩnh vực A, áp sang lĩnh vực B. Nội dung cũ làm lại với góc nhìn mới. Kiểm tra xem đã có ai làm chưa.', '#/ideas', 'Kiểm tra ý tưởng'],
+  ['2', 'Tìm format thắng', 'Format đã thắng ở lĩnh vực A, áp sang lĩnh vực B. Nội dung cũ làm lại với góc nhìn mới. Kiểm tra xem đã có ai làm chưa.', '#/ideas', 'Chấm điểm từ khoá'],
   ['3', 'Mổ xẻ video viral', 'Gom 10 video viral của đối thủ: hook, bố cục, cách kể, nhịp, CTA → thành khung kịch bản.', '#/channel', 'Phân tích kênh'],
   ['4', 'Nghe khán giả', 'Comment: họ hỏi gì, than gì, muốn xem gì tiếp → khoảng trống cho video tiếp theo.', '#/research', 'Nghiên cứu chủ đề'],
 ];

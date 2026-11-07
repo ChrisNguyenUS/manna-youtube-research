@@ -102,6 +102,7 @@ export async function mount(root, params) {
         <div class="kpi"><div class="label">Vượt kênh (view ≥ sub)</div><div class="value">${s.outliers}</div><div class="hint accent">nội dung thắng, không nhờ kênh</div></div>
       </div>
       <div class="row" style="margin:14px 0 0"><span class="muted small">Tìm ${ago(rec.created_at)} · "${esc(d.keywords.join(', '))}"${d.regions?.length > 1 ? ` · 🌐 ${d.regions.length} nước: ${esc(d.regions.join(', '))}` : ''}</span><span class="spacer"></span>
+        <a class="btn sm" href="#/ideas?ideas=${encodeURIComponent(d.keywords.join('\n'))}&run=1" data-tip="Điểm Volume / Competition kiểu vidIQ cho từ khoá này">${icon('bulb')} Chấm điểm từ khoá</a>
         <a class="btn sm" href="/api/records/${id}/export.csv">${icon('download')} CSV</a></div>
       <div data-results style="margin-top:14px"></div>`;
     mountVideoResults(out.querySelector('[data-results]'), d.videos, {

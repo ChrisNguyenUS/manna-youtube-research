@@ -37,6 +37,7 @@ export function addVideoMetrics(videos, { minSubs = 500, now = Date.now() } = {}
       age: age == null ? null : round(age, 1),
       ageExact: !!v.publishedAt,
       viewsPerDay: v.views != null && age != null ? Math.round(v.views / Math.max(age, 1)) : null,
+      vph: v.views != null && age != null ? round(v.views / Math.max(age * 24, 1), 1) : null,
       outlier: v.views != null && subs != null && subs >= minSubs ? round(v.views / subs, 2) : null,
     };
   });

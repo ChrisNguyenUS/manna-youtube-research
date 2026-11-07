@@ -33,7 +33,7 @@ export async function mount(root, params) {
     const rec = await api(`/api/records/${id}`);
     const sel = new Set();
     out.innerHTML = `<div class="card"><div class="card-head"><h3>${rec.data.list.length} gợi ý cho "${esc(rec.data.seed)}"</h3>
-      <div class="row"><button class="btn sm" data-act="videos" disabled>${icon('search')} Tìm video</button><button class="btn sm" data-act="channels" disabled>${icon('users')} Tìm kênh</button><button class="btn sm" data-act="ideas" disabled>${icon('bulb')} Kiểm tra</button><a class="btn sm" href="/api/records/${id}/export.csv">${icon('download')} CSV</a></div></div>
+      <div class="row"><button class="btn sm" data-act="videos" disabled>${icon('search')} Tìm video</button><button class="btn sm" data-act="channels" disabled>${icon('users')} Tìm kênh</button><button class="btn sm" data-act="ideas" disabled>${icon('bulb')} Chấm điểm</button><a class="btn sm" href="/api/records/${id}/export.csv">${icon('download')} CSV</a></div></div>
       <table class="t"><thead><tr><th style="width:30px"></th><th>Từ khoá</th><th class="r" data-tip="Số lần xuất hiện qua các lần gõ thử">Xuất hiện</th><th></th></tr></thead><tbody>
       ${rec.data.list.map((k, i) => `<tr><td><input type="checkbox" data-k="${i}"></td><td><b>${esc(k.keyword)}</b></td><td class="r num">${k.hits}</td>
         <td class="actions"><a class="btn sm" href="#/videos?q=${encodeURIComponent(k.keyword)}&run=1">${icon('search')} Video</a></td></tr>`).join('')}</tbody></table></div>`;
@@ -47,7 +47,7 @@ export async function mount(root, params) {
     });
     btns.forEach((b) => b.addEventListener('click', () => {
       const list = [...sel];
-      if (b.dataset.act === 'ideas') window.__go('/ideas', { ideas: list.join('\n') });
+      if (b.dataset.act === 'ideas') window.__go('/ideas', { ideas: list.join('\n'), run: 1 });
       else window.__go('/' + b.dataset.act, { q: list.join(', ') });
     }));
   }

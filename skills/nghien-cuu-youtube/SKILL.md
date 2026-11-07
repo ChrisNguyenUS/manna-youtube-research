@@ -50,7 +50,7 @@ Lệnh khác:
 |---|---|
 | Phân tích một kênh (120 video dài + Shorts, video nổi bật ≥ 3× trung vị) | `node src/cli.js channel "@handle"` → `output/kenh-<handle>-<ngày>.digest.md` |
 | Lấy comment video bất kỳ | `node src/cli.js comments <url1> <url2> --max 200` |
-| Kiểm tra ý tưởng đã có ai làm chưa | `node src/cli.js ideas "ý tưởng 1" "ý tưởng 2" --gl VN` (in `open` / `competitive` / `saturated` / `low_demand`) |
+| Chấm điểm từ khoá kiểu vidIQ (đã có ai làm chưa) | `node src/cli.js ideas "từ khoá 1" "từ khoá 2" --gl VN` → điểm tổng, Volume, Competition + tình trạng `open` (ít người làm gần đây) / `competitive` (đã có người làm) / `saturated` (nhiều người làm và đang thắng) / `low_demand` (ít người xem). Volume là **ước tính** từ view của video top, không phải lượng tìm kiếm thật: khi báo cáo, dẫn số liệu (view TB, sub TB, mới 7 ngày) chứ đừng chỉ dẫn điểm |
 
 Nếu báo lỗi 429 hoặc ra 0 video: YouTube chặn tạm. Đợi vài phút rồi chạy lại; có thể giảm "Số request song song" trong Cài đặt. **Không** tự chuyển sang Apify hay dịch vụ trả phí.
 

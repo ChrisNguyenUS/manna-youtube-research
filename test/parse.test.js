@@ -135,3 +135,32 @@ test('global mode: regions and merge', () => {
   assert.equal(realGl('VN'), 'VN');
   configure({ gl: 'US' });
 });
+
+import { scoreKeyword, titleMatches, autocompleteMatch, band } from '../src/analysis/score.js';
+
+test('keyword score', () => {
+  assert.equal(titleMatches('ĂN CHAY lành mạnh mỗi ngày', 'ăn chay lành mạnh'), true);
+  assert.equal(titleMatches('Món chay ngon', 'ăn chay lành mạnh'), false);
+  assert.equal(autocompleteMatch('ăn chay', ['ăn chay', 'ăn chay giảm cân']), 'exact');
+  assert.equal(autocompleteMatch('ăn chay', ['ăn chay giảm cân']), 'prefix');
+  assert.equal(autocompleteMatch('xyz', ['abc']), 'none');
+  assert.equal(band(64).label, 'Cao');
+
+  // High demand, small channels, unoptimized titles -> good keyword
+  const easy = Array.from({ length: 20 }, (_, i) => ({ title: `video ${i}`, views: 500000, channelSubs: 5000, age: 400 }));
+  // Same demand but giant, optimized, fresh competitors -> worse
+  const hard = Array.from({ length: 20 }, () => ({ title: 'ăn chay lành mạnh', views: 500000, channelSubs: 3000000, age: 10 }));
+  const a = scoreKeyword('ăn chay lành mạnh', easy, { autocomplete: 'exact', ccCount: 0 });
+  const b = scoreKeyword('ăn chay lành mạnh', hard, { autocomplete: 'exact', ccCount: 0 });
+  assert.ok(b.volume >= a.volume, 'same views in fewer days = more demand');
+  assert.ok(b.competition > a.competition + 40);
+  assert.ok(a.overall > b.overall);
+  assert.equal(a.stats.added7d, 0);
+  assert.equal(b.stats.added30d, 20);
+  assert.equal(b.stats.titleMatch, 20);
+  assert.equal(scoreKeyword('x', []).overall, 0);
+});
+
+test('captions filter matches YouTube menu', () => {
+  assert.equal(buildSearchParams({ sort: 'popularity', upload: 'year', type: 'video', duration: 'mid4to20', captions: true }), 'CAMSCAgFEAEYAygB');
+});

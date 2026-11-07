@@ -38,6 +38,8 @@ Không lấy được: transcript/phụ đề (YouTube yêu cầu token khi khô
 - **Vượt kênh** = view ÷ sub của kênh. > 1 = video kéo được người ngoài tệp sub (thắng nhờ nội dung). Bỏ kênh < 500 sub.
 - **View/ngày** = view ÷ tuổi video (tối thiểu 1 ngày). Tuổi có `~` là ước tính từ "3 tháng trước"; không có `~` là ngày đăng chính xác.
 - **Video nổi bật** (phân tích kênh) = view ≥ 3× trung vị của kênh.
+- **Điểm từ khoá** (kiểu vidIQ): Volume *ước tính* = 50% view trung vị top 20 + 30% view/ngày + 20% có trong gợi ý tìm kiếm; Competition = 45% sub trung vị + 25% tiêu đề chứa từ khoá + 15% kênh ≥ 1 triệu sub + 15% video mới 30 ngày; Tổng = 55% Volume + 45% (100 − Competition). Không có lượng tìm kiếm thật như vidIQ.
+- **VPH** = view ÷ số giờ kể từ lúc đăng.
 - **Lift của mẫu tiêu đề** = trung vị chỉ số của nhóm ÷ trung vị chung.
 
 ## Cấu trúc
@@ -59,7 +61,7 @@ data/            SQLite (gitignore)
 node src/cli.js research "kể chuyện lịch sử" --keywords "lịch sử việt nam, chuyện xưa" --gl VN --min 4 --max 20 --comments 5
 node src/cli.js channel "@BlackJournals"
 node src/cli.js comments https://www.youtube.com/watch?v=... --max 200
-node src/cli.js ideas "ý tưởng 1" "ý tưởng 2" --gl VN
+node src/cli.js ideas "từ khoá 1" "từ khoá 2" --gl VN   # chấm điểm kiểu vidIQ
 ```
 
 Kết quả: `output/*.digest.md`, đồng thời hiện trong app.

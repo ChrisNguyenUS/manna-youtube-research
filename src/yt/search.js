@@ -21,8 +21,9 @@ function field(num, value) {
   return value ? [...varint(num << 3), ...varint(value)] : [];
 }
 
-export function buildSearchParams({ sort = 'relevance', upload = 'any', type = 'video', duration = 'any', cc = false } = {}) {
+export function buildSearchParams({ sort = 'relevance', upload = 'any', type = 'video', duration = 'any', cc = false, captions = false } = {}) {
   const inner = [...field(1, UPLOAD[upload] || 0), ...field(2, TYPE[type] || 0), ...field(3, DURATION[duration] || 0)];
+  if (captions) inner.push(...varint((5 << 3) | 0), 1); // Subtitles/CC
   if (cc) inner.push(...varint((6 << 3) | 0), 1); // Creative Commons
   const bytes = [...field(1, SORT[sort] || 0)];
   if (inner.length) bytes.push(...varint((2 << 3) | 2), ...varint(inner.length), ...inner);
@@ -78,7 +79,7 @@ function continuationToken(json) {
  */
 export async function searchVideos(query, opts = {}, onPage) {
   const max = opts.max || 40;
-  const params = buildSearchParams({ sort: opts.sort || 'popularity', upload: opts.upload || 'any', type: 'video', duration: opts.duration || 'any', cc: opts.cc });
+  const params = buildSearchParams({ sort: opts.sort || 'popularity', upload: opts.upload || 'any', type: 'video', duration: opts.duration || 'any', cc: opts.cc, captions: opts.captions });
   let json = await call('search', { query, params }, { gl: opts.gl });
   const out = [];
   const seen = new Set();

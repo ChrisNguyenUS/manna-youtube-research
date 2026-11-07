@@ -22,7 +22,7 @@ const NAV = [
   ['/channel', 'bars', 'Phân tích kênh', channel],
   ['/compare', 'columns', 'So sánh kênh', compare],
   ['/comments', 'message', 'Comment', comments],
-  ['/ideas', 'bulb', 'Kiểm tra ý tưởng', ideas],
+  ['/ideas', 'bulb', 'Chấm điểm từ khoá', ideas],
   ['Lưu trữ'],
   ['/saved', 'bookmark', 'Đã lưu', saved],
   ['/settings', 'settings', 'Cài đặt', settings],
