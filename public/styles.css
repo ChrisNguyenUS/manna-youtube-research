@@ -156,6 +156,8 @@ textarea.input { resize: vertical; min-height: 70px; }
 .badge.warn { background: var(--warn-soft); color: var(--warn); }
 .badge.bad { background: var(--bad-soft); color: var(--bad); }
 .badge.blue { background: var(--blue-soft); color: var(--blue); }
+.badge.purple { background: #f3ecfd; color: #7048e8; }
+.badge small { font-size: 10px; font-weight: 600; opacity: 0.8; }
 .badge.plain { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--line); }
 
 /* ---------- tables ---------- */

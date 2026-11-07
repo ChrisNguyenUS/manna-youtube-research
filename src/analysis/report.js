@@ -21,6 +21,13 @@ export function researchMarkdown(d) {
     const v = byId.get(id);
     if (v) L.push(`| ${i + 1} | ${cell(v.title)} | ${cell(v.channelTitle)} | ${n(v.channelSubs)} | ${n(v.views)} | ×${v.outlier} | ${n(v.viewsPerDay)} | ${age(v)} | ${dur(v.durationSec)} | ${(v.regions || []).join(' ')} | ${v.url} |`);
   });
+  if (d.topByOutlierScore?.length) {
+    L.push('', '## Top theo Outlier (view ÷ view thường lệ của chính kênh, như 1of10/vidIQ)', '', '| # | Tiêu đề | Kênh | View | View TB kênh | Outlier | Dài | Link |', '|---|---|---|---|---|---|---|---|');
+    d.topByOutlierScore.forEach((id, i) => {
+      const v = byId.get(id);
+      if (v) L.push(`| ${i + 1} | ${cell(v.title)} | ${cell(v.channelTitle)} | ${n(v.views)} | ${n(v.channelMedianViews)} | ×${v.outlierScore}${v.outlierBasis === 'vph' ? ' (VPH)' : ''} | ${dur(v.durationSec)} | ${v.url} |`);
+    });
+  }
   L.push('', '## Top video theo view/ngày (đang lên)', '', '| # | Tiêu đề | Kênh | View | View/ngày | Tuổi |', '|---|---|---|---|---|---|');
   d.topByViewsPerDay.slice(0, 10).forEach((id, i) => {
     const v = byId.get(id);

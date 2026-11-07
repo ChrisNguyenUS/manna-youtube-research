@@ -59,6 +59,7 @@ Nếu báo lỗi 429 hoặc ra 0 video: YouTube chặn tạm. Đợi vài phút 
 Đọc **toàn bộ** file `.digest.md` (vài chục KB). Đừng đọc `data/research.db`. Digest có:
 
 - **Top video theo vượt kênh** = view ÷ sub của kênh (kênh < 500 sub bị bỏ vì nhiễu). Lớn hơn 1 = video kéo được người ngoài tệp sub.
+- **Top theo Outlier** = view ÷ view trung vị của chính kênh (như 1of10/vidIQ; video < 7 ngày so theo VPH). Đây là tín hiệu "format/tiêu đề này thắng" rõ nhất; vượt kênh (view ÷ sub) thì đo việc kéo người ngoài tệp sub. Dùng cả hai, ưu tiên video cao ở cả hai cột.
 - **Top theo view/ngày**: tách video mới đang lên khỏi video cũ tích luỹ lâu. Tuổi có dấu `~` là ước tính từ "3 months ago"; không có `~` là ngày đăng chính xác.
 - **Mẫu tiêu đề** với *lift* = trung vị vượt kênh của nhóm ÷ trung vị chung (> 1 = mẫu đang ăn).
 - **Cụm từ trong tiêu đề**, **độ dài**, **kênh nhỏ đang thắng** (< 100K sub, có video view ≥ sub).

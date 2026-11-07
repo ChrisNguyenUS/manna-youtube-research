@@ -1,5 +1,5 @@
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, api, fmt, mult, ago, emptyState, thumb, ytVideo, dur, ageText, bindTips } from '../lib.js';
-import { mountVideoResults, hbars, patternList, phraseChips } from '../components.js';
+import { mountVideoResults, hbars, patternList, phraseChips, oscoreBadge, OUTLIER_TIP } from '../components.js';
 import { DUR_CHIPS, UPLOAD_CHIPS, REGIONS, durToSeconds } from './videos.js';
 
 const FORM = { topic: '', keywords: '', competitors: '', gl: '', direction: 'top', upload: 'year', dur: '4-20', minDur: '', maxDur: '', perKeyword: 40, readComments: true, commentTop: 5, commentMax: 50 };
@@ -110,6 +110,7 @@ export async function mount(root, params) {
         const vpd = d.topByViewsPerDay.map((i) => byId.get(i)).filter(Boolean).slice(0, 10);
         body.innerHTML = `<div class="card-pad"><div class="section-label" style="margin-top:0">Top theo điểm vượt kênh (view ÷ sub)</div>
           <div class="vgrid" style="padding:0">${top.map((v, i) => miniCard(v, i)).join('')}</div>
+          ${d.topByOutlierScore?.length ? `<div class="section-label" data-tip="${esc(OUTLIER_TIP)}">Outlier: gấp nhiều lần video thường của chính kênh ⓘ</div>${outlierTable(d.topByOutlierScore.map((i) => byId.get(i)).filter(Boolean).slice(0, 10))}` : ''}
           <div class="section-label">Đang lên nhanh nhất (view/ngày)</div>${miniTable(vpd)}</div>`;
       } else if (t === 'titles') {
         body.innerHTML = `<div class="card-pad"><p class="muted small" style="margin-top:0">Tiêu đề trung vị ${d.titleShape.medianChars} ký tự, ${d.titleShape.medianWords} từ. Hiệu quả = trung vị vượt kênh của nhóm ÷ trung vị chung.</p>
@@ -173,6 +174,11 @@ export async function mount(root, params) {
       return `<table class="t"><thead><tr><th class="thumb"></th><th>Video</th><th class="r">View</th><th class="r">View/ngày</th><th class="r">Vượt kênh</th><th class="r">Đăng</th></tr></thead><tbody>
         ${list.map((v) => `<tr><td class="thumb"><img loading="lazy" src="${thumb(v.id)}" alt=""></td><td class="title-cell"><a href="${ytVideo(v.id)}" target="_blank" rel="noopener">${esc(v.title)}</a><div class="meta">${esc(v.channelTitle)} · ${fmt(v.channelSubs)} sub</div></td>
           <td class="r num">${fmt(v.views)}</td><td class="r num"><b>${fmt(v.viewsPerDay)}</b></td><td class="r">${mult(v.outlier)}</td><td class="r num">${ageText(v.age, v.ageExact)}</td></tr>`).join('')}</tbody></table>`;
+    }
+    function outlierTable(list) {
+      return `<table class="t"><thead><tr><th class="thumb"></th><th>Video</th><th class="r">View</th><th class="r">View TB kênh</th><th class="r">Outlier</th><th class="r">Đăng</th></tr></thead><tbody>
+        ${list.map((v) => `<tr><td class="thumb"><img loading="lazy" src="${thumb(v.id)}" alt=""></td><td class="title-cell"><a href="${ytVideo(v.id)}" target="_blank" rel="noopener">${esc(v.title)}</a><div class="meta">${esc(v.channelTitle)} · ${fmt(v.channelSubs)} sub</div></td>
+          <td class="r num">${fmt(v.views)}</td><td class="r num">${fmt(v.channelMedianViews)}</td><td class="r">${oscoreBadge(v)}</td><td class="r num">${ageText(v.age, v.ageExact)}</td></tr>`).join('')}</tbody></table>`;
     }
     function channelTable(list) {
       if (!list.length) return emptyState('Không có');

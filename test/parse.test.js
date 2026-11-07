@@ -164,3 +164,27 @@ test('keyword score', () => {
 test('captions filter matches YouTube menu', () => {
   assert.equal(buildSearchParams({ sort: 'popularity', upload: 'year', type: 'video', duration: 'mid4to20', captions: true }), 'CAMSCAgFEAEYAygB');
 });
+
+import { channelBaseline, outlierScore } from '../src/analysis/metrics.js';
+
+test('outlier score vs channel baseline', () => {
+  const ch = [
+    { id: 'n1', views: 50, ageDays: 1 }, // too new: excluded from the views baseline
+    { id: 'n2', views: 300, ageDays: 3 },
+    { id: 'a', views: 1000, ageDays: 10 },
+    { id: 'b', views: 2000, ageDays: 20 },
+    { id: 'c', views: 3000, ageDays: 40 },
+    { id: 'live', views: 9e6, ageDays: 15, isLive: true },
+  ];
+  const b = channelBaseline(ch);
+  assert.equal(b.medianViews, 2000);
+  assert.equal(b.sample, 3);
+  assert.deepEqual(outlierScore({ views: 20000, ageDays: 100 }, b), { outlierScore: 10, outlierBasis: 'views' });
+  // 2-day-old video judged on VPH against the channel's 1–30 day uploads
+  const young = outlierScore({ views: 4800, ageDays: 2 }, b);
+  assert.equal(young.outlierBasis, 'vph');
+  assert.ok(young.outlierScore > 10);
+  assert.equal(outlierScore({ views: 1e6, ageDays: 50, durationSec: 30 }, b).outlierScore, null, 'shorts skipped');
+  assert.equal(channelBaseline([{ views: 1, ageDays: 10 }]).medianViews, null, 'needs ≥ 3 videos');
+  assert.equal(channelBaseline(ch, { exclude: 'b' }).medianViews, null, 'excluding the video can drop below 3 settled videos');
+});
