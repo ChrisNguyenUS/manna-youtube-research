@@ -7,19 +7,19 @@
 
 ## 1. Hiện trạng (v0) và nợ kỹ thuật
 
-| # | Nợ | Ở đâu | Hậu quả khi nâng cấp |
-|---|---|---|---|
-| D1 | Một file "services" ôm mọi use case (519 dòng) | `src/services.js` | Thêm theo dõi kênh sẽ phình tiếp; khó test riêng |
-| D2 | Kết quả lưu thành JSON không có phiên bản | bảng `records.data` | Dữ liệu cũ thiếu trường mới (VPH, outlierScore) → đang vá ở giao diện (`components.js` tự tính VPH) |
-| D3 | Không có migration; schema tạo bằng `CREATE IF NOT EXISTS` | `src/db.js` | Không đổi cột được an toàn; desktop của khách không nâng cấp được DB |
-| D4 | Job chỉ nằm trong RAM | `src/jobs.js` | Tắt app là mất tiến trình; không làm được lịch quét / theo dõi |
-| D5 | Logic nghiệp vụ gọi thẳng scraper | `services.js` import `yt/*` | Không thay được nguồn dữ liệu (Data API), không test được bằng dữ liệu giả |
-| D6 | Định nghĩa chỉ số rải rác, tên dễ lẫn (`outlier` = view/sub, `outlierScore` = × kênh) | metrics, text, components, report, server CSV | Đổi công thức phải sửa 5 nơi; tooltip/CSV/digest lệch nhau |
-| D7 | Route HTTP regex + không kiểm tra input | `src/server.js` | Lỗi khó đoán; API không ổn định cho frontend mới / extension |
-| D8 | Frontend ghép chuỗi HTML, gắn listener mỗi lần render, `components.js` 401 dòng | `public/` | Rò listener; khó viết lại sang Preact; không đa ngôn ngữ |
-| D9 | Cấu hình rải rác (cổng, đường dẫn data, gl mặc định) | server, db, innertube | Desktop cần `dataDir` theo hệ điều hành, cổng ngẫu nhiên |
-| D10 | Test chỉ có unit thuần, không có fixture phản hồi YouTube | `test/` | YouTube đổi định dạng → chỉ biết khi người dùng gặp lỗi |
-| D11 | Không có `workspace_id` | mọi bảng người dùng | Lên SaaS phải viết lại toàn bộ truy vấn |
+| # | Nợ | Ở đâu (v0) | Hậu quả khi nâng cấp | Trạng thái |
+|---|---|---|---|---|
+| D1 | Một file "services" ôm mọi use case (519 dòng) | `src/services.js` | Thêm theo dõi kênh sẽ phình tiếp; khó test riêng | Đã xử lý (giai đoạn 0): `src/features/*` |
+| D2 | Kết quả lưu thành JSON không có phiên bản | bảng `records.data` | Dữ liệu cũ thiếu trường mới (VPH, outlierScore) → đang vá ở giao diện (`components.js` tự tính VPH) | Đã xử lý: `schema_version` + `store/upgrades` |
+| D3 | Không có migration; schema tạo bằng `CREATE IF NOT EXISTS` | `src/db.js` | Không đổi cột được an toàn; desktop của khách không nâng cấp được DB | Đã xử lý: migration đánh số + backup |
+| D4 | Job chỉ nằm trong RAM | `src/jobs.js` | Tắt app là mất tiến trình; không làm được lịch quét / theo dõi | Đã xử lý: `jobs` trong SQLite, huỷ, gián đoạn |
+| D5 | Logic nghiệp vụ gọi thẳng scraper | `services.js` import `yt/*` | Không thay được nguồn dữ liệu (Data API), không test được bằng dữ liệu giả | Đã xử lý: port `YouTubeSource` |
+| D6 | Định nghĩa chỉ số rải rác, tên dễ lẫn (`outlier` = view/sub, `outlierScore` = × kênh) | metrics, text, components, report, server CSV | Đổi công thức phải sửa 5 nơi; tooltip/CSV/digest lệch nhau | Đã xử lý: registry, `viewSub` |
+| D7 | Route HTTP regex + không kiểm tra input | `src/server.js` | Lỗi khó đoán; API không ổn định cho frontend mới / extension | Đã xử lý: `src/http` + validate + `/api/v1` |
+| D8 | Frontend ghép chuỗi HTML, gắn listener mỗi lần render, `components.js` 401 dòng | `public/` | Rò listener; khó viết lại sang Preact; không đa ngôn ngữ | Một phần: client, scope/unmount, component tách file; Preact ở v1.2 |
+| D9 | Cấu hình rải rác (cổng, đường dẫn data, gl mặc định) | server, db, innertube | Desktop cần `dataDir` theo hệ điều hành, cổng ngẫu nhiên | Đã xử lý: `src/config.js` |
+| D10 | Test chỉ có unit thuần, không có fixture phản hồi YouTube | `test/` | YouTube đổi định dạng → chỉ biết khi người dùng gặp lỗi | Đã xử lý: fixture + test hợp đồng + `npm run probe` |
+| D11 | Không có `workspace_id` | mọi bảng người dùng | Lên SaaS phải viết lại toàn bộ truy vấn | Một phần: có cột `workspace_id`, chưa có đăng nhập |
 
 ---
 
@@ -90,7 +90,7 @@ src/
   cli/index.js
 desktop/                    # (v1.2) Electron main, tray, notify, updater
 web/                        # frontend (đổi tên từ public/)
-  api/client.js             # MỌI fetch đi qua đây (kiểu trả về theo JSDoc)
+  http/client.js            # MỌI fetch đi qua đây (không đặt tên web/api/: trùng tiền tố /api/ của server)
   components/               # video-table.js, video-grid.js, filters.js, score-card.js, charts.js…
   views/                    # một màn một file, export mount(root, params) → trả về unmount()
   i18n/vi.js, en.js         # (v1.2)
@@ -277,7 +277,7 @@ Trạng thái: `queued → running → (succeeded | failed | cancelled | interru
 ## 10. Frontend
 
 v1.0–1.1 (JS thuần, không build):
-- `web/api/client.js` là nơi duy nhất gọi `fetch`.
+- `web/http/client.js` là nơi duy nhất gọi `fetch`.
 - Mỗi view `export function mount(root, params)` **trả về `unmount()`**; mọi listener gắn qua helper `on(root, event, selector, fn)` để gỡ được.
 - Component nhận dữ liệu + callback, trả HTML; không tự gọi API.
 - Không chuỗi giao diện nào hard-code trong component mới: dùng `t('key')` (bước đệm cho i18n).
@@ -338,6 +338,6 @@ v1.2: chuyển sang **Preact + Vite** từng màn một (bắt đầu từ Chấ
 - [ ] Đổi schema DB → migration mới; đổi hình dạng record → tăng `schema_version` + bước nâng cấp + test record cũ.
 - [ ] Chỉ số mới/đổi công thức → registry (`definitions.js`), không viết nhãn/công thức ở nơi khác.
 - [ ] Route mới có schema validate và mã lỗi chuẩn.
-- [ ] View mới trả `unmount()`, gọi API qua `web/api/client.js`.
+- [ ] View mới trả `unmount()` (listener trên phần tử sống lâu đi qua `scope()` trong `web/dom.js`), gọi API qua `web/http/client.js`.
 - [ ] `npm test` xanh (gồm typecheck và arch test).
 - [ ] Cập nhật PRD/L4 nếu đổi luồng; cập nhật skill nếu đổi CLI/digest.

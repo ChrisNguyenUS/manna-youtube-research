@@ -73,7 +73,7 @@ if (cmd === 'research') {
   process.stderr.write('\r\x1b[K');
   for (const x of r.results) console.log(x.error ? `lỗi: ${x.error} — ${x.keyword}` : `điểm ${String(x.overall).padStart(3)} (volume ${x.volume}, cạnh tranh ${x.competition}) · ${x.verdict.padEnd(11)} · view TB ${Math.round(x.stats.avgViews ?? 0)} · sub TB ${Math.round(x.stats.avgSubs ?? 0)} · mới 7 ngày ${x.stats.added7d}/${x.stats.results} — ${x.keyword}`);
 } else {
-  console.log('Lệnh: research | channel | comments | ideas  (xem đầu file src/cli.js)');
+  console.log('Lệnh: research | channel | comments | ideas  (xem đầu file src/cli/index.js)');
   process.exit(1);
 }
 process.exit(0);

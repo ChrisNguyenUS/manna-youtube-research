@@ -44,15 +44,34 @@ Không lấy được: transcript/phụ đề (YouTube yêu cầu token khi khô
 
 ## Cấu trúc
 
+Kiến trúc chi tiết và luật thêm tính năng: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Sản phẩm: [docs/youtube-research-prd.md](docs/youtube-research-prd.md).
+
 ```
-src/yt/          innertube client, parser, search, channel, comments
-src/analysis/    metrics, phân tích tiêu đề + comment, xuất Markdown/CSV
-src/services.js  các thao tác nghiên cứu (dùng chung cho server và CLI)
-src/server.js    HTTP API + job nền + file tĩnh
-src/cli/index.js       CLI cho skill
-public/          giao diện (JS thuần, không build)
+src/
+  main.js            entry: npm start, launcher macOS
+  app.js             composition root: chọn adapter, đăng ký use case + job
+  config.js          nơi duy nhất đọc biến môi trường
+  core/              tính toán thuần: metrics (outlier, view/sub, VPH), phân tích tiêu đề/comment, chấm điểm từ khoá, Markdown/CSV
+  ports/             hợp đồng: YouTubeSource, Store
+  sources/innertube/ lấy dữ liệu YouTube (không key) + fixture test
+  sources/fake/      nguồn giả cho test
+  store/sqlite/      SQLite: migration đánh số, repo theo workspace, job
+  store/upgrades/    nâng cấp record cũ khi đọc
+  jobs/runner.js     job nền lưu DB (chống chạy trùng, huỷ, gián đoạn)
+  features/          use case: tìm video, tìm kênh, phân tích kênh, nghiên cứu, comment, chấm điểm, gợi ý từ khoá
+  http/              router khai báo, kiểm tra input, /api/v1
+  cli/index.js       CLI cho skill
+web/                 giao diện (JS thuần, không build): http/client.js, components/, views/
+scripts/             make-app.sh (icon macOS), probe.js (kiểm tra YouTube còn đúng định dạng)
 skills/nghien-cuu-youtube/   skill Claude Code (symlink vào ~/.claude/skills)
-data/            SQLite (gitignore)
+data/                SQLite + backups/ (gitignore)
+```
+
+Lệnh kiểm tra:
+
+```bash
+npm test             # typecheck (JSDoc) + test, không cần mạng
+npm run probe        # gọi YouTube thật 6 lần, báo nếu định dạng đổi
 ```
 
 ## CLI
