@@ -6,13 +6,13 @@
 //   node src/cli.js ideas "ý tưởng 1" "ý tưởng 2"
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, settingsStore } from './db.js';
-import { configure } from './sources/innertube/client.js';
-import * as svc from './services.js';
+import { ROOT } from './config.js';
+import { createApp } from './app.js';
 import { researchMarkdown, channelMarkdown, commentsMarkdown } from './core/report/markdown.js';
-import { records } from './db.js';
 
-configure(settingsStore.all());
+const app = createApp();
+const svc = app.features;
+const records = { get: (id) => app.store.records.get(app.ws, id) };
 
 const argv = process.argv.slice(2);
 const cmd = argv.shift();

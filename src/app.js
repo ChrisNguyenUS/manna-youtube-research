@@ -1,0 +1,60 @@
+// Composition root: the only place that picks concrete adapters (docs/ARCHITECTURE.md §2.3).
+import { loadConfig } from './config.js';
+import { openDatabase } from './store/sqlite/db.js';
+import { createSqliteStore } from './store/sqlite/index.js';
+import { createInnertubeSource } from './sources/innertube/index.js';
+import { createRunner } from './jobs/runner.js';
+import { makeEnrich, recordsFor } from './features/shared.js';
+import { makeVideoSearch } from './features/video-search.js';
+import { makeChannelSearch } from './features/channel-search.js';
+import { makeChannelAnalysis, makeCompareChannels } from './features/channel-analysis.js';
+import { makeFetchComments } from './features/comments.js';
+import { makeResearch, makeResearchComments } from './features/topic-research.js';
+import { makeKeywordIdeas } from './features/keyword-ideas.js';
+import { makeScoreOneKeyword, makeKeywordScores } from './features/keyword-score.js';
+
+/**
+ * @param {{config?: ReturnType<typeof loadConfig>, source?: import('./ports/youtube-source.js').YouTubeSource, store?: import('./store/sqlite/index.js').Store}} [o]
+ */
+export function createApp({ config = loadConfig(), source, store } = {}) {
+  store ??= createSqliteStore(openDatabase({ dataDir: config.dataDir }));
+  const ws = 'local'; // workspace; becomes the signed-in workspace when the app goes multi-user
+  const settings = () => store.settings.all(ws);
+  source ??= createInnertubeSource(settings());
+  const base = { source, store, ws, settings, now: Date.now, records: recordsFor(store, ws) };
+  const enrich = makeEnrich(base);
+
+  const videoSearch = makeVideoSearch({ ...base, enrich });
+  const keywordIdeas = makeKeywordIdeas(base);
+  const researchComments = makeResearchComments(base);
+  const scoreOneKeyword = makeScoreOneKeyword({ ...base, enrich });
+  const features = {
+    videoSearch,
+    channelSearch: makeChannelSearch({ ...base, enrich }),
+    analyzeChannel: makeChannelAnalysis({ ...base, enrich }),
+    compareChannels: makeCompareChannels(base),
+    fetchComments: makeFetchComments({ ...base, enrich }),
+    research: makeResearch({ ...base, enrich, videoSearch, keywordIdeas, researchComments }),
+    researchComments,
+    keywordIdeas,
+    keywordScores: makeKeywordScores({ ...base, scoreOneKeyword }),
+  };
+
+  /** Job kind → handler. ctx.progress throws after cancel, which is how jobs stop. */
+  const handlers = {
+    video_search: (p, ctx) => features.videoSearch(p, ctx.progress),
+    channel_search: (p, ctx) => features.channelSearch(p, ctx.progress),
+    channel_analysis: (p, ctx) => features.analyzeChannel(p.input, { max: Number(p.max) || 120 }, ctx.progress),
+    research: (p, ctx) => features.research(p, ctx.progress),
+    research_comments: (p, ctx) => features.researchComments(Number(p.recordId), p, ctx.progress),
+    comments: (p, ctx) => features.fetchComments(p, ctx.progress),
+    idea_check: (p, ctx) => features.keywordScores(p, ctx.progress),
+    keyword_score: (p, ctx) => features.keywordScores(p, ctx.progress),
+    keywords: async (p, ctx) => {
+      const list = await features.keywordIdeas(p.seed, { gl: p.gl }, ctx.progress);
+      return { id: base.records.add('keywords', p.seed, { params: p, data: { seed: p.seed, list } }) };
+    },
+  };
+  const runner = createRunner({ jobsRepo: store.jobs, handlers });
+  return { config, store, source, features, runner, ws, settings };
+}

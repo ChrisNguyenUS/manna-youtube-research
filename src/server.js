@@ -1,20 +1,20 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, records, saved, settingsStore } from './db.js';
-import { loadConfig } from './config.js';
+import { ROOT } from './config.js';
+import { createApp } from './app.js';
 import { METRICS, metricLabel } from './core/metrics/definitions.js';
-import { configure, getConfig, stats } from './sources/innertube/client.js';
-import { createRunner } from './jobs/runner.js';
-import { store } from './db.js';
-import * as svc from './services.js';
 import { researchMarkdown, channelMarkdown, commentsMarkdown } from './core/report/markdown.js';
 import { toCsv } from './core/report/csv.js';
 
-const { port: PORT, host: HOST } = loadConfig();
+const app = createApp();
+const { port: PORT, host: HOST } = app.config;
 const PUBLIC = path.join(ROOT, 'public');
-
-configure(settingsStore.all());
+const WS = app.ws;
+// Workspace-bound shorthands used by the routes below (replaced by http/routes in Task 11).
+const records = { list: (k, l) => app.store.records.list(WS, k, l), get: (id) => app.store.records.get(WS, id), remove: (id) => app.store.records.remove(WS, id), counts: () => app.store.records.counts(WS) };
+const saved = { list: (k) => app.store.saved.list(WS, k), keys: () => app.store.saved.keys(WS), put: (...a) => app.store.saved.put(WS, ...a), note: (...a) => app.store.saved.note(WS, ...a), remove: (...a) => app.store.saved.remove(WS, ...a) };
+const settingsStore = { all: app.settings, set: (o) => app.store.settings.set(WS, o) };
 
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' };
 
@@ -80,22 +80,7 @@ const COMMENT_COLS = [
 ];
 
 // Routes: [method, regex, handler(req, res, match, body, url)]
-const JOBS = {
-  video_search: (b, p) => svc.videoSearch(b, p),
-  channel_search: (b, p) => svc.channelSearch(b, p),
-  channel_analysis: (b, p) => svc.analyzeChannel(b.input, { max: Number(b.max) || 120 }, p),
-  research: (b, p) => svc.research(b, p),
-  research_comments: (b, p) => svc.researchComments(Number(b.recordId), b, p),
-  comments: (b, p) => svc.fetchComments(b, p),
-  idea_check: (b, p) => svc.ideaCheck(b, p),
-  keyword_score: (b, p) => svc.keywordScores(b, p),
-  keywords: async (b, p) => {
-    const list = await svc.keywordIdeas(b.seed, { gl: b.gl }, p);
-    const id = records.add('keywords', b.seed, { params: b, data: { seed: b.seed, list } });
-    return { id, seed: b.seed, list };
-  },
-};
-const runner = createRunner({ jobsRepo: store.jobs, handlers: Object.fromEntries(Object.entries(JOBS).map(([k, fn]) => [k, (params, ctx) => fn(params, ctx.progress)])) });
+const runner = app.runner;
 runner.start();
 
 /** Job as the web UI sees it: small, no big results (those live in /records). */
@@ -113,16 +98,21 @@ function jobView(j) {
 /** @type {Array<[string, RegExp, (...a: any[]) => any]>} */
 const routes = [
   ['POST', /^\/api\/jobs\/(\w+)$/, async (req, res, m, body) => {
-    if (!JOBS[m[1]]) return json(res, { error: 'Không có tác vụ này' }, 404);
     const title = body.keywords || body.topic || body.input || body.seed || body.ideas || body.videos || m[1];
-    const { id, reused } = runner.enqueue('local', m[1], body, String(title).slice(0, 80));
+    let job;
+    try {
+      job = runner.enqueue(WS, m[1], body, String(title).slice(0, 80));
+    } catch (e) {
+      return json(res, { error: e.message }, e.code === 'invalid_input' ? 400 : 500);
+    }
+    const { id, reused } = job;
     json(res, { id, reused });
   }],
   ['POST', /^\/api\/jobs\/(\d+)\/cancel$/, (req, res, m) => {
     runner.cancel(Number(m[1]));
     json(res, { ok: true });
   }],
-  ['GET', /^\/api\/jobs$/, (req, res) => json(res, runner.list('local').map(jobView))],
+  ['GET', /^\/api\/jobs$/, (req, res) => json(res, runner.list(WS).map(jobView))],
   ['GET', /^\/api\/jobs\/(\d+)$/, (req, res, m) => {
     const j = runner.get(Number(m[1]));
     if (!j) return json(res, { error: 'Không thấy tác vụ' }, 404);
@@ -159,7 +149,7 @@ const routes = [
     else csv = toCsv(r.data.videos || [], VIDEO_COLS);
     download(res, `${name}.csv`, csv, 'text/csv; charset=utf-8');
   }],
-  ['POST', /^\/api\/compare$/, (req, res, m, body) => json(res, svc.compareChannels(body.ids || []))],
+  ['POST', /^\/api\/compare$/, (req, res, m, body) => json(res, app.features.compareChannels(body.ids || []))],
   ['GET', /^\/api\/saved$/, (req, res, m, b, url) => json(res, saved.list(url.searchParams.get('kind')))],
   ['GET', /^\/api\/saved\/keys$/, (req, res) => json(res, saved.keys())],
   ['POST', /^\/api\/saved$/, (req, res, m, body) => {
@@ -178,11 +168,11 @@ const routes = [
   ['POST', /^\/api\/settings$/, (req, res, m, body) => {
     if (body.aiKey === '••••') delete body.aiKey;
     const s = settingsStore.set(body);
-    configure(s);
+    app.source.configure?.(s);
     json(res, { ...s, aiKey: s.aiKey ? '••••' : '' });
   }],
   ['GET', /^\/api\/metrics$/, (req, res) => json(res, METRICS)],
-  ['GET', /^\/api\/status$/, (req, res) => json(res, { ...getConfig(), requests: stats.requests, failures: stats.failures, counts: records.counts(), running: runner.list('local').filter((j) => j.status === 'running').length })],
+  ['GET', /^\/api\/status$/, (req, res) => json(res, { gl: app.settings().gl, concurrency: app.settings().concurrency, delayMs: app.settings().delayMs, ...app.source.stats(), counts: records.counts(), running: runner.list(WS).filter((j) => j.status === 'running').length })],
 ];
 
 const server = http.createServer(async (req, res) => {
