@@ -30,7 +30,7 @@ async function readBody(req) {
 }
 
 /** @param {ReturnType<typeof import('../app.js').createApp>} app @param {{publicDir?: string}} [o] */
-export function createHttpServer(app, { publicDir = path.join(ROOT, 'public') } = {}) {
+export function createHttpServer(app, { publicDir = path.join(ROOT, 'web') } = {}) {
   const router = createRouter([...jobRoutes, ...recordRoutes, ...savedRoutes, ...settingsRoutes]);
   const root = path.resolve(publicDir);
 

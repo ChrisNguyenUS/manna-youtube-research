@@ -1,11 +1,12 @@
-import { esc, icon, api, fmt, mult, ago, emptyState, ytVideo, ytChannel, ageText } from '../lib.js';
+import { records, compareChannels } from '../http/client.js';
+import { esc, icon, fmt, mult, ago, emptyState, ytVideo, ytChannel, ageText } from '../lib.js';
 
 export async function mount(root, params) {
   root.innerHTML = `<div class="page-head"><div><h1>${icon('columns')} So sánh kênh</h1>
     <p>Đặt 2–4 kênh cạnh nhau: người theo dõi, view trung vị, tỉ lệ video nổi bật, nhịp đăng, độ dài, từ khoá.</p></div>
     <div class="head-actions"><button class="btn primary" data-go disabled>${icon('columns')} So sánh</button></div></div>
     <div class="card" data-pick></div><div data-out style="margin-top:14px"></div>`;
-  const rows = await api('/api/records?kind=channel_analysis&limit=100');
+  const rows = await records.list('channel_analysis', 100);
   const latest = new Map();
   for (const r of rows) if (!latest.has(r.ref)) latest.set(r.ref, r);
   const preset = new Set((params.ids || '').split(',').filter(Boolean));
@@ -25,7 +26,7 @@ export async function mount(root, params) {
   if (preset.size >= 2) compare([...preset]);
 
   async function compare(ids) {
-    const list = await api('/api/compare', { method: 'POST', body: { ids } });
+    const list = await compareChannels(ids);
     const best = (fn, hi = true) => {
       const vals = list.map(fn).filter((x) => x != null);
       return hi ? Math.max(...vals) : Math.min(...vals);

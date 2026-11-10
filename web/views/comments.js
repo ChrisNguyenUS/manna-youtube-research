@@ -1,4 +1,5 @@
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, api, fmt, ago, emptyState, ytVideo, thumb } from '../lib.js';
+import { records } from '../http/client.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ytVideo, thumb } from '../lib.js';
 
 const FORM = { videos: '', max: 100, sort: 'top', replies: false };
 
@@ -31,7 +32,7 @@ export async function mount(root, params) {
     try {
       await runJob('comments', st, (p) => updateProgress(out, p));
       history();
-      const recs = await api('/api/records?kind=comments&limit=1');
+      const recs = await records.list('comments', 1);
       out.innerHTML = '';
       if (recs[0]) show(recs[0].id);
     } catch (e) {
@@ -40,7 +41,7 @@ export async function mount(root, params) {
   }
 
   async function show(id) {
-    const rec = await api(`/api/records/${id}`);
+    const rec = await records.get(id);
     const d = rec.data;
     const i = d.insights;
     let tab = 'questions';
@@ -48,7 +49,7 @@ export async function mount(root, params) {
     out.innerHTML = `<div class="card"><div class="card-pad row">
         <img src="${thumb(d.video.id)}" alt="" style="width:120px;border-radius:6px">
         <div><a href="${ytVideo(d.video.id)}" target="_blank" rel="noopener"><b>${esc(d.video.title)}</b></a><div class="muted small">${esc(d.video.channelTitle || '')} · ${fmt(d.video.views)} view · ${d.comments.length} comment đã lấy ${d.disabled ? '· <b style="color:var(--bad)">video tắt comment</b>' : ''} · ${ago(rec.created_at)}</div></div>
-        <span class="spacer"></span><a class="btn sm" href="/api/records/${id}/export.csv">${icon('download')} CSV</a><a class="btn sm" href="/api/records/${id}/export.md">${icon('download')} Markdown</a></div>
+        <span class="spacer"></span><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a><a class="btn sm" href="${records.exportUrl(id, 'md')}">${icon('download')} Markdown</a></div>
       <div class="tabs">${[['questions', `Câu hỏi (${i.counts.questions})`], ['requests', `Muốn xem (${i.counts.requests})`], ['complaints', `Phàn nàn (${i.counts.complaints})`], ['top', 'Like nhiều nhất'], ['all', `Tất cả (${d.comments.length})`]].map(([k, l]) => `<button class="tab ${k === tab ? 'on' : ''}" data-tab="${k}">${l}</button>`).join('')}</div>
       <div class="card-pad"><div class="chips" style="margin-bottom:12px">${i.phrases.map((p) => `<span class="tag">${esc(p.phrase)} · <b>${p.count}</b></span>`).join('')}</div><div data-body></div></div></div>`;
     const body = out.querySelector('[data-body]');
@@ -78,11 +79,11 @@ export async function mount(root, params) {
   const quotes = (list) => (list.length ? list.map((c) => `<blockquote class="quote">${esc(c.text)}<div class="m">${c.likes} like · ${c.replies} trả lời · ${esc(c.published || '')}${c.isReply ? ' · trả lời' : ''}${c.hearted ? ' · ❤ chủ kênh' : ''}</div></blockquote>`).join('') : emptyState('Không có'));
 
   async function history() {
-    const list = await api('/api/records?kind=comments&limit=40');
+    const list = await records.list('comments', 40);
     root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Đã lấy</h3></div>${
       list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/comments?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}">${icon('trash')}</button></div>`).join('') : emptyState('Chưa lấy comment nào')
     }`;
-    root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await api(`/api/records/${b.dataset.del}`, { method: 'DELETE' }), history())));
+    root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));
   }
   history();
   if (params.id) show(params.id);

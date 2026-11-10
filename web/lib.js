@@ -1,3 +1,4 @@
+import { jobs, saved as savedApi, metrics } from './http/client.js';
 // Shared helpers for all views.
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -66,12 +67,6 @@ const P = {
 export const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${P[name] || ''}</svg>`;
 
 // ---------- api ----------
-export async function api(path, { method = 'GET', body } = {}) {
-  const res = await fetch(path, { method, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error?.message || data.error || `Lỗi ${res.status}`);
-  return data;
-}
 
 // ---------- background jobs (shown in the sidebar) ----------
 const watchers = new Map();
@@ -80,24 +75,24 @@ let JOB_INDEX = new Map();
 document.addEventListener('click', async (e) => {
   const c = e.target.closest?.('[data-job-cancel]');
   if (c) {
-    await api(`/api/jobs/${c.dataset.jobCancel}/cancel`, { method: 'POST', body: {} });
+    await jobs.cancel(c.dataset.jobCancel);
     return refreshJobs();
   }
   const r = e.target.closest?.('[data-job-retry]');
   const j = r && JOB_INDEX.get(r.dataset.jobRetry);
   if (j) {
-    await api(`/api/jobs/${j.kind}`, { method: 'POST', body: j.params });
+    await jobs.start(j.kind, j.params);
     toast('Đã chạy lại tác vụ');
     refreshJobs();
   }
 });
 export async function runJob(kind, body, onProgress) {
-  const { id } = await api(`/api/jobs/${kind}`, { method: 'POST', body });
+  const { id } = await jobs.start(kind, body);
   refreshJobs();
   return new Promise((resolve, reject) => {
     const tick = async () => {
       try {
-        const j = await api(`/api/jobs/${id}`);
+        const j = await jobs.get(id);
         onProgress?.(j.progress, j);
         if (j.status === 'succeeded') {
           refreshJobs();
@@ -124,7 +119,7 @@ const ACTIVE = ['queued', 'running'];
 let jobsTimer = null;
 export async function refreshJobs() {
   try {
-    const list = await api('/api/jobs');
+    const list = await jobs.list();
     const box = document.getElementById('jobs');
     box.hidden = !list.length;
     document.getElementById('jobs-list').innerHTML = list
@@ -186,7 +181,7 @@ export function store(key, fallback) {
 // ---------- metric registry (served by /api/metrics from src/core/metrics/definitions.js) ----------
 let METRICS = {};
 export async function loadMetrics() {
-  METRICS = await api('/api/metrics').catch(() => ({}));
+  METRICS = await metrics.load().catch(() => ({}));
 }
 /** @param {string} id */
 export const metric = (id) => METRICS[id] || { label: { vi: id, en: id }, formula: '' };
@@ -231,17 +226,17 @@ export function bindChips(root, onChange, { toggleOff = true } = {}) {
 // ---------- saved (bookmarks) ----------
 let savedKeys = new Set();
 export async function loadSaved() {
-  savedKeys = new Set(await api('/api/saved/keys').catch(() => []));
+  savedKeys = new Set(await savedApi.keys().catch(() => []));
 }
 export const isSaved = (kind, ref) => savedKeys.has(`${kind}:${ref}`);
 export async function toggleSave(kind, ref, title, data, btn) {
   if (isSaved(kind, ref)) {
-    await api('/api/saved', { method: 'DELETE', body: { kind, ref } });
+    await savedApi.remove({ kind, ref });
     savedKeys.delete(`${kind}:${ref}`);
     btn?.classList.remove('on');
     toast('Đã bỏ lưu');
   } else {
-    await api('/api/saved', { method: 'POST', body: { kind, ref, title, data } });
+    await savedApi.put({ kind, ref, title, data });
     savedKeys.add(`${kind}:${ref}`);
     btn?.classList.add('on');
     toast('Đã lưu vào Đã lưu');
@@ -260,6 +255,7 @@ export function emptyState(title, text = '') {
 }
 
 /** Tooltip for elements with data-tip */
+/** Tooltip for elements with data-tip. Returns off() to remove its listeners. */
 export function bindTips(root) {
   let tip = document.querySelector('.tip');
   if (!tip) {
@@ -268,13 +264,20 @@ export function bindTips(root) {
     tip.hidden = true;
     document.body.appendChild(tip);
   }
-  root.addEventListener('mousemove', (e) => {
+  const move = (e) => {
     const el = e.target.closest('[data-tip]');
     if (!el) return (tip.hidden = true);
     tip.textContent = el.dataset.tip;
     tip.hidden = false;
     tip.style.left = Math.min(e.clientX + 12, window.innerWidth - 330) + 'px';
     tip.style.top = e.clientY + 14 + 'px';
-  });
-  root.addEventListener('mouseleave', () => (tip.hidden = true));
+  };
+  const leave = () => (tip.hidden = true);
+  root.addEventListener('mousemove', move);
+  root.addEventListener('mouseleave', leave);
+  return () => {
+    root.removeEventListener('mousemove', move);
+    root.removeEventListener('mouseleave', leave);
+    tip.hidden = true;
+  };
 }

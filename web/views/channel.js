@@ -1,5 +1,7 @@
-import { esc, icon, runJob, progressCard, updateProgress, toast, api, fmt, full, mult, ago, emptyState, thumb, ytVideo, ytChannel, dur, ageText, bindTips, isSaved, toggleSave } from '../lib.js';
-import { viewsChart, hbars, patternList, phraseChips } from '../components.js';
+import { scope } from '../dom.js';
+import { records } from '../http/client.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, fmt, full, mult, ago, emptyState, thumb, ytVideo, ytChannel, dur, ageText, bindTips, isSaved, toggleSave } from '../lib.js';
+import { viewsChart, hbars, patternList, phraseChips } from '../components/index.js';
 
 export async function mount(root, params) {
   root.innerHTML = `
@@ -13,6 +15,8 @@ export async function mount(root, params) {
     <div data-out style="margin-top:14px"></div>
     <div class="card" data-list style="margin-top:14px"></div>`;
   const out = root.querySelector('[data-out]');
+  const shown = scope(); // per-render listeners on long-lived elements
+  const listed = scope();
   const input = root.querySelector('[data-input]');
   root.querySelector('[data-run]').addEventListener('click', () => run(input.value.trim()));
   input.addEventListener('keydown', (e) => e.key === 'Enter' && run(input.value.trim()));
@@ -30,7 +34,7 @@ export async function mount(root, params) {
   }
 
   async function show(id) {
-    const rec = await api(`/api/records/${id}`);
+    const rec = await records.get(id);
     const { info, stats, videos, shorts, durations, phrases, patterns, dayOfWeek, titleShape } = rec.data;
     const standouts = videos.filter((v) => v.standout).sort((a, b) => b.views - a.views);
     out.innerHTML = `
@@ -41,8 +45,8 @@ export async function mount(root, params) {
         <span class="spacer"></span>
         <button class="btn sm ${isSaved('channel', info.id) ? 'on' : ''}" data-save>${icon('bookmark')} ${isSaved('channel', info.id) ? 'Đã lưu' : 'Lưu kênh'}</button>
         <button class="btn sm" data-rerun>${icon('refresh')} Phân tích lại</button>
-        <a class="btn sm" href="/api/records/${id}/export.md">${icon('download')} Markdown</a>
-        <a class="btn sm" href="/api/records/${id}/export.csv">${icon('download')} CSV</a></div></div>
+        <a class="btn sm" href="${records.exportUrl(id, 'md')}">${icon('download')} Markdown</a>
+        <a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div></div>
       <div class="kpis" style="margin-top:14px">
         <div class="kpi"><div class="label">Người theo dõi</div><div class="value">${fmt(info.subs)}</div><div class="hint">${fmt(info.totalViews)} tổng view</div></div>
         <div class="kpi"><div class="label">Video dài</div><div class="value">${info.videoCount ?? stats.longCount}</div><div class="hint">đã lấy ${stats.longCount} · ${fmt(stats.longViews)} view</div></div>
@@ -63,16 +67,14 @@ export async function mount(root, params) {
       <div class="card" style="margin-top:14px"><div class="card-head"><h3>${icon('flame')} Video nổi bật: đáng học hoặc xin phép dịch</h3><span class="sub">${standouts.length} video</span></div>${videoRows(standouts)}</div>
       <div class="card" style="margin-top:14px"><div class="card-head"><h3>Tất cả video dài (mới → cũ)</h3></div>${videoRows(videos)}</div>
       ${shorts.length ? `<div class="card" style="margin-top:14px"><div class="card-head"><h3>Shorts gần nhất</h3></div><div class="card-pad"><div class="chips">${shorts.map((s) => `<a class="tag" href="${s.url}" target="_blank" rel="noopener">${esc(s.title.slice(0, 60))} · <b>${fmt(s.views)}</b></a>`).join('')}</div></div></div>` : ''}`;
-    bindTips(out);
+    shown.off();
+    shown.add(bindTips(out));
     out.querySelector('[data-rerun]').addEventListener('click', () => run(info.id));
     out.querySelector('[data-save]').addEventListener('click', async (e) => {
       await toggleSave('channel', info.id, info.title, { id: info.id, title: info.title, handle: info.handle, avatar: info.avatar, subs: info.subs, medianViews: stats.medianAll, country: info.country });
       e.currentTarget.innerHTML = `${icon('bookmark')} ${isSaved('channel', info.id) ? 'Đã lưu' : 'Lưu kênh'}`;
     });
-    out.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-cm]');
-      if (b) window.__go('/comments', { videos: b.dataset.cm });
-    });
+    shown.on(out, 'click', '[data-cm]', (e, b) => window.__go('/comments', { videos: b.dataset.cm }));
   }
 
   function videoRows(list) {
@@ -86,7 +88,7 @@ export async function mount(root, params) {
   }
 
   async function list() {
-    const rows = await api('/api/records?kind=channel_analysis&limit=100');
+    const rows = await records.list('channel_analysis', 100);
     const latest = new Map();
     for (const r of rows) if (!latest.has(r.ref)) latest.set(r.ref, r);
     const items = [...latest.values()];
@@ -97,13 +99,14 @@ export async function mount(root, params) {
         <div class="row" style="padding:12px 18px"><button class="btn primary sm" data-compare disabled>${icon('columns')} So sánh</button></div>` : emptyState('Chưa phân tích kênh nào')}`;
     const box = root.querySelector('[data-list]');
     const btn = box.querySelector('[data-compare]');
-    box.addEventListener('change', () => {
+    listed.off();
+    listed.on(box, 'change', null, () => {
       const n = box.querySelectorAll('[data-cmp]:checked').length;
       if (btn) (btn.disabled = n < 2 || n > 4), (btn.innerHTML = `${icon('columns')} So sánh (${n})`);
     });
     btn?.addEventListener('click', () => window.__go('/compare', { ids: [...box.querySelectorAll('[data-cmp]:checked')].map((x) => x.dataset.cmp).join(',') }));
     box.querySelectorAll('[data-re]').forEach((b) => b.addEventListener('click', () => run(b.dataset.re)));
-    box.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await api(`/api/records/${b.dataset.del}`, { method: 'DELETE' }), list())));
+    box.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), list())));
   }
   list();
   if (params.id) show(params.id);
@@ -111,4 +114,8 @@ export async function mount(root, params) {
     input.value = params.input;
     run(params.input);
   }
+  return () => {
+    shown.off();
+    listed.off();
+  };
 }

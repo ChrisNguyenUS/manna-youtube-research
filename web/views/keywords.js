@@ -1,4 +1,6 @@
-import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, api, ago, emptyState } from '../lib.js';
+import { scope } from '../dom.js';
+import { records } from '../http/client.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState } from '../lib.js';
 import { REGIONS } from './videos.js';
 
 export async function mount(root, params) {
@@ -12,6 +14,7 @@ export async function mount(root, params) {
       <button class="btn primary" data-run>${icon('key')} Lấy gợi ý</button></div></div>
     <div data-out style="margin-top:14px"></div><div class="card" data-history style="margin-top:14px"></div>`;
   const out = root.querySelector('[data-out]');
+  const shown = scope(); // listeners of the current result; reset on every render
   const run = async () => {
     st.seed = root.querySelector('[data-seed]').value.trim();
     st.gl = root.querySelector('[data-gl]').value;
@@ -30,17 +33,16 @@ export async function mount(root, params) {
   root.querySelector('[data-seed]').addEventListener('keydown', (e) => e.key === 'Enter' && run());
 
   async function show(id) {
-    const rec = await api(`/api/records/${id}`);
+    const rec = await records.get(id);
     const sel = new Set();
     out.innerHTML = `<div class="card"><div class="card-head"><h3>${rec.data.list.length} gợi ý cho "${esc(rec.data.seed)}"</h3>
-      <div class="row"><button class="btn sm" data-act="videos" disabled>${icon('search')} Tìm video</button><button class="btn sm" data-act="channels" disabled>${icon('users')} Tìm kênh</button><button class="btn sm" data-act="ideas" disabled>${icon('bulb')} Chấm điểm</button><a class="btn sm" href="/api/records/${id}/export.csv">${icon('download')} CSV</a></div></div>
+      <div class="row"><button class="btn sm" data-act="videos" disabled>${icon('search')} Tìm video</button><button class="btn sm" data-act="channels" disabled>${icon('users')} Tìm kênh</button><button class="btn sm" data-act="ideas" disabled>${icon('bulb')} Chấm điểm</button><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div></div>
       <table class="t"><thead><tr><th style="width:30px"></th><th>Từ khoá</th><th class="r" data-tip="Số lần xuất hiện qua các lần gõ thử">Xuất hiện</th><th></th></tr></thead><tbody>
       ${rec.data.list.map((k, i) => `<tr><td><input type="checkbox" data-k="${i}"></td><td><b>${esc(k.keyword)}</b></td><td class="r num">${k.hits}</td>
         <td class="actions"><a class="btn sm" href="#/videos?q=${encodeURIComponent(k.keyword)}&run=1">${icon('search')} Video</a></td></tr>`).join('')}</tbody></table></div>`;
     const btns = out.querySelectorAll('[data-act]');
-    out.addEventListener('change', (e) => {
-      const c = e.target.closest('[data-k]');
-      if (!c) return;
+    shown.off();
+    shown.on(out, 'change', '[data-k]', (e, c) => {
       const kw = rec.data.list[c.dataset.k].keyword;
       c.checked ? sel.add(kw) : sel.delete(kw);
       btns.forEach((b) => (b.disabled = !sel.size));
@@ -52,9 +54,12 @@ export async function mount(root, params) {
     }));
   }
   async function history() {
-    const list = await api('/api/records?kind=keywords&limit=20');
+    const list = await records.list('keywords', 20);
     root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Đã lấy</h3></div>${list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/keywords?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span></div>`).join('') : emptyState('Chưa có')}`;
   }
   history();
   if (params.id) show(params.id);
+  return () => {
+    shown.off();
+  };
 }

@@ -1,4 +1,6 @@
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, api, fmt, full, ago, emptyState, thumb, ytVideo, ytChannel, isSaved, toggleSave, bindTips, ageText } from '../lib.js';
+import { scope } from '../dom.js';
+import { records } from '../http/client.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, full, ago, emptyState, thumb, ytVideo, ytChannel, isSaved, toggleSave, bindTips, ageText } from '../lib.js';
 import { REGIONS } from './videos.js';
 
 const FORM = { keywords: '', source: 'both', perKeyword: 40, gl: '', upload: 'year' };
@@ -83,6 +85,7 @@ export async function mount(root, params) {
   root.querySelector('[data-k="keywords"]').addEventListener('keydown', (e) => e.key === 'Enter' && run());
   root.querySelector('[data-run]').addEventListener('click', run);
   const out = root.querySelector('[data-out]');
+  const shown = scope();
 
   async function run() {
     st.keywords = root.querySelector('[data-k="keywords"]').value.trim();
@@ -99,12 +102,12 @@ export async function mount(root, params) {
   }
 
   async function show(id) {
-    const rec = await api(`/api/records/${id}`);
+    const rec = await records.get(id);
     const all = rec.data.channels;
     const countries = [...new Set(all.map((c) => c.country || '?'))].sort((a, b) => all.filter((c) => (c.country || '?') === b).length - all.filter((c) => (c.country || '?') === a).length);
     out.innerHTML = `
       <div class="row" style="margin-bottom:10px"><span class="muted">Khoảng <b style="color:var(--accent)">${all.length}</b> kênh cho <b>"${esc(rec.data.keywords.join(', '))}"</b>${rec.data.regions?.length > 1 ? ` · 🌐 tìm ở ${rec.data.regions.length} nước` : ''} · tìm ${ago(rec.created_at)}</span><span class="spacer"></span>
-        <a class="btn sm" href="/api/records/${id}/export.csv">${icon('download')} CSV</a></div>
+        <a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div>
       <div class="filter-table" data-filters>
         <div class="filter-row"><div class="fr-label">Người theo dõi</div>${chips('subs', SUBS, f.subs)}
           <div class="range"><input class="input sm" data-f="subsMin" placeholder="Min (N)" value="${esc(f.subsMin)}"> – <input class="input sm" data-f="subsMax" placeholder="Max (N)" value="${esc(f.subsMax)}"></div></div>
@@ -145,7 +148,8 @@ export async function mount(root, params) {
       persist('channels-filter', f);
       show(id);
     });
-    bindTips(out);
+    shown.off();
+    shown.add(bindTips(out));
     out.querySelector('[data-list]').addEventListener('click', (e) => {
       const b = e.target.closest('[data-save]');
       if (b) {
@@ -186,12 +190,15 @@ export async function mount(root, params) {
   }
 
   async function history() {
-    const list = await api('/api/records?kind=channel_search&limit=15');
+    const list = await records.list('channel_search', 15);
     root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Lần tìm trước</h3></div>${
       list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/channels?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}">${icon('trash')}</button></div>`).join('') : emptyState('Chưa tìm lần nào')
     }`;
-    root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await api(`/api/records/${b.dataset.del}`, { method: 'DELETE' }), history())));
+    root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));
   }
   history();
   if (params.id) show(params.id);
+  return () => {
+    shown.off();
+  };
 }

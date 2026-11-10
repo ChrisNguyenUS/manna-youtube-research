@@ -1,8 +1,9 @@
-import { esc, icon, api, toast } from '../lib.js';
+import { settings as settingsApi } from '../http/client.js';
+import { esc, icon, toast } from '../lib.js';
 import { REGIONS } from './videos.js';
 
 export async function mount(root) {
-  const s = await api('/api/settings');
+  const s = await settingsApi.get();
   root.innerHTML = `<div class="page-head"><div><h1>${icon('settings')} Cài đặt</h1><p>Lưu trên máy này.</p></div></div>
     <div class="card card-pad" style="max-width:760px">
       <div class="grid grid-2">
@@ -24,7 +25,7 @@ export async function mount(root) {
   root.querySelector('[data-save]').addEventListener('click', async () => {
     const body = {};
     root.querySelectorAll('[data-k]').forEach((el) => (body[el.dataset.k] = el.type === 'number' ? Number(el.value) : el.value));
-    await api('/api/settings', { method: 'POST', body });
+    await settingsApi.save(body);
     toast('Đã lưu cài đặt');
   });
 }

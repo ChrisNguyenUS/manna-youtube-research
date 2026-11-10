@@ -1,4 +1,5 @@
-import { esc, icon, api, ago, emptyState, fmt } from '../lib.js';
+import { records as recordsApi, saved as savedApi, status as statusApi } from '../http/client.js';
+import { esc, icon, ago, emptyState, fmt } from '../lib.js';
 
 const KIND = {
   research: ['Nghiên cứu', '/research', 'compass'],
@@ -18,7 +19,7 @@ const STEPS = [
 ];
 
 export async function mount(root) {
-  const [records, saved, status] = await Promise.all([api('/api/records?limit=12'), api('/api/saved?kind=channel'), api('/api/status')]);
+  const [records, saved, status] = await Promise.all([recordsApi.list(null, 12), savedApi.list('channel'), statusApi.get()]);
   const c = status.counts || {};
   root.innerHTML = `
     <div class="page-head"><div><h1>${icon('home')} Tổng quan</h1><p>Nghiên cứu YouTube trên máy của bạn: miễn phí, không cần key, dữ liệu công khai.</p></div></div>

@@ -1,4 +1,5 @@
-import { icon, api, refreshJobs, loadSaved, loadMetrics, esc, toast } from './lib.js';
+import { status as statusApi } from './http/client.js';
+import { icon, refreshJobs, loadSaved, loadMetrics, esc, toast } from './lib.js';
 import * as dashboard from './views/dashboard.js';
 import * as videos from './views/videos.js';
 import * as channels from './views/channels.js';
@@ -40,18 +41,19 @@ function renderNav(path) {
   ).join('');
 }
 
-let current = null;
+let unmount = null;
 async function route() {
   const { path, params } = parseHash();
   const entry = NAV.find((n) => n[0] === path) || NAV[1];
   renderNav(entry[0]);
   const main = document.getElementById('main');
-  current?.unmount?.();
-  current = entry[3];
+  unmount?.(); // let the previous view remove its listeners
+  unmount = null;
   main.scrollTop = 0;
   main.innerHTML = '<div class="page"></div>';
   try {
-    await entry[3].mount(main.firstChild, params);
+    const off = await entry[3].mount(main.firstChild, params);
+    unmount = typeof off === 'function' ? off : null;
   } catch (e) {
     main.firstChild.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
   }
@@ -65,7 +67,7 @@ window.__go = go;
 
 async function status() {
   try {
-    const s = await api('/api/status');
+    const s = await statusApi.get();
     document.getElementById('statusbar').innerHTML = `<span><span class="dot"></span>YouTube: <b>${s.failures ? 'có lỗi' : 'ổn'}</b></span>
       <span>Khu vực: <b>${esc(s.gl)}</b></span><span>Request: <b>${s.requests}</b>${s.failures ? ` · lỗi <b>${s.failures}</b>` : ''}</span>
       <span>Việc nền: <b>${s.running ? s.running + ' đang chạy' : 'rảnh'}</b></span>

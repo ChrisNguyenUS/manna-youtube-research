@@ -1,5 +1,7 @@
-import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, api, ago, emptyState, bindTips } from '../lib.js';
-import { scoreCard, bindScoreCards } from '../components.js';
+import { scope } from '../dom.js';
+import { records } from '../http/client.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, bindTips } from '../lib.js';
+import { scoreCard, bindScoreCards } from '../components/index.js';
 import { REGIONS } from './videos.js';
 
 export async function mount(root, params) {
@@ -21,8 +23,9 @@ export async function mount(root, params) {
     </div>
     <div data-out style="margin-top:14px"></div><div class="card" data-history style="margin-top:14px"></div>`;
   const out = root.querySelector('[data-out]');
-  bindTips(out);
-  bindScoreCards(out, runJob, st.gl);
+  const view = scope();
+  view.add(bindTips(out));
+  view.add(bindScoreCards(out, runJob, st.gl));
 
   async function run() {
     st.ideas = root.querySelector('[data-ideas]').value.trim();
@@ -41,24 +44,27 @@ export async function mount(root, params) {
   root.querySelector('[data-run]').addEventListener('click', run);
 
   async function show(id) {
-    const rec = await api(`/api/records/${id}`);
+    const rec = await records.get(id);
     const results = rec.data.results;
     if (results.length && !results[0].stats && !results[0].error) {
       out.innerHTML = `<div class="callout">Lần kiểm tra này làm bằng bản cũ (chưa có điểm). Bấm <b>Chấm điểm</b> để chạy lại.</div>`;
       root.querySelector('[data-ideas]').value = results.map((r) => r.idea).join('\n');
       return;
     }
-    out.innerHTML = `<div class="row" style="margin-bottom:10px"><span class="muted small">${results.length} từ khoá · ${ago(rec.created_at)}</span><span class="spacer"></span><a class="btn sm" href="/api/records/${id}/export.csv">${icon('download')} CSV</a></div>
+    out.innerHTML = `<div class="row" style="margin-bottom:10px"><span class="muted small">${results.length} từ khoá · ${ago(rec.created_at)}</span><span class="spacer"></span><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div>
       <div class="score-grid">${results.map((r) => scoreCard(r)).join('')}</div>`;
   }
   async function history() {
-    const list = await api('/api/records?kind=idea_check&limit=20');
+    const list = await records.list('idea_check', 20);
     root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Đã chấm</h3></div>${
       list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/ideas?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa chấm từ khoá nào')
     }`;
-    root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await api(`/api/records/${b.dataset.del}`, { method: 'DELETE' }), history())));
+    root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));
   }
   history();
   if (params.id) show(params.id);
   else if (params.ideas && params.run) run();
+  return () => {
+    view.off();
+  };
 }

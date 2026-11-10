@@ -1,5 +1,6 @@
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, api, fmt, ago, emptyState } from '../lib.js';
-import { mountVideoResults } from '../components.js';
+import { records } from '../http/client.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState } from '../lib.js';
+import { mountVideoResults } from '../components/index.js';
 
 const DEFAULT = { keywords: '', upload: 'year', sort: 'popularity', dur: '', minDur: '', maxDur: '', perKeyword: 60, gl: '', exactTop: 30, cc: false };
 export const DUR_CHIPS = [
@@ -91,7 +92,7 @@ export async function mount(root, params) {
   }
 
   async function show(id) {
-    const rec = await api(`/api/records/${id}`);
+    const rec = await records.get(id);
     const d = rec.data;
     const s = d.summary;
     out.innerHTML = `
@@ -104,7 +105,7 @@ export async function mount(root, params) {
       </div>
       <div class="row" style="margin:14px 0 0"><span class="muted small">Tìm ${ago(rec.created_at)} · "${esc(d.keywords.join(', '))}"${d.regions?.length > 1 ? ` · 🌐 ${d.regions.length} nước: ${esc(d.regions.join(', '))}` : ''}</span><span class="spacer"></span>
         <a class="btn sm" href="#/ideas?ideas=${encodeURIComponent(d.keywords.join('\n'))}&run=1" data-tip="Điểm Volume / Competition kiểu vidIQ cho từ khoá này">${icon('bulb')} Chấm điểm từ khoá</a>
-        <a class="btn sm" href="/api/records/${id}/export.csv">${icon('download')} CSV</a></div>
+        <a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div>
       <div data-results style="margin-top:14px"></div>`;
     mountVideoResults(out.querySelector('[data-results]'), d.videos, {
       key: 'vf-videos',
@@ -114,7 +115,7 @@ export async function mount(root, params) {
   }
 
   async function history() {
-    const list = await api('/api/records?kind=video_search&limit=15');
+    const list = await records.list('video_search', 15);
     root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Lần tìm trước</h3></div>${
       list.length
         ? list.map((r) => `<div class="list-row"><a class="name" href="#/videos?id=${r.id}">${esc(r.title)}</a><span class="muted small">${esc(r.params?.upload || '')}</span><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('')
@@ -122,7 +123,7 @@ export async function mount(root, params) {
     }`;
     root.querySelectorAll('[data-del]').forEach((b) =>
       b.addEventListener('click', async () => {
-        await api(`/api/records/${b.dataset.del}`, { method: 'DELETE' });
+        await records.remove(b.dataset.del);
         history();
       }),
     );

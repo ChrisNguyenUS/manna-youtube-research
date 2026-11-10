@@ -1,4 +1,5 @@
-import { esc, icon, api, fmt, mult, ago, emptyState, ytVideo, thumb, ytChannel, toast, loadSaved } from '../lib.js';
+import { saved } from '../http/client.js';
+import { esc, icon, fmt, mult, ago, emptyState, ytVideo, thumb, ytChannel, toast, loadSaved } from '../lib.js';
 
 export async function mount(root, params) {
   let tab = params.tab || 'channel';
@@ -7,7 +8,7 @@ export async function mount(root, params) {
   root.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => ((tab = b.dataset.tab), render())));
   async function render() {
     root.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
-    const list = await api(`/api/saved?kind=${tab}`);
+    const list = await saved.list(tab);
     const body = root.querySelector('[data-body]');
     if (!list.length) return (body.innerHTML = emptyState('Chưa lưu gì', 'Bấm biểu tượng dấu trang ở kết quả tìm kiếm để lưu.'));
     body.innerHTML = `<table class="t"><tbody>${list
@@ -21,8 +22,8 @@ export async function mount(root, params) {
           <td class="actions">${tab === 'channel' ? `<a class="btn sm" href="#/channel?input=${encodeURIComponent(d.id)}">${icon('bars')} Phân tích</a>` : `<a class="btn sm" href="#/comments?videos=${d.id}">${icon('message')} Comment</a>`} <button class="icon-btn" data-del="${esc(s.ref)}">${icon('trash')}</button></td></tr>`;
       })
       .join('')}</tbody></table>`;
-    body.querySelectorAll('[data-note]').forEach((i) => i.addEventListener('change', async () => (await api('/api/saved', { method: 'PATCH', body: { kind: tab, ref: i.dataset.note, note: i.value } }), toast('Đã lưu ghi chú'))));
-    body.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await api('/api/saved', { method: 'DELETE', body: { kind: tab, ref: b.dataset.del } }), await loadSaved(), render())));
+    body.querySelectorAll('[data-note]').forEach((i) => i.addEventListener('change', async () => (await saved.note({ kind: tab, ref: i.dataset.note, note: i.value }), toast('Đã lưu ghi chú'))));
+    body.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await saved.remove({ kind: tab, ref: b.dataset.del }), await loadSaved(), render())));
   }
   render();
 }

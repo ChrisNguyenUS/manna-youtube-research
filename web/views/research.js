@@ -1,5 +1,7 @@
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, api, fmt, mult, ago, emptyState, thumb, ytVideo, dur, ageText, bindTips } from '../lib.js';
-import { mountVideoResults, hbars, patternList, phraseChips, oscoreBadge, outlierTip } from '../components.js';
+import { scope } from '../dom.js';
+import { records } from '../http/client.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, mult, ago, emptyState, thumb, ytVideo, dur, ageText, bindTips } from '../lib.js';
+import { mountVideoResults, hbars, patternList, phraseChips, oscoreBadge, outlierTip } from '../components/index.js';
 import { DUR_CHIPS, UPLOAD_CHIPS, REGIONS, durToSeconds } from './videos.js';
 
 const FORM = { topic: '', keywords: '', competitors: '', gl: '', direction: 'top', upload: 'year', dur: '4-20', minDur: '', maxDur: '', perKeyword: 40, readComments: true, commentTop: 5, commentMax: 50 };
@@ -54,6 +56,7 @@ export async function mount(root, params) {
   form.querySelectorAll('[data-k]').forEach((el) => el.addEventListener('change', () => ((st[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value), persist('research-form', st))));
   form.querySelector('[data-run]').addEventListener('click', run);
   const out = root.querySelector('[data-out]');
+  const shown = scope();
 
   async function run() {
     form.querySelectorAll('input.input[data-k]').forEach((el) => (st[el.dataset.k] = el.value.trim()));
@@ -72,7 +75,7 @@ export async function mount(root, params) {
   }
 
   async function show(id, tab = 'overview') {
-    const rec = await api(`/api/records/${id}`);
+    const rec = await records.get(id);
     const d = rec.data;
     const byId = new Map(d.videos.map((v) => [v.id, v]));
     const s = d.summary;
@@ -88,7 +91,7 @@ export async function mount(root, params) {
     out.innerHTML = `
       <div class="card card-pad"><div class="row between"><div><h2 style="margin:0;font-size:18px">${esc(d.topic)}</h2>
         <div class="muted small">${esc(rec.title)} · ${ago(rec.created_at)} · từ khoá: ${d.keywords.map((k) => `<span class="tag">${esc(k)}</span>`).join('')}</div></div>
-        <div class="head-actions"><a class="btn sm" href="/api/records/${id}/export.md" title="File Markdown: đưa cho Claude hoặc AI để viết báo cáo">${icon('download')} Markdown</a><a class="btn sm" href="/api/records/${id}/export.csv">${icon('download')} CSV</a></div></div></div>
+        <div class="head-actions"><a class="btn sm" href="${records.exportUrl(id, 'md')}\" title="File Markdown: đưa cho Claude hoặc AI để viết báo cáo">${icon('download')} Markdown</a><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div></div></div>
       <div class="kpis" style="margin-top:14px">
         <div class="kpi"><div class="label">Video tìm được</div><div class="value">${s.count}</div><div class="hint">${s.channels} kênh</div></div>
         <div class="kpi"><div class="label">View trung vị</div><div class="value">${fmt(s.medianViews)}</div><div class="hint">${s.over100k} video trên 100 N</div></div>
@@ -101,7 +104,8 @@ export async function mount(root, params) {
       out.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
       renderTab(b.dataset.tab);
     }));
-    bindTips(out);
+    shown.off();
+    shown.add(bindTips(out));
     const body = out.querySelector('[data-tabbody]');
 
     function renderTab(t) {
@@ -160,7 +164,7 @@ export async function mount(root, params) {
         </div>
         <div class="section-label">Cụm từ lặp lại trong comment</div><div class="chips">${i.phrases.map((p) => `<span class="tag">${esc(p.phrase)} · <b>${p.count}</b></span>`).join('')}</div>
         <div class="section-label">Comment được like nhiều nhất</div>${quotes(i.top)}
-        <div class="row" style="margin-top:12px"><a class="btn sm" href="/api/records/${id}/export.csv?what=comments">${icon('download')} CSV comment</a></div></div>`;
+        <div class="row" style="margin-top:12px"><a class="btn sm" href="${records.exportUrl(id, 'csv', { what: 'comments' })}">${icon('download')} CSV comment</a></div></div>`;
     }
 
     function miniCard(v, i) {
@@ -192,12 +196,15 @@ export async function mount(root, params) {
   }
 
   async function history() {
-    const list = await api('/api/records?kind=research&limit=30');
+    const list = await records.list('research', 30);
     root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>${icon('doc')} Báo cáo đã lập</h3></div>${
       list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/research?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa có báo cáo nào')
     }`;
-    root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await api(`/api/records/${b.dataset.del}`, { method: 'DELETE' }), history())));
+    root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));
   }
   history();
   if (params.id) show(params.id);
+  return () => {
+    shown.off();
+  };
 }
