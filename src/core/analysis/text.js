@@ -1,4 +1,4 @@
-import { median, round } from './metrics.js';
+import { median, round } from '../metrics/index.js';
 
 const STOP = new Set(
   `a an the of to in on for and or but is are was were be been it its this that these those with without from by at as

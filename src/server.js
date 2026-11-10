@@ -7,7 +7,8 @@ import { METRICS, metricLabel } from './core/metrics/definitions.js';
 import { configure, getConfig, stats } from './yt/innertube.js';
 import { startJob, getJob, listJobs } from './jobs.js';
 import * as svc from './services.js';
-import { researchMarkdown, channelMarkdown, commentsMarkdown, toCsv } from './analysis/report.js';
+import { researchMarkdown, channelMarkdown, commentsMarkdown } from './core/report/markdown.js';
+import { toCsv } from './core/report/csv.js';
 
 const { port: PORT, host: HOST } = loadConfig();
 const PUBLIC = path.join(ROOT, 'public');

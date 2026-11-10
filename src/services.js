@@ -4,9 +4,9 @@ import { resolveChannelId, getChannelInfo, getChannelVideos, getChannelShorts, g
 import { getComments } from './yt/comments.js';
 import { mapLimit, suggest } from './yt/innertube.js';
 import { cache, records, settingsStore } from './db.js';
-import { addVideoMetrics, channelStats, durationBuckets, median, sum, round, channelBaseline, outlierScore } from './analysis/metrics.js';
-import { titlePhrases, titlePatterns, titleShape, commentInsights } from './analysis/text.js';
-import { scoreKeyword as computeScore, autocompleteMatch, topChannels, normalize as normalizeKw } from './analysis/score.js';
+import { addVideoMetrics, channelStats, durationBuckets, median, sum, round, channelBaseline, outlierScore } from './core/metrics/index.js';
+import { titlePhrases, titlePatterns, titleShape, commentInsights } from './core/analysis/text.js';
+import { scoreKeyword as computeScore, autocompleteMatch, topChannels, normalize as normalizeKw } from './core/analysis/keyword-score.js';
 
 /** @type {(p?: any) => void} */
 const noop = () => {};

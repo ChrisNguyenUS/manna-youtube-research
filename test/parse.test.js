@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseCount, parseRelativeAge, parseDuration, parseJoined, classifyInput } from '../src/yt/parse.js';
 import { buildSearchParams, durationBucket, parseChannelRenderer } from '../src/yt/search.js';
-import { addVideoMetrics, channelStats, median, durationBuckets } from '../src/analysis/metrics.js';
-import { titlePatterns, titlePhrases, classifyComment, tokenize } from '../src/analysis/text.js';
+import { addVideoMetrics, channelStats, median, durationBuckets } from '../src/core/metrics/index.js';
+import { titlePatterns, titlePhrases, classifyComment, tokenize } from '../src/core/analysis/text.js';
 
 test('parseCount', () => {
   assert.equal(parseCount('11,093,866 views'), 11093866);
@@ -136,7 +136,7 @@ test('global mode: regions and merge', () => {
   configure({ gl: 'US' });
 });
 
-import { scoreKeyword, titleMatches, autocompleteMatch, band } from '../src/analysis/score.js';
+import { scoreKeyword, titleMatches, autocompleteMatch, band } from '../src/core/analysis/keyword-score.js';
 
 test('keyword score', () => {
   assert.equal(titleMatches('ĂN CHAY lành mạnh mỗi ngày', 'ăn chay lành mạnh'), true);
@@ -165,7 +165,7 @@ test('captions filter matches YouTube menu', () => {
   assert.equal(buildSearchParams({ sort: 'popularity', upload: 'year', type: 'video', duration: 'mid4to20', captions: true }), 'CAMSCAgFEAEYAygB');
 });
 
-import { channelBaseline, outlierScore } from '../src/analysis/metrics.js';
+import { channelBaseline, outlierScore } from '../src/core/metrics/index.js';
 
 test('outlier score vs channel baseline', () => {
   const ch = [

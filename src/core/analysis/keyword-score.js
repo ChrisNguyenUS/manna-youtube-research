@@ -2,7 +2,7 @@
 // vidIQ uses real search volume; we don't have it, so Volume is estimated from how many views the
 // top results get (total and per day) plus whether YouTube autocompletes the keyword.
 // Every sub-score is returned so the UI can show why a keyword scored what it did.
-import { median } from './metrics.js';
+import { median } from '../metrics/index.js';
 
 const clamp = (x) => Math.max(0, Math.min(100, Math.round(x)));
 /** log10 scale: value `lo` → 0 points, each ×10 adds `step` points. */
