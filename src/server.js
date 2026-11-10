@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, records, saved, settingsStore } from './db.js';
 import { loadConfig } from './config.js';
+import { METRICS, metricLabel } from './core/metrics/definitions.js';
 import { configure, getConfig, stats } from './yt/innertube.js';
 import { startJob, getJob, listJobs } from './jobs.js';
 import * as svc from './services.js';
@@ -38,11 +39,11 @@ const VIDEO_COLS = [
   { key: 'channelTitle', label: 'Kênh' },
   { key: 'channelSubs', label: 'Sub kênh' },
   { key: 'views', label: 'View' },
-  { key: 'outlierScore', label: 'Outlier (× trung vị kênh)' },
-  { key: 'channelMedianViews', label: 'View trung vị kênh' },
-  { key: 'outlier', label: 'Vượt tệp sub (view/sub)' },
-  { key: 'vph', label: 'VPH (view/giờ)' },
-  { key: 'viewsPerDay', label: 'View/ngày' },
+  { key: 'outlierScore', label: metricLabel('outlierScore') },
+  { key: 'channelMedianViews', label: metricLabel('channelMedianViews') },
+  { key: 'viewSub', label: metricLabel('viewSub') },
+  { key: 'vph', label: metricLabel('vph') },
+  { key: 'viewsPerDay', label: metricLabel('viewsPerDay') },
   { key: 'likes', label: 'Like' },
   { key: 'durationSec', label: 'Dài (giây)' },
   { key: 'age', label: 'Tuổi (ngày)' },
@@ -162,6 +163,7 @@ const routes = [
     configure(s);
     json(res, { ...s, aiKey: s.aiKey ? '••••' : '' });
   }],
+  ['GET', /^\/api\/metrics$/, (req, res) => json(res, METRICS)],
   ['GET', /^\/api\/status$/, (req, res) => json(res, { ...getConfig(), requests: stats.requests, failures: stats.failures, counts: records.counts(), running: listJobs().filter((j) => j.status === 'running').length })],
 ];
 

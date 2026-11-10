@@ -25,8 +25,8 @@ export function ageDays(video, now = Date.now()) {
 }
 
 /**
- * Adds outlier (views / channel subs) and viewsPerDay to each video.
- * Channels below minSubs get outlier=null (sample too small to mean anything).
+ * Adds viewSub (views ÷ channel subs), vph and viewsPerDay to each video.
+ * Channels below minSubs get viewSub=null (sample too small to mean anything).
  */
 export function addVideoMetrics(videos, { minSubs = 500, now = Date.now() } = {}) {
   return videos.map((v) => {
@@ -38,7 +38,7 @@ export function addVideoMetrics(videos, { minSubs = 500, now = Date.now() } = {}
       ageExact: !!v.publishedAt,
       viewsPerDay: v.views != null && age != null ? Math.round(v.views / Math.max(age, 1)) : null,
       vph: v.views != null && age != null ? round(v.views / Math.max(age * 24, 1), 1) : null,
-      outlier: v.views != null && subs != null && subs >= minSubs ? round(v.views / subs, 2) : null,
+      viewSub: v.views != null && subs != null && subs >= minSubs ? round(v.views / subs, 2) : null,
     };
   });
 }
@@ -91,7 +91,7 @@ export function durationBuckets(videos, valueKey = 'views') {
       count: list.length,
       medianViews: median(list.map((v) => v.views)),
       medianValue: median(list.map((v) => v[valueKey])),
-      medianOutlier: median(list.map((v) => v.outlier)),
+      medianViewSub: median(list.map((v) => v.viewSub)),
       medianViewsPerDay: median(list.map((v) => v.viewsPerDay)),
     };
   }).filter((b) => b.count > 0);

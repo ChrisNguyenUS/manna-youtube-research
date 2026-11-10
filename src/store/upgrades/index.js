@@ -2,8 +2,10 @@
 // Changing the shape of a kind's data: bump `latest` in its module and add a step (docs/ARCHITECTURE.md §5.3).
 import * as videoSearch from './video_search.js';
 import * as research from './research.js';
+import * as channelAnalysis from './channel_analysis.js';
+import * as ideaCheck from './idea_check.js';
 
-const KINDS = { video_search: videoSearch, research };
+const KINDS = { video_search: videoSearch, research, channel_analysis: channelAnalysis, idea_check: ideaCheck };
 
 /** @type {Record<string, number>} */
 export const LATEST = Object.fromEntries(Object.entries(KINDS).map(([k, m]) => [k, m.latest]));

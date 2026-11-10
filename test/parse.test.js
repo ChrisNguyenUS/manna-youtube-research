@@ -62,7 +62,7 @@ test('channel renderer swaps handle and subscriber fields', () => {
   assert.equal(c.subs, 252000);
 });
 
-test('outlier and views/day', () => {
+test('viewSub and views/day', () => {
   const now = Date.parse('2026-11-06T00:00:00Z');
   const [a, b, c] = addVideoMetrics(
     [
@@ -72,10 +72,10 @@ test('outlier and views/day', () => {
     ],
     { minSubs: 500, now },
   );
-  assert.equal(a.outlier, 10);
+  assert.equal(a.viewSub, 10);
   assert.equal(a.viewsPerDay, 10000);
   assert.equal(a.ageExact, true);
-  assert.equal(b.outlier, null, 'channels under minSubs are ignored');
+  assert.equal(b.viewSub, null, 'channels under minSubs are ignored');
   assert.equal(c.viewsPerDay, 10, 'age is floored to 1 day');
 });
 
@@ -98,17 +98,17 @@ test('channelStats', () => {
 
 test('Vietnamese title patterns and comment classification', () => {
   const vids = [
-    { id: '1', title: '7 SỰ THẬT không ai kể về Hà Nội', outlier: 5 },
-    { id: '2', title: 'Tại sao người Việt thích ăn phở?', outlier: 1 },
-    { id: '3', title: 'Câu chuyện người lính già | Ký ức', outlier: 2 },
-    { id: '4', title: 'Bí mật không ai kể', outlier: 3 },
+    { id: '1', title: '7 SỰ THẬT không ai kể về Hà Nội', viewSub: 5 },
+    { id: '2', title: 'Tại sao người Việt thích ăn phở?', viewSub: 1 },
+    { id: '3', title: 'Câu chuyện người lính già | Ký ức', viewSub: 2 },
+    { id: '4', title: 'Bí mật không ai kể', viewSub: 3 },
   ];
   const keys = titlePatterns(vids).map((p) => p.key);
   assert.ok(keys.includes('number'));
   assert.ok(keys.includes('question'));
   assert.ok(keys.includes('secret'));
   assert.ok(keys.includes('caps'));
-  assert.ok(titlePhrases(vids, { metric: 'outlier' }).some((p) => p.phrase === 'không ai kể'));
+  assert.ok(titlePhrases(vids, { metric: 'viewSub' }).some((p) => p.phrase === 'không ai kể'));
   assert.equal(classifyComment('Cái này là gì vậy').question, true);
   assert.equal(classifyComment('Ad ơi làm phần 2 đi').request, true);
   assert.equal(classifyComment('Giọng AI khó nghe quá').complaint, true);

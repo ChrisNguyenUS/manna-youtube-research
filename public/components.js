@@ -1,4 +1,4 @@
-import { esc, fmt, full, mult, dur, ageText, thumb, ytVideo, icon, chips, bindChips, isSaved, toggleSave, store, persist, median, emptyState, bindTips } from './lib.js';
+import { esc, fmt, full, mult, dur, ageText, thumb, ytVideo, icon, chips, bindChips, isSaved, toggleSave, store, persist, median, emptyState, bindTips, metric } from './lib.js';
 
 // ---------- video filters (client side, instant) ----------
 export const SUB_RANGES = [
@@ -16,7 +16,7 @@ const range = (s) => {
 };
 const inRange = (x, lo, hi) => x != null && (lo == null || x >= lo) && (hi == null || x < hi);
 
-export const VIDEO_FILTER_DEFAULT = { region: '', oscore: '', vph: '', subs: '', subsMin: '', subsMax: '', views: '', outlier: '', age: '', noShorts: true, q: '', sort: 'views', view: 'table' };
+export const VIDEO_FILTER_DEFAULT = { region: '', oscore: '', vph: '', subs: '', subsMin: '', subsMax: '', views: '', viewSub: '', age: '', noShorts: true, q: '', sort: 'views', view: 'table' };
 
 export function filterVideos(videos, f) {
   const [slo, shi] = range(f.subs);
@@ -29,7 +29,7 @@ export function filterVideos(videos, f) {
     if (smin != null && !(v.channelSubs >= smin)) return false;
     if (smax != null && !(v.channelSubs <= smax)) return false;
     if (f.views && !(v.views >= Number(f.views))) return false;
-    if (f.outlier && !(v.outlier >= Number(f.outlier))) return false;
+    if (f.viewSub && !(v.viewSub >= Number(f.viewSub))) return false;
     if (f.oscore && !(v.outlierScore >= Number(f.oscore))) return false;
     if (f.vph && !(v.vph >= Number(f.vph))) return false;
     if (f.age && !(v.age != null && v.age <= Number(f.age))) return false;
@@ -37,7 +37,7 @@ export function filterVideos(videos, f) {
     if (q && !`${v.title} ${v.channelTitle}`.toLowerCase().includes(q)) return false;
     return true;
   });
-  const key = { views: 'views', oscore: 'outlierScore', outlier: 'outlier', vpd: 'viewsPerDay', vph: 'vph', new: 'age', subsAsc: 'channelSubs', likes: 'likes', dur: 'durationSec' }[f.sort] || 'views';
+  const key = { views: 'views', oscore: 'outlierScore', viewSub: 'viewSub', vpd: 'viewsPerDay', vph: 'vph', new: 'age', subsAsc: 'channelSubs', likes: 'likes', dur: 'durationSec' }[f.sort] || 'views';
   const asc = f.sort === 'new' || f.sort === 'subsAsc';
   list.sort((a, b) => {
     const x = a[key], y = b[key];
@@ -55,8 +55,8 @@ export function videoFilterPanel(f, regions = []) {
     <div class="filter-row"><div class="fr-label">Sub của kênh</div>${chips('subs', SUB_RANGES, f.subs)}
       <div class="range"><input class="input sm" data-f="subsMin" placeholder="Min (N)" value="${esc(f.subsMin)}"> – <input class="input sm" data-f="subsMax" placeholder="Max (N)" value="${esc(f.subsMax)}"></div></div>
     <div class="filter-row"><div class="fr-label">Lượt xem</div>${chips('views', [{ v: 10000, label: '10N+' }, { v: 50000, label: '50N+' }, { v: 100000, label: '100N+' }, { v: 500000, label: '500N+' }, { v: 1000000, label: '1Tr+' }], f.views)}<div></div></div>
-    <div class="filter-row"><div class="fr-label" data-tip="${esc(OUTLIER_TIP)}">Outlier (× kênh) ⓘ</div>${chips('oscore', [{ v: 2, label: '2×+' }, { v: 5, label: '5×+' }, { v: 10, label: '10×+' }, { v: 50, label: '50×+' }], f.oscore)}<div></div></div>
-    <div class="filter-row"><div class="fr-label" data-tip="Lượt xem chia số sub của kênh. Lớn hơn 1 = video kéo được người ngoài tệp sub.">Vượt tệp sub (view/sub) ⓘ</div>${chips('outlier', [{ v: 0.5, label: '×0,5+' }, { v: 1, label: '×1+' }, { v: 3, label: '×3+' }, { v: 10, label: '×10+' }], f.outlier)}<div></div></div>
+    <div class="filter-row"><div class="fr-label" data-tip="${esc(outlierTip())}">Outlier (× kênh) ⓘ</div>${chips('oscore', [{ v: 2, label: '2×+' }, { v: 5, label: '5×+' }, { v: 10, label: '10×+' }, { v: 50, label: '50×+' }], f.oscore)}<div></div></div>
+    <div class="filter-row"><div class="fr-label" data-tip="Lượt xem chia số sub của kênh. Lớn hơn 1 = video kéo được người ngoài tệp sub.">Vượt tệp sub (view/sub) ⓘ</div>${chips('viewSub', [{ v: 0.5, label: '×0,5+' }, { v: 1, label: '×1+' }, { v: 3, label: '×3+' }, { v: 10, label: '×10+' }], f.viewSub)}<div></div></div>
     <div class="filter-row"><div class="fr-label" data-tip="View mỗi giờ kể từ lúc đăng">VPH ⓘ</div>${chips('vph', [{ v: 1, label: '1+' }, { v: 10, label: '10+' }, { v: 100, label: '100+' }, { v: 1000, label: '1N+' }, { v: 10000, label: '10N+' }], f.vph)}<div></div></div>
     <div class="filter-row"><div class="fr-label">Đăng trong</div>${chips('age', [{ v: 7, label: '7 ngày' }, { v: 30, label: '30 ngày' }, { v: 90, label: '90 ngày' }, { v: 180, label: '6 tháng' }, { v: 365, label: '1 năm' }], f.age)}
       <div class="range"><label class="check small"><input type="checkbox" data-f="noShorts" ${f.noShorts ? 'checked' : ''}> Bỏ video ≤ 60 giây</label></div></div>
@@ -94,14 +94,15 @@ export function videoToolbar(f, count, total) {
     <span class="spacer"></span>
     <label class="small muted">Xếp theo</label>
     <select class="select input sm" style="width:auto" data-f="sort">
-      ${[['views', 'Lượt xem'], ['oscore', 'Outlier (× kênh)'], ['outlier', 'View/sub'], ['vph', 'VPH (view/giờ)'], ['vpd', 'View/ngày'], ['new', 'Mới nhất'], ['subsAsc', 'Kênh ít sub nhất'], ['likes', 'Like'], ['dur', 'Dài nhất']].map(([v, l]) => `<option value="${v}" ${f.sort === v ? 'selected' : ''}>${l}</option>`).join('')}
+      ${[['views', 'Lượt xem'], ['oscore', 'Outlier (× kênh)'], ['viewSub', 'View/sub'], ['vph', 'VPH (view/giờ)'], ['vpd', 'View/ngày'], ['new', 'Mới nhất'], ['subsAsc', 'Kênh ít sub nhất'], ['likes', 'Like'], ['dur', 'Dài nhất']].map(([v, l]) => `<option value="${v}" ${f.sort === v ? 'selected' : ''}>${l}</option>`).join('')}
     </select>
     <button class="icon-btn ${f.view === 'grid' ? 'on' : ''}" data-viewmode="grid" title="Dạng lưới">${icon('grid')}</button>
     <button class="icon-btn ${f.view === 'table' ? 'on' : ''}" data-viewmode="table" title="Dạng bảng">${icon('list')}</button>
   </div>`;
 }
 
-export const OUTLIER_TIP = 'Outlier = view ÷ view thường lệ của chính kênh (trung vị các video ≥ 7 ngày tuổi trong 30 video mới nhất). Video < 7 ngày so theo VPH. Như 1of10/vidIQ. Không tính cho Shorts.';
+/** Tooltip text for the outlier column; read at render time so it follows the server registry. */
+export const outlierTip = () => `${metric('outlierScore').label.vi} = ${metric('outlierScore').formula}. Như 1of10/vidIQ.`;
 /** vidIQ-style brackets: < 2× · 2–5× · 5–10× · 10×+ */
 export function oscoreBadge(v) {
   const o = v.outlierScore;
@@ -116,7 +117,7 @@ export function videoTable(list, { selected = new Set(), rankOffset = 0 } = {}) 
   if (!list.length) return emptyState('Không có video nào khớp bộ lọc', 'Bỏ bớt bộ lọc ở trên.');
   return `<div class="table-wrap"><table class="t"><thead><tr>
     <th style="width:28px"><input type="checkbox" data-selall></th><th>#</th><th class="thumb"></th><th>Video</th>
-    <th class="r">View</th><th class="r" data-tip="${esc(OUTLIER_TIP)}">Outlier</th><th class="r" data-tip="View ÷ sub của kênh">View/sub</th><th class="r" data-tip="View mỗi giờ kể từ lúc đăng">VPH</th><th class="r">View/ngày</th><th class="r">Sub kênh</th><th class="r">Dài</th><th class="r">Đăng</th><th></th></tr></thead><tbody>
+    <th class="r">View</th><th class="r" data-tip="${esc(outlierTip())}">Outlier</th><th class="r" data-tip="View ÷ sub của kênh">View/sub</th><th class="r" data-tip="View mỗi giờ kể từ lúc đăng">VPH</th><th class="r">View/ngày</th><th class="r">Sub kênh</th><th class="r">Dài</th><th class="r">Đăng</th><th></th></tr></thead><tbody>
     ${list
       .map(
         (v, i) => `<tr data-id="${v.id}">
@@ -127,7 +128,7 @@ export function videoTable(list, { selected = new Set(), rankOffset = 0 } = {}) 
         <div class="meta"><a href="#/channel?input=${encodeURIComponent(v.channelId || '')}" style="display:inline" data-tip="Phân tích kênh này">${esc(v.channelTitle)}</a>${v.likes != null ? ` · ${fmt(v.likes)} like` : ''}${v.regions?.length > 1 ? ` · <span class="tag" data-tip="Video hiện trong kết quả tìm ở các nước này">🌐 ${esc(v.regions.join(' '))}</span>` : ''}${v.queries?.length ? ` · <span class="tag">${esc(v.queries[0])}</span>` : ''}</div></td>
       <td class="r num"><b>${fmt(v.views)}</b></td>
       <td class="r">${oscoreBadge(v)}</td>
-      <td class="r">${outlierBadge(v.outlier)}</td>
+      <td class="r">${outlierBadge(v.viewSub)}</td>
       <td class="r num">${v.vph == null ? '–' : v.vph < 10 ? String(v.vph).replace('.', ',') : fmt(v.vph)}</td>
       <td class="r num">${fmt(v.viewsPerDay)}</td>
       <td class="r num">${fmt(v.channelSubs)}</td>
@@ -145,11 +146,11 @@ export function videoGrid(list, { selected = new Set() } = {}) {
     .map(
       (v, i) => `<div class="vcard" data-id="${v.id}">
       <div class="img"><a href="${ytVideo(v.id)}" target="_blank" rel="noopener"><img loading="lazy" src="${thumb(v.id)}" alt=""></a>
-        ${v.outlierScore != null ? `<span class="ov mult" data-tip="${esc(OUTLIER_TIP)}">${mult(v.outlierScore)} kênh</span>` : v.outlier != null ? `<span class="ov mult">${mult(v.outlier)} sub</span>` : ''}<span class="ov rank">#${i + 1}</span><span class="ov dur">${dur(v.durationSec)}</span>
+        ${v.outlierScore != null ? `<span class="ov mult" data-tip="${esc(outlierTip())}">${mult(v.outlierScore)} kênh</span>` : v.outlier != null ? `<span class="ov mult">${mult(v.outlier)} sub</span>` : ''}<span class="ov rank">#${i + 1}</span><span class="ov dur">${dur(v.durationSec)}</span>
         <label class="ov sel"><input type="checkbox" data-sel="${v.id}" ${selected.has(v.id) ? 'checked' : ''}></label></div>
       <div class="body"><a class="t1" href="${ytVideo(v.id)}" target="_blank" rel="noopener">${esc(v.title)}</a>
         <div class="stats"><b>${fmt(v.views)}</b> lượt xem · ${v.vph == null ? '–' : fmt(v.vph)} VPH · ${ageText(v.age, v.ageExact)}</div>
-        <div class="stats">${esc(v.channelTitle)} · ${fmt(v.channelSubs)} sub${v.outlier != null ? ` · ${mult(v.outlier)} sub` : ''}${v.regions?.length > 1 ? ` · 🌐 ${esc(v.regions.join(' '))}` : ''}</div>
+        <div class="stats">${esc(v.channelTitle)} · ${fmt(v.channelSubs)} sub${v.viewSub != null ? ` · ${mult(v.viewSub)} sub` : ''}${v.regions?.length > 1 ? ` · 🌐 ${esc(v.regions.join(' '))}` : ''}</div>
         <div class="foot"><a class="btn sm" href="#/channel?input=${encodeURIComponent(v.channelId || '')}">${icon('bars')} Kênh</a>
           <button class="btn sm" data-comment="${v.id}">${icon('message')} Comment</button>
           <button class="icon-btn ${isSaved('video', v.id) ? 'on' : ''}" data-save="${v.id}" title="Lưu">${icon('bookmark')}</button></div></div>
@@ -229,7 +230,7 @@ export function mountVideoResults(container, videos, { key = 'vf', onComments, r
     const sv = e.target.closest('[data-save]');
     if (sv) {
       const v = videos.find((x) => x.id === sv.dataset.save);
-      toggleSave('video', v.id, v.title, { id: v.id, title: v.title, channelTitle: v.channelTitle, channelId: v.channelId, views: v.views, channelSubs: v.channelSubs, outlier: v.outlier, durationSec: v.durationSec }, sv);
+      toggleSave('video', v.id, v.title, { id: v.id, title: v.title, channelTitle: v.channelTitle, channelId: v.channelId, views: v.views, channelSubs: v.channelSubs, viewSub: v.viewSub, durationSec: v.durationSec }, sv);
     }
     const cm = e.target.closest('[data-comment]');
     if (cm) onComments?.([cm.dataset.comment]);
@@ -282,7 +283,7 @@ export function patternList(patterns, { valueLabel = 'vượt kênh' } = {}) {
       .join('')}</tbody></table>`;
 }
 
-export function phraseChips(phrases, { value = 'medianOutlier', format = mult } = {}) {
+export function phraseChips(phrases, { value = 'medianViewSub', format = mult } = {}) {
   if (!phrases?.length) return emptyState('Chưa có cụm từ lặp lại');
   return `<div class="chips">${phrases.map((p) => `<span class="tag" data-tip="${p.count} video">${esc(p.phrase)} · <b>${format(p[value])}</b></span>`).join('')}</div>`;
 }

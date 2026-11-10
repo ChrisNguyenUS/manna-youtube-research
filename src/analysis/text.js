@@ -54,7 +54,7 @@ export function titlePhrases(videos, { metric = 'views', minCount = 2, limit = 3
       phrase,
       count: vs.length,
       medianViews: median(vs.map((v) => v.views)),
-      medianOutlier: median(vs.map((v) => v.outlier)),
+      medianViewSub: median(vs.map((v) => v.viewSub)),
       medianViewsPerDay: median(vs.map((v) => v.viewsPerDay)),
       score: median(vs.map((v) => v[metric])),
       videoIds: vs.map((v) => v.id),
@@ -76,7 +76,7 @@ export const TITLE_PATTERNS = [
   { key: 'emotion', label: 'Từ cảm xúc mạnh', test: (t) => /(sốc|kinh hoàng|đáng sợ|rùng mình|bất ngờ|không thể tin|ám ảnh|đau lòng|xúc động|shocking|insane|terrifying|horrifying|evil|disturbing|unbelievable|crazy|incredible|heartbreaking)/iu.test(t), hint: 'Đẩy cảm xúc ngay trong tiêu đề' },
 ];
 
-export function titlePatterns(videos, { metric = 'outlier' } = {}) {
+export function titlePatterns(videos, { metric = 'viewSub' } = {}) {
   const all = median(videos.map((v) => v[metric]));
   return TITLE_PATTERNS.map((p) => {
     const hit = videos.filter((v) => p.test(v.title || ''));

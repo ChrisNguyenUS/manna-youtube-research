@@ -16,7 +16,7 @@ export async function mount(root, params) {
         const head =
           tab === 'channel'
             ? `<td style="width:56px">${d.avatar ? `<img src="${esc(d.avatar)}" referrerpolicy="no-referrer" style="width:44px;height:44px;border-radius:50%" alt="">` : ''}</td><td><a href="${ytChannel(d)}" target="_blank" rel="noopener"><b>${esc(d.title)}</b></a><div class="muted small">${fmt(d.subs)} sub · trung vị ${fmt(d.medianViews)} view${d.country ? ' · ' + esc(d.country) : ''}</div></td>`
-            : `<td class="thumb"><img src="${thumb(d.id)}" alt=""></td><td class="title-cell"><a href="${ytVideo(d.id)}" target="_blank" rel="noopener">${esc(d.title)}</a><div class="meta">${esc(d.channelTitle)} · ${fmt(d.views)} view · ${mult(d.outlier)} sub</div></td>`;
+            : `<td class="thumb"><img src="${thumb(d.id)}" alt=""></td><td class="title-cell"><a href="${ytVideo(d.id)}" target="_blank" rel="noopener">${esc(d.title)}</a><div class="meta">${esc(d.channelTitle)} · ${fmt(d.views)} view · ${mult(d.viewSub)} sub</div></td>`;
         return `<tr>${head}<td><input class="input sm" data-note="${esc(s.ref)}" placeholder="Ghi chú…" value="${esc(s.note || '')}"></td><td class="muted small r">${ago(s.created_at)}</td>
           <td class="actions">${tab === 'channel' ? `<a class="btn sm" href="#/channel?input=${encodeURIComponent(d.id)}">${icon('bars')} Phân tích</a>` : `<a class="btn sm" href="#/comments?videos=${d.id}">${icon('message')} Comment</a>`} <button class="icon-btn" data-del="${esc(s.ref)}">${icon('trash')}</button></td></tr>`;
       })

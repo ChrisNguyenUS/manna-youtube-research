@@ -136,7 +136,7 @@ function summarizeVideos(videos) {
     medianViews: median(videos.map((v) => v.views)),
     over100k: videos.filter((v) => v.views >= 100000).length,
     over1m: videos.filter((v) => v.views >= 1000000).length,
-    outliers: videos.filter((v) => v.outlier >= 1).length,
+    viewSubOver1: videos.filter((v) => v.viewSub >= 1).length,
     outlierScore5: videos.filter((v) => v.outlierScore >= 5).length,
     channels: new Set(videos.map((v) => v.channelId)).size,
   };
@@ -345,7 +345,7 @@ export async function research(params, progress = noop) {
       /* skip unknown competitor */
     }
   }
-  const ranked = [...videos].filter((v) => v.outlier != null).sort((a, b) => b.outlier - a.outlier);
+  const ranked = [...videos].filter((v) => v.viewSub != null).sort((a, b) => b.viewSub - a.viewSub);
   const byVpd = [...videos].sort((a, b) => (b.viewsPerDay ?? 0) - (a.viewsPerDay ?? 0));
   // Small channels winning (Thanh Hai step 1: nhiều view nhưng ít sub)
   const chMap = new Map();
@@ -355,8 +355,8 @@ export async function research(params, progress = noop) {
     chMap.get(v.channelId).videos.push(v);
   }
   const channels = [...chMap.values()]
-    .map((c) => ({ ...c, count: c.videos.length, bestOutlier: Math.max(...c.videos.map((v) => v.outlier ?? 0)), totalViews: sum(c.videos.map((v) => v.views)), videos: c.videos.sort((a, b) => b.views - a.views).slice(0, 3).map((v) => ({ id: v.id, title: v.title, views: v.views, outlier: v.outlier })) }))
-    .sort((a, b) => b.bestOutlier - a.bestOutlier);
+    .map((c) => ({ ...c, count: c.videos.length, bestViewSub: Math.max(...c.videos.map((v) => v.viewSub ?? 0)), totalViews: sum(c.videos.map((v) => v.views)), videos: c.videos.sort((a, b) => b.views - a.views).slice(0, 3).map((v) => ({ id: v.id, title: v.title, views: v.views, outlier: v.viewSub })) }))
+    .sort((a, b) => b.bestViewSub - a.bestViewSub);
   const data = {
     topic: topic || keywords[0],
     keywords,
@@ -366,16 +366,16 @@ export async function research(params, progress = noop) {
     competitors,
     regions: search.regions,
     summary: summarizeVideos(videos),
-    videos: videos.sort((a, b) => (b.outlier ?? -1) - (a.outlier ?? -1)),
-    topByOutlier: ranked.slice(0, 15).map((v) => v.id),
+    videos: videos.sort((a, b) => (b.viewSub ?? -1) - (a.viewSub ?? -1)),
+    topByViewSub: ranked.slice(0, 15).map((v) => v.id),
     topByViewsPerDay: byVpd.slice(0, 15).map((v) => v.id),
     topByOutlierScore: [...videos].filter((v) => v.outlierScore != null).sort((a, b) => b.outlierScore - a.outlierScore).slice(0, 15).map((v) => v.id),
-    patterns: titlePatterns(videos, { metric: 'outlier' }),
-    phrases: titlePhrases(videos, { metric: 'outlier', minCount: 2, limit: 30 }),
+    patterns: titlePatterns(videos, { metric: 'viewSub' }),
+    phrases: titlePhrases(videos, { metric: 'viewSub', minCount: 2, limit: 30 }),
     titleShape: titleShape(videos),
-    durations: durationBuckets(videos, 'outlier'),
+    durations: durationBuckets(videos, 'viewSub'),
     channels: channels.slice(0, 30),
-    smallWinners: channels.filter((c) => c.subs != null && c.subs < 100000 && c.bestOutlier >= 1).slice(0, 15),
+    smallWinners: channels.filter((c) => c.subs != null && c.subs < 100000 && c.bestViewSub >= 1).slice(0, 15),
     comments: null,
   };
   const id = records.add('research', `${data.topic} · ${dirLabel(direction)} · ${uploadLabel(upload)}`, { params, data });
@@ -385,13 +385,13 @@ export async function research(params, progress = noop) {
   return { id, ...records.get(id).data };
 }
 
-/** Comments for the top-N videos of a research record (by outlier); merged insights stored on the record. */
+/** Comments for the top-N videos of a research record (by view/sub); merged insights stored on the record. */
 /** @param {number} recordId @param {{top?: number, max?: number, videoIds?: string[]}} [o] */
 export async function researchComments(recordId, { top = 5, max = 50, videoIds } = {}, progress = noop) {
   const rec = records.get(recordId);
   if (!rec) throw new Error('Không tìm thấy báo cáo');
   const data = rec.data;
-  const ids = videoIds?.length ? videoIds : data.topByOutlier.slice(0, top);
+  const ids = videoIds?.length ? videoIds : data.topByViewSub.slice(0, top);
   const all = [];
   const perVideo = [];
   for (const [i, vid] of ids.entries()) {
@@ -444,7 +444,7 @@ export async function keywordIdeas(seed, { gl, hl = 'vi', depth = 'full' } = {},
 /** Has someone already made this? Demand = views; supply = recent, strong videos (Thanh Hải step 2). */
 function verdictFor(enriched) {
   const recent = enriched.filter((v) => (v.age ?? v.ageDays) != null && (v.age ?? v.ageDays) <= 365).length;
-  const strong = enriched.filter((v) => v.outlier >= 1).length;
+  const strong = enriched.filter((v) => v.viewSub >= 1).length;
   const med = median(enriched.map((v) => v.views));
   let verdict;
   if (med != null && med < 2000) verdict = 'low_demand';

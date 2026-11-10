@@ -148,12 +148,26 @@ export function toast(msg, kind = '') {
 // ---------- tiny persisted state ----------
 export function store(key, fallback) {
   try {
-    const v = localStorage.getItem('ytr:' + key);
-    return v ? { ...fallback, ...JSON.parse(v) } : { ...fallback };
+    const raw = JSON.parse(localStorage.getItem('ytr:' + key) || '{}');
+    // Filters saved before the metric rename (view/sub was called "outlier").
+    if ('outlier' in raw) {
+      raw.viewSub = raw.outlier;
+      delete raw.outlier;
+    }
+    if (raw.sort === 'outlier') raw.sort = 'viewSub';
+    return { ...fallback, ...raw };
   } catch {
     return { ...fallback };
   }
 }
+
+// ---------- metric registry (served by /api/metrics from src/core/metrics/definitions.js) ----------
+let METRICS = {};
+export async function loadMetrics() {
+  METRICS = await api('/api/metrics').catch(() => ({}));
+}
+/** @param {string} id */
+export const metric = (id) => METRICS[id] || { label: { vi: id, en: id }, formula: '' };
 export function persist(key, value) {
   try {
     localStorage.setItem('ytr:' + key, JSON.stringify(value));

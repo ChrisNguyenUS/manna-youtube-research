@@ -40,3 +40,30 @@ test('repo returns upgraded data for old rows and stamps new rows with LATEST', 
   const newId = s.records.add('local', 'video_search', 'new', { data: { videos: [] } });
   assert.equal(s.records.get('local', newId).schema_version, LATEST.video_search);
 });
+
+test('research v1 derived view/sub fields are renamed', () => {
+  const v1 = {
+    videos: [{ id: 'a', views: 10, age: 1, outlier: 2 }],
+    summary: { outliers: 1 },
+    topByOutlier: ['a'],
+    durations: [{ key: '4-10', medianOutlier: 2 }],
+    phrases: [{ phrase: 'x', medianOutlier: 2 }],
+    channels: [{ id: 'UC1', bestOutlier: 2, videos: [{ id: 'a', outlier: 2 }] }],
+    smallWinners: [{ id: 'UC1', bestOutlier: 2, videos: [] }],
+  };
+  const { data } = upgradeRecord('research', 1, v1);
+  assert.deepEqual(data.topByViewSub, ['a']);
+  assert.equal('topByOutlier' in data, false);
+  assert.equal(data.summary.viewSubOver1, 1);
+  assert.equal(data.durations[0].medianViewSub, 2);
+  assert.equal(data.phrases[0].medianViewSub, 2);
+  assert.equal(data.channels[0].bestViewSub, 2);
+  assert.equal(data.channels[0].videos[0].viewSub, 2);
+  assert.equal(data.smallWinners[0].bestViewSub, 2);
+});
+
+test('saved video bookmarks expose viewSub', () => {
+  const s = createSqliteStore(openDatabase({ dataDir: fs.mkdtempSync(path.join(os.tmpdir(), 'ytr-')) }));
+  s.saved.put('local', 'video', 'abc', 'T', { id: 'abc', outlier: 4 });
+  assert.equal(s.saved.list('local', 'video')[0].data.viewSub, 4);
+});

@@ -1,4 +1,4 @@
-import { icon, api, refreshJobs, loadSaved, esc, toast } from './lib.js';
+import { icon, api, refreshJobs, loadSaved, loadMetrics, esc, toast } from './lib.js';
 import * as dashboard from './views/dashboard.js';
 import * as videos from './views/videos.js';
 import * as channels from './views/channels.js';
@@ -77,7 +77,7 @@ async function status() {
 
 window.addEventListener('hashchange', route);
 window.addEventListener('unhandledrejection', (e) => toast(e.reason?.message || String(e.reason), 'error'));
-await loadSaved();
+await Promise.all([loadSaved(), loadMetrics()]);
 route();
 refreshJobs();
 status();

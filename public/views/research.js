@@ -1,5 +1,5 @@
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, api, fmt, mult, ago, emptyState, thumb, ytVideo, dur, ageText, bindTips } from '../lib.js';
-import { mountVideoResults, hbars, patternList, phraseChips, oscoreBadge, OUTLIER_TIP } from '../components.js';
+import { mountVideoResults, hbars, patternList, phraseChips, oscoreBadge, outlierTip } from '../components.js';
 import { DUR_CHIPS, UPLOAD_CHIPS, REGIONS, durToSeconds } from './videos.js';
 
 const FORM = { topic: '', keywords: '', competitors: '', gl: '', direction: 'top', upload: 'year', dur: '4-20', minDur: '', maxDur: '', perKeyword: 40, readComments: true, commentTop: 5, commentMax: 50 };
@@ -92,7 +92,7 @@ export async function mount(root, params) {
       <div class="kpis" style="margin-top:14px">
         <div class="kpi"><div class="label">Video tìm được</div><div class="value">${s.count}</div><div class="hint">${s.channels} kênh</div></div>
         <div class="kpi"><div class="label">View trung vị</div><div class="value">${fmt(s.medianViews)}</div><div class="hint">${s.over100k} video trên 100 N</div></div>
-        <div class="kpi"><div class="label">Vượt kênh</div><div class="value">${s.outliers}</div><div class="hint accent">video có view ≥ sub kênh</div></div>
+        <div class="kpi"><div class="label">Vượt kênh</div><div class="value">${s.viewSubOver1}</div><div class="hint accent">video có view ≥ sub kênh</div></div>
         <div class="kpi"><div class="label">Kênh nhỏ thắng</div><div class="value">${d.smallWinners.length}</div><div class="hint">&lt; 100 N sub, video vượt kênh</div></div>
         <div class="kpi"><div class="label">Comment đã đọc</div><div class="value">${d.comments ? d.comments.total : '–'}</div><div class="hint">${d.comments ? `${d.comments.insights.counts.questions} câu hỏi` : 'chưa đọc'}</div></div>
       </div>
@@ -106,17 +106,17 @@ export async function mount(root, params) {
 
     function renderTab(t) {
       if (t === 'overview') {
-        const top = d.topByOutlier.map((i) => byId.get(i)).filter(Boolean);
+        const top = d.topByViewSub.map((i) => byId.get(i)).filter(Boolean);
         const vpd = d.topByViewsPerDay.map((i) => byId.get(i)).filter(Boolean).slice(0, 10);
         body.innerHTML = `<div class="card-pad"><div class="section-label" style="margin-top:0">Top theo điểm vượt kênh (view ÷ sub)</div>
           <div class="vgrid" style="padding:0">${top.map((v, i) => miniCard(v, i)).join('')}</div>
-          ${d.topByOutlierScore?.length ? `<div class="section-label" data-tip="${esc(OUTLIER_TIP)}">Outlier: gấp nhiều lần video thường của chính kênh ⓘ</div>${outlierTable(d.topByOutlierScore.map((i) => byId.get(i)).filter(Boolean).slice(0, 10))}` : ''}
+          ${d.topByOutlierScore?.length ? `<div class="section-label" data-tip="${esc(outlierTip())}">Outlier: gấp nhiều lần video thường của chính kênh ⓘ</div>${outlierTable(d.topByOutlierScore.map((i) => byId.get(i)).filter(Boolean).slice(0, 10))}` : ''}
           <div class="section-label">Đang lên nhanh nhất (view/ngày)</div>${miniTable(vpd)}</div>`;
       } else if (t === 'titles') {
         body.innerHTML = `<div class="card-pad"><p class="muted small" style="margin-top:0">Tiêu đề trung vị ${d.titleShape.medianChars} ký tự, ${d.titleShape.medianWords} từ. Hiệu quả = trung vị vượt kênh của nhóm ÷ trung vị chung.</p>
           ${patternList(d.patterns)}<div class="section-label">Cụm từ hay xuất hiện (xếp theo vượt kênh trung vị)</div>${phraseChips(d.phrases)}</div>`;
       } else if (t === 'durations') {
-        body.innerHTML = `<div class="card-pad"><div class="grid grid-2"><div><div class="section-label" style="margin-top:0">Vượt kênh trung vị theo độ dài</div>${hbars(d.durations, { value: 'medianOutlier', format: mult })}</div>
+        body.innerHTML = `<div class="card-pad"><div class="grid grid-2"><div><div class="section-label" style="margin-top:0">Vượt kênh trung vị theo độ dài</div>${hbars(d.durations, { value: 'medianViewSub', format: mult })}</div>
           <div><div class="section-label" style="margin-top:0">View trung vị theo độ dài</div>${hbars(d.durations, { value: 'medianViews' })}</div></div></div>`;
       } else if (t === 'channels') {
         body.innerHTML = `<div class="card-pad"><p class="muted small" style="margin-top:0">Bước 1 trong quy trình: ưu tiên kênh <b>nhiều view nhưng ít sub</b>, có video mới đạt view tốt. Bấm Phân tích để xem cả kênh.</p>
@@ -165,7 +165,7 @@ export async function mount(root, params) {
 
     function miniCard(v, i) {
       return `<div class="vcard"><div class="img"><a href="${ytVideo(v.id)}" target="_blank" rel="noopener"><img loading="lazy" src="${thumb(v.id)}" alt=""></a>
-        <span class="ov mult">${mult(v.outlier)} sub</span><span class="ov rank">#${i + 1}</span><span class="ov dur">${dur(v.durationSec)}</span></div>
+        <span class="ov mult">${mult(v.viewSub)} sub</span><span class="ov rank">#${i + 1}</span><span class="ov dur">${dur(v.durationSec)}</span></div>
         <div class="body"><a class="t1" href="${ytVideo(v.id)}" target="_blank" rel="noopener">${esc(v.title)}</a>
         <div class="stats"><b>${fmt(v.views)}</b> view · ${fmt(v.viewsPerDay)}/ngày · ${ageText(v.age, v.ageExact)}</div>
         <div class="stats"><a href="#/channel?input=${encodeURIComponent(v.channelId)}">${esc(v.channelTitle)}</a> · ${fmt(v.channelSubs)} sub</div></div></div>`;
@@ -173,7 +173,7 @@ export async function mount(root, params) {
     function miniTable(list) {
       return `<table class="t"><thead><tr><th class="thumb"></th><th>Video</th><th class="r">View</th><th class="r">View/ngày</th><th class="r">Vượt kênh</th><th class="r">Đăng</th></tr></thead><tbody>
         ${list.map((v) => `<tr><td class="thumb"><img loading="lazy" src="${thumb(v.id)}" alt=""></td><td class="title-cell"><a href="${ytVideo(v.id)}" target="_blank" rel="noopener">${esc(v.title)}</a><div class="meta">${esc(v.channelTitle)} · ${fmt(v.channelSubs)} sub</div></td>
-          <td class="r num">${fmt(v.views)}</td><td class="r num"><b>${fmt(v.viewsPerDay)}</b></td><td class="r">${mult(v.outlier)}</td><td class="r num">${ageText(v.age, v.ageExact)}</td></tr>`).join('')}</tbody></table>`;
+          <td class="r num">${fmt(v.views)}</td><td class="r num"><b>${fmt(v.viewsPerDay)}</b></td><td class="r">${mult(v.viewSub)}</td><td class="r num">${ageText(v.age, v.ageExact)}</td></tr>`).join('')}</tbody></table>`;
     }
     function outlierTable(list) {
       return `<table class="t"><thead><tr><th class="thumb"></th><th>Video</th><th class="r">View</th><th class="r">View TB kênh</th><th class="r">Outlier</th><th class="r">Đăng</th></tr></thead><tbody>
@@ -184,7 +184,7 @@ export async function mount(root, params) {
       if (!list.length) return emptyState('Không có');
       return `<table class="t"><thead><tr><th>Kênh</th><th class="r">Sub</th><th class="r">Video trong kết quả</th><th class="r">Vượt kênh tốt nhất</th><th>Video tốt nhất</th><th></th></tr></thead><tbody>
         ${list.map((c) => `<tr><td><b>${esc(c.title)}</b><div class="muted small">${esc(c.handle || '')}</div></td><td class="r num">${fmt(c.subs)}</td><td class="r num">${c.count}</td>
-          <td class="r"><span class="badge ${c.bestOutlier >= 1 ? 'good' : 'plain'}">${mult(c.bestOutlier)}</span></td>
+          <td class="r"><span class="badge ${c.bestViewSub >= 1 ? 'good' : 'plain'}">${mult(c.bestViewSub)}</span></td>
           <td class="title-cell"><a href="${ytVideo(c.videos[0]?.id)}" target="_blank" rel="noopener">${esc(c.videos[0]?.title || '')}</a><div class="meta">${fmt(c.videos[0]?.views)} view</div></td>
           <td><a class="btn sm" href="#/channel?input=${encodeURIComponent(c.id)}">${icon('bars')} Phân tích</a></td></tr>`).join('')}</tbody></table>`;
     }
