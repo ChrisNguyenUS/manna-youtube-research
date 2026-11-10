@@ -20,7 +20,7 @@ on run
 	set url_ to "http://localhost:$PORT"
 	set code_ to (do shell script "/usr/bin/curl -s -o /dev/null -w '%{http_code}' --max-time 1 " & url_ & "/api/status || true")
 	if code_ is not "200" then
-		do shell script "cd " & quoted form of repo & "; mkdir -p data; PORT=$PORT nohup '$NODE' --disable-warning=ExperimentalWarning src/server.js < /dev/null >> data/server.log 2>&1 &"
+		do shell script "cd " & quoted form of repo & "; mkdir -p data; PORT=$PORT nohup '$NODE' --disable-warning=ExperimentalWarning src/main.js < /dev/null >> data/server.log 2>&1 &"
 		repeat 40 times
 			delay 0.25
 			set code_ to (do shell script "/usr/bin/curl -s -o /dev/null -w '%{http_code}' --max-time 1 " & url_ & "/api/status || true")

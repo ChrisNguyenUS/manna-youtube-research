@@ -37,7 +37,7 @@ Không cần báo phí (miễn phí). Báo thời gian: ~30–60 giây cho 2 t�
 ## Bước 2 — Chạy (trong nền)
 
 ```bash
-cd ~/youtube-research && node --disable-warning=ExperimentalWarning src/cli.js research "<chủ đề>" \
+cd ~/youtube-research && node --disable-warning=ExperimentalWarning src/cli/index.js research "<chủ đề>" \
   --keywords "<kw1>, <kw2>" --gl VN --min 4 --max 20 --per 40 --comments 5 --comment-max 50
 ```
 
@@ -48,9 +48,9 @@ Lệnh khác:
 
 | Việc | Lệnh |
 |---|---|
-| Phân tích một kênh (120 video dài + Shorts, video nổi bật ≥ 3× trung vị) | `node src/cli.js channel "@handle"` → `output/kenh-<handle>-<ngày>.digest.md` |
-| Lấy comment video bất kỳ | `node src/cli.js comments <url1> <url2> --max 200` |
-| Chấm điểm từ khoá kiểu vidIQ (đã có ai làm chưa) | `node src/cli.js ideas "từ khoá 1" "từ khoá 2" --gl VN` → điểm tổng, Volume, Competition + tình trạng `open` (ít người làm gần đây) / `competitive` (đã có người làm) / `saturated` (nhiều người làm và đang thắng) / `low_demand` (ít người xem). Volume là **ước tính** từ view của video top, không phải lượng tìm kiếm thật: khi báo cáo, dẫn số liệu (view TB, sub TB, mới 7 ngày) chứ đừng chỉ dẫn điểm |
+| Phân tích một kênh (120 video dài + Shorts, video nổi bật ≥ 3× trung vị) | `node src/cli/index.js channel "@handle"` → `output/kenh-<handle>-<ngày>.digest.md` |
+| Lấy comment video bất kỳ | `node src/cli/index.js comments <url1> <url2> --max 200` |
+| Chấm điểm từ khoá kiểu vidIQ (đã có ai làm chưa) | `node src/cli/index.js ideas "từ khoá 1" "từ khoá 2" --gl VN` → điểm tổng, Volume, Competition + tình trạng `open` (ít người làm gần đây) / `competitive` (đã có người làm) / `saturated` (nhiều người làm và đang thắng) / `low_demand` (ít người xem). Volume là **ước tính** từ view của video top, không phải lượng tìm kiếm thật: khi báo cáo, dẫn số liệu (view TB, sub TB, mới 7 ngày) chứ đừng chỉ dẫn điểm |
 
 Nếu báo lỗi 429 hoặc ra 0 video: YouTube chặn tạm. Đợi vài phút rồi chạy lại; có thể giảm "Số request song song" trong Cài đặt. **Không** tự chuyển sang Apify hay dịch vụ trả phí.
 

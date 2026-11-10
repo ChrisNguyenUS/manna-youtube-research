@@ -1,14 +1,14 @@
 // CLI for the nghien-cuu-youtube skill: run research without opening the UI.
-//   node src/cli.js research "chủ đề" --keywords "kw1, kw2" [--direction top|trend|keyword] [--upload week|month|year|any]
+//   node src/cli/index.js research "chủ đề" --keywords "kw1, kw2" [--direction top|trend|keyword] [--upload week|month|year|any]
 //        [--min 4 --max 20 (phút)] [--per 40] [--gl VN] [--competitors "@a,@b"] [--comments 5] [--comment-max 50]
-//   node src/cli.js channel "@handle"
-//   node src/cli.js comments <videoUrl...> [--max 100]
-//   node src/cli.js ideas "ý tưởng 1" "ý tưởng 2"
+//   node src/cli/index.js channel "@handle"
+//   node src/cli/index.js comments <videoUrl...> [--max 100]
+//   node src/cli/index.js ideas "ý tưởng 1" "ý tưởng 2"
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT } from './config.js';
-import { createApp } from './app.js';
-import { researchMarkdown, channelMarkdown, commentsMarkdown } from './core/report/markdown.js';
+import { ROOT } from '../config.js';
+import { createApp } from '../app.js';
+import { researchMarkdown, channelMarkdown, commentsMarkdown } from '../core/report/markdown.js';
 
 const app = createApp();
 const svc = app.features;

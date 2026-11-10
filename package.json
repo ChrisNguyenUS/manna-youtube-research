@@ -8,11 +8,12 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "start": "node --disable-warning=ExperimentalWarning src/server.js",
-    "dev": "node --disable-warning=ExperimentalWarning --watch src/server.js",
-    "research": "node --disable-warning=ExperimentalWarning src/cli.js research",
+    "start": "node --disable-warning=ExperimentalWarning src/main.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/main.js",
+    "research": "node --disable-warning=ExperimentalWarning src/cli/index.js research",
     "test": "npm run typecheck && node --disable-warning=ExperimentalWarning --test 'test/**/*.test.js'",
-    "typecheck": "tsc -p jsconfig.json"
+    "typecheck": "tsc -p jsconfig.json",
+    "probe": "node --disable-warning=ExperimentalWarning scripts/probe.js"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",

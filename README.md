@@ -13,7 +13,7 @@ npm test           # unit test parser + chỉ số
 bash scripts/make-app.sh          # tạo /Applications/YouTube Research.app
 ```
 
-Bấm icon: nếu server chưa chạy thì bật nền (log ở `data/server.log`), rồi mở trình duyệt. Server chạy tiếp tới khi tắt máy hoặc `pkill -f src/server.js`. Đổi đường dẫn repo hay cài lại Node thì chạy lại lệnh trên.
+Bấm icon: nếu server chưa chạy thì bật nền (log ở `data/server.log`), rồi mở trình duyệt. Server chạy tiếp tới khi tắt máy hoặc `pkill -f src/main.js`. Đổi đường dẫn repo hay cài lại Node thì chạy lại lệnh trên.
 
 ## Lấy dữ liệu thế nào
 
@@ -49,7 +49,7 @@ src/yt/          innertube client, parser, search, channel, comments
 src/analysis/    metrics, phân tích tiêu đề + comment, xuất Markdown/CSV
 src/services.js  các thao tác nghiên cứu (dùng chung cho server và CLI)
 src/server.js    HTTP API + job nền + file tĩnh
-src/cli.js       CLI cho skill
+src/cli/index.js       CLI cho skill
 public/          giao diện (JS thuần, không build)
 skills/nghien-cuu-youtube/   skill Claude Code (symlink vào ~/.claude/skills)
 data/            SQLite (gitignore)
@@ -58,10 +58,10 @@ data/            SQLite (gitignore)
 ## CLI
 
 ```bash
-node src/cli.js research "kể chuyện lịch sử" --keywords "lịch sử việt nam, chuyện xưa" --gl VN --min 4 --max 20 --comments 5
-node src/cli.js channel "@BlackJournals"
-node src/cli.js comments https://www.youtube.com/watch?v=... --max 200
-node src/cli.js ideas "từ khoá 1" "từ khoá 2" --gl VN   # chấm điểm kiểu vidIQ
+node src/cli/index.js research "kể chuyện lịch sử" --keywords "lịch sử việt nam, chuyện xưa" --gl VN --min 4 --max 20 --comments 5
+node src/cli/index.js channel "@BlackJournals"
+node src/cli/index.js comments https://www.youtube.com/watch?v=... --max 200
+node src/cli/index.js ideas "từ khoá 1" "từ khoá 2" --gl VN   # chấm điểm kiểu vidIQ
 ```
 
 Kết quả: `output/*.digest.md`, đồng thời hiện trong app.
