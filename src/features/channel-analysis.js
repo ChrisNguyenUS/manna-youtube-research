@@ -1,3 +1,4 @@
+import { rethrowIfCancelled } from '../core/cancel.js';
 // Use case: analyze one channel; compare analyzed channels. Receives everything through deps (docs/ARCHITECTURE.md §4).
 import { noop } from './shared.js';
 import { addVideoMetrics, channelStats, durationBuckets, median, sum, round } from '../core/metrics/index.js';
@@ -19,7 +20,8 @@ export function makeChannelAnalysis(deps) {
     let shorts = [];
     try {
       shorts = await source.getChannelShorts(id, { max: 60 });
-    } catch {
+    } catch (e) {
+      rethrowIfCancelled(e);
       /* some channels have no shorts tab */
     }
     const details = new Map();

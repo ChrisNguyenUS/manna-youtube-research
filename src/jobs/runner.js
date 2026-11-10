@@ -1,6 +1,7 @@
 // Persistent background job runner (docs/jobs-and-scraping-L4.md).
 // queued → running → succeeded | failed | cancelled ; running at boot → interrupted.
 import crypto from 'node:crypto';
+import { CancelledError, runWithSignal } from '../core/cancel.js';
 
 /** Canonical form of params so the same request always hashes the same. */
 const norm = (v) =>
@@ -12,6 +13,9 @@ const norm = (v) =>
         ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, norm(v[k])]))
         : v;
 
+const CANCEL = 'cancel';
+const SHUTDOWN = 'shutdown';
+
 /** @param {string} ws @param {string} kind @param {any} params */
 export const idempotencyKey = (ws, kind, params) => crypto.createHash('sha1').update(JSON.stringify([ws, kind, norm(params)])).digest('hex');
 
@@ -21,9 +25,10 @@ export const idempotencyKey = (ws, kind, params) => crypto.createHash('sha1').up
  */
 
 /**
- * @param {{jobsRepo: ReturnType<typeof import('../store/sqlite/repos/jobs.js').jobsRepo>, handlers: Record<string, JobHandler>, maxParallel?: number, now?: () => number}} o
+ * @param {{jobsRepo: ReturnType<typeof import('../store/sqlite/repos/jobs.js').jobsRepo>, handlers: Record<string, JobHandler>, maxParallel?: number, now?: () => number,
+ *   onCancelled?: (job: any) => void}} o  onCancelled: undo side effects of a cancelled job (e.g. delete its records)
  */
-export function createRunner({ jobsRepo, handlers, maxParallel = 2, now = Date.now }) {
+export function createRunner({ jobsRepo, handlers, maxParallel = 2, now = Date.now, onCancelled = () => {} }) {
   const controllers = new Map();
   let timer = null;
   let active = 0;
@@ -56,17 +61,25 @@ export function createRunner({ jobsRepo, handlers, maxParallel = 2, now = Date.n
       // Handlers report progress between steps; that is also where a cancelled job stops,
       // so features don't each need their own abort checks.
       progress: (p) => {
-        if (ac.signal.aborted) throw new Error('cancelled');
+        if (ac.signal.aborted) throw new CancelledError();
         jobsRepo.update(job.id, { progress: { ...(jobsRepo.get(job.id)?.progress || {}), ...p } });
       },
     };
     try {
-      const result = await handlers[job.kind](job.params, ctx);
-      if (ac.signal.aborted) throw new Error('cancelled');
+      const result = await runWithSignal(ac.signal, job.id, () => handlers[job.kind](job.params, ctx));
+      if (ac.signal.aborted) throw new CancelledError();
       jobsRepo.update(job.id, { status: 'succeeded', finished_at: now(), record_id: result?.id ?? null, result: result?.inline ? result : null });
     } catch (e) {
-      const cancelled = ac.signal.aborted;
-      jobsRepo.update(job.id, { status: cancelled ? 'cancelled' : 'failed', finished_at: now(), error: cancelled ? null : String(e?.message || e) });
+      // Abort reason tells a user cancel apart from the app shutting down (then the job can be re-run).
+      const status = !ac.signal.aborted ? 'failed' : ac.signal.reason === SHUTDOWN ? 'interrupted' : 'cancelled';
+      jobsRepo.update(job.id, { status, finished_at: now(), error: status === 'failed' ? String(e?.message || e) : null });
+      if (status === 'cancelled') {
+        try {
+          onCancelled(job);
+        } catch {
+          /* cleanup is best effort */
+        }
+      }
     } finally {
       controllers.delete(job.id);
       active--;
@@ -94,7 +107,7 @@ export function createRunner({ jobsRepo, handlers, maxParallel = 2, now = Date.n
     cancel(id) {
       jobsRepo.update(id, { cancel_requested: 1 });
       const ac = controllers.get(id);
-      if (ac) ac.abort();
+      if (ac) ac.abort(CANCEL);
       else if (jobsRepo.get(id)?.status === 'queued') jobsRepo.update(id, { status: 'cancelled', finished_at: now() });
     },
     start() {
@@ -105,7 +118,7 @@ export function createRunner({ jobsRepo, handlers, maxParallel = 2, now = Date.n
     },
     stop() {
       clearInterval(timer);
-      for (const ac of controllers.values()) ac.abort();
+      for (const ac of controllers.values()) ac.abort(SHUTDOWN);
     },
   };
 }

@@ -1,3 +1,4 @@
+import { rethrowIfCancelled } from '../core/cancel.js';
 // Use case: fetch and classify comments of videos. Receives everything through deps (docs/ARCHITECTURE.md §4).
 import { noop, splitList } from './shared.js';
 import { commentInsights } from '../core/analysis/text.js';
@@ -14,7 +15,7 @@ export function makeFetchComments(deps) {
     for (const [i, vid] of ids.entries()) {
       const label = `Comment video ${i + 1}/${ids.length}`;
       progress({ step: label, done: 0, total: params.max || 100 });
-      const d = await videoDetails(vid).catch(() => ({ id: vid, title: vid }));
+      const d = await videoDetails(vid).catch((e) => (rethrowIfCancelled(e), { id: vid, title: vid }));
       const res = await source.getComments(vid, { max: Number(params.max) || 100, sort: params.sort || 'top', replies: !!params.replies, maxRepliesPerThread: 10 }, (n) => progress({ step: label, done: n, total: params.max || 100 }));
       const video = { id: vid, title: d.title, channelTitle: d.channelTitle, views: d.views, publishedAt: d.publishedAt, url: `https://www.youtube.com/watch?v=${vid}` };
       const data = { video, disabled: res.disabled, comments: res.comments, insights: commentInsights(res.comments), params };

@@ -1,3 +1,4 @@
+import { rethrowIfCancelled } from '../core/cancel.js';
 // Use case: vidIQ-style keyword scoring. Receives everything through deps (docs/ARCHITECTURE.md §4).
 import { noop, splitList, regionsFor } from './shared.js';
 import { addVideoMetrics, median } from '../core/metrics/index.js';
@@ -31,7 +32,7 @@ export function makeScoreOneKeyword(deps) {
     const regions = regionsFor(gl || s.gl, s.globalRegions);
     const first = regions.slice(0, 1);
     const hl = /[à-ỹđ]/i.test(keyword) ? 'vi' : 'en';
-    const safe = (p, fallback) => p.catch(() => fallback);
+    const safe = (p, fallback) => p.catch((e) => (rethrowIfCancelled(e), fallback));
 
     const [topRaw, ccList, capList, recentRaw, suggestions] = await Promise.all([
       source.searchVideos(keyword, { ...{ sort: 'relevance', upload: 'any', max: 20 }, regions: regions }),
@@ -80,6 +81,7 @@ export function makeKeywordScores(deps) {
         try {
           results.push(await scoreOneKeyword(kw, { gl: params.gl || s.gl, lite, autocomplete: lite ? 'exact' : undefined }));
         } catch (e) {
+          rethrowIfCancelled(e);
           results.push({ keyword: kw, error: e.message });
         }
       },

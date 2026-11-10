@@ -1,3 +1,4 @@
+import { rethrowIfCancelled } from '../../core/cancel.js';
 import { call } from './client.js';
 import { parseCount, parseDuration, parseRelativeAge, text, findAll, findFirst } from './parse.js';
 
@@ -162,7 +163,8 @@ async function multi(fn, query, opts, regions, onPage) {
           onPage?.([...counts.values()].reduce((a, b) => a + b, 0));
         });
         return { gl, list };
-      } catch {
+      } catch (e) {
+        rethrowIfCancelled(e);
         return { gl, list: [] }; // one region failing shouldn't kill a global search
       }
     }),

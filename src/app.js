@@ -55,6 +55,6 @@ export function createApp({ config = loadConfig(), source, store } = {}) {
       return { id: base.records.add('keywords', p.seed, { params: p, data: { seed: p.seed, list } }) };
     },
   };
-  const runner = createRunner({ jobsRepo: store.jobs, handlers });
+  const runner = createRunner({ jobsRepo: store.jobs, handlers, onCancelled: (job) => store.records.removeByJob(job.id) });
   return { config, store, source, features, runner, ws, settings };
 }

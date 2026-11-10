@@ -1,3 +1,4 @@
+import { rethrowIfCancelled } from '../core/cancel.js';
 // Use case: topic research report (the four questions). Receives everything through deps (docs/ARCHITECTURE.md §4).
 import { noop, splitList, summarizeVideos } from './shared.js';
 import { addVideoMetrics, durationBuckets, sum } from '../core/metrics/index.js';
@@ -44,7 +45,8 @@ export function makeResearch(deps) {
         const vids = await channelVideos(cid, { max: 30, channel: info });
         const extra = addVideoMetrics(vids.filter((v) => !videos.some((x) => x.id === v.id)).map((v) => ({ ...v, channelTitle: info.title, channelSubs: info.subs, queries: ['@' + (info.handle || info.title)] })), { minSubs: s.minSubsForOutlier });
         videos = videos.concat(extra);
-      } catch {
+      } catch (e) {
+        rethrowIfCancelled(e);
         /* skip unknown competitor */
       }
     }
@@ -109,6 +111,7 @@ export function makeResearchComments(deps) {
         perVideo.push({ id: vid, title: v?.title || vid, count: res.comments.length, disabled: res.disabled });
         all.push(...res.comments.map((c) => ({ ...c, videoId: vid, videoTitle: v?.title || vid })));
       } catch (e) {
+        rethrowIfCancelled(e);
         perVideo.push({ id: vid, title: vid, count: 0, error: e.message });
       }
     }

@@ -9,7 +9,7 @@
  * @property {{add: (ws: string, kind: string, title: string, o?: {ref?: string|null, params?: any, data?: any, schemaVersion?: number, jobId?: number|null}) => number,
  *   get: (ws: string, id: number) => any, update: (ws: string, id: number, data: any, schemaVersion?: number) => void,
  *   list: (ws: string, kind?: string|null, limit?: number) => any[], remove: (ws: string, id: number) => void,
- *   latestByRef: (ws: string, kind: string, ref: string) => any, counts: (ws: string) => Record<string, number>}} records
+ *   latestByRef: (ws: string, kind: string, ref: string) => any, counts: (ws: string) => Record<string, number>, removeByJob: (jobId: number) => void}} records
  * @property {{list: (ws: string, kind?: string) => any[], put: (ws: string, kind: string, ref: string, title: string, data: any, note?: string) => void,
  *   note: (ws: string, kind: string, ref: string, note: string) => void, remove: (ws: string, kind: string, ref: string) => void, keys: (ws: string) => string[]}} saved
  * @property {{all: (ws: string) => Record<string, any>, set: (ws: string, o: Record<string, any>) => Record<string, any>}} settings

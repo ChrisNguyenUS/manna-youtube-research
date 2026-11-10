@@ -1,3 +1,4 @@
+import { rethrowIfCancelled } from '../core/cancel.js';
 // Helpers shared by the use cases: option parsing, cached channel/video lookups, enrichment.
 import { addVideoMetrics, channelBaseline, outlierScore, median } from '../core/metrics/index.js';
 
@@ -69,7 +70,7 @@ export function makeEnrich(deps) {
       async (id) => {
         const info = await channelInfo(id);
         subs.set(id, info);
-        if (outliers) recentByChannel.set(id, await channelVideos(id, { max: 30, channel: info }).catch(() => []));
+        if (outliers) recentByChannel.set(id, await channelVideos(id, { max: 30, channel: info }).catch((e) => (rethrowIfCancelled(e), [])));
       },
       (done, total) => progress({ step, done, total }),
     );

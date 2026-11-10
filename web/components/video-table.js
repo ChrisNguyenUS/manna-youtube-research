@@ -59,7 +59,7 @@ export function videoGrid(list, { selected = new Set() } = {}) {
     .map(
       (v, i) => `<div class="vcard" data-id="${v.id}">
       <div class="img"><a href="${ytVideo(v.id)}" target="_blank" rel="noopener"><img loading="lazy" src="${thumb(v.id)}" alt=""></a>
-        ${v.outlierScore != null ? `<span class="ov mult" data-tip="${esc(outlierTip())}">${mult(v.outlierScore)} kênh</span>` : v.outlier != null ? `<span class="ov mult">${mult(v.outlier)} sub</span>` : ''}<span class="ov rank">#${i + 1}</span><span class="ov dur">${dur(v.durationSec)}</span>
+        ${v.outlierScore != null ? `<span class="ov mult" data-tip="${esc(outlierTip())}">${mult(v.outlierScore)} kênh</span>` : v.viewSub != null ? `<span class="ov mult">${mult(v.viewSub)} sub</span>` : ''}<span class="ov rank">#${i + 1}</span><span class="ov dur">${dur(v.durationSec)}</span>
         <label class="ov sel"><input type="checkbox" data-sel="${v.id}" ${selected.has(v.id) ? 'checked' : ''}></label></div>
       <div class="body"><a class="t1" href="${ytVideo(v.id)}" target="_blank" rel="noopener">${esc(v.title)}</a>
         <div class="stats"><b>${fmt(v.views)}</b> lượt xem · ${v.vph == null ? '–' : fmt(v.vph)} VPH · ${ageText(v.age, v.ageExact)}</div>

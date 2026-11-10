@@ -3,9 +3,16 @@ import { createApp } from './app.js';
 import { createHttpServer } from './http/server.js';
 
 const app = createApp();
-app.runner.start();
 const srv = createHttpServer(app);
-srv.listen(app.config.port, app.config.host, () => console.log(`YouTube Research → http://localhost:${/** @type {any} */ (srv.address()).port}`));
+// Only the process that owns the port runs jobs: a second `npm start` must not touch the first one's jobs.
+srv.on('error', (e) => {
+  console.error(/** @type {any} */ (e).code === 'EADDRINUSE' ? `Cổng ${app.config.port} đang được dùng (app đã chạy?).` : e);
+  process.exit(1);
+});
+srv.listen(app.config.port, app.config.host, () => {
+  app.runner.start();
+  console.log(`YouTube Research → http://localhost:${/** @type {any} */ (srv.address()).port}`);
+});
 
 const shutdown = () => {
   app.runner.stop();
