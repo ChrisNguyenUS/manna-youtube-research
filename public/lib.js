@@ -69,7 +69,7 @@ export const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${P[n
 export async function api(path, { method = 'GET', body } = {}) {
   const res = await fetch(path, { method, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Lỗi ${res.status}`);
+  if (!res.ok) throw new Error(data.error?.message || data.error || `Lỗi ${res.status}`);
   return data;
 }
 
