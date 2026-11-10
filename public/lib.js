@@ -75,6 +75,22 @@ export async function api(path, { method = 'GET', body } = {}) {
 
 // ---------- background jobs (shown in the sidebar) ----------
 const watchers = new Map();
+let JOB_INDEX = new Map();
+// Sidebar buttons: cancel a running job, or re-run one interrupted by an app restart.
+document.addEventListener('click', async (e) => {
+  const c = e.target.closest?.('[data-job-cancel]');
+  if (c) {
+    await api(`/api/jobs/${c.dataset.jobCancel}/cancel`, { method: 'POST', body: {} });
+    return refreshJobs();
+  }
+  const r = e.target.closest?.('[data-job-retry]');
+  const j = r && JOB_INDEX.get(r.dataset.jobRetry);
+  if (j) {
+    await api(`/api/jobs/${j.kind}`, { method: 'POST', body: j.params });
+    toast('Đã chạy lại tác vụ');
+    refreshJobs();
+  }
+});
 export async function runJob(kind, body, onProgress) {
   const { id } = await api(`/api/jobs/${kind}`, { method: 'POST', body });
   refreshJobs();
@@ -83,13 +99,13 @@ export async function runJob(kind, body, onProgress) {
       try {
         const j = await api(`/api/jobs/${id}`);
         onProgress?.(j.progress, j);
-        if (j.status === 'done') {
+        if (j.status === 'succeeded') {
           refreshJobs();
           return resolve(j.result);
         }
-        if (j.status === 'error') {
+        if (j.status in STOPPED) {
           refreshJobs();
-          return reject(new Error(j.error));
+          return reject(new Error(j.error || STOPPED[j.status]));
         }
         setTimeout(tick, 700);
       } catch (e) {
@@ -101,6 +117,10 @@ export async function runJob(kind, body, onProgress) {
   });
 }
 
+const STOPPED = { failed: 'Lỗi', cancelled: 'Đã huỷ', interrupted: 'Bị gián đoạn (app đã tắt giữa chừng)' };
+const STATE = { queued: 'Chờ', running: 'Đang chạy', succeeded: 'Xong', failed: 'Lỗi', cancelled: 'Đã huỷ', interrupted: 'Bị gián đoạn' };
+const ACTIVE = ['queued', 'running'];
+
 let jobsTimer = null;
 export async function refreshJobs() {
   try {
@@ -110,15 +130,17 @@ export async function refreshJobs() {
     document.getElementById('jobs-list').innerHTML = list
       .slice(0, 5)
       .map((j) => {
-        const pct = j.progress.total ? Math.min(100, Math.round((j.progress.done / j.progress.total) * 100)) : j.status === 'done' ? 100 : 8;
-        const state = { running: 'Đang chạy', done: 'Xong', error: 'Lỗi' }[j.status];
-        return `<div class="job"><span class="job-state ${j.status}">${state}</span><div class="job-title">${esc(LABELS[j.kind] || j.kind)}</div>
-          <div class="job-step">${esc(j.status === 'error' ? j.error : j.status === 'done' ? j.title : j.progress.step)}</div>
-          ${j.status === 'running' ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ''}</div>`;
+        const pct = j.progress.total ? Math.min(100, Math.round((j.progress.done / j.progress.total) * 100)) : j.status === 'succeeded' ? 100 : 8;
+        const step = j.status === 'failed' ? j.error : ACTIVE.includes(j.status) ? j.progress.step : j.title;
+        return `<div class="job"><span class="job-state ${j.status}">${STATE[j.status] || j.status}</span><div class="job-title">${esc(LABELS[j.kind] || j.kind)}</div>
+          <div class="job-step">${esc(step)}</div>
+          ${ACTIVE.includes(j.status) ? `<div class="bar"><i style="width:${pct}%"></i></div><button class="btn sm ghost" data-job-cancel="${j.id}" style="margin-top:4px">Huỷ</button>` : ''}
+          ${j.status === 'interrupted' ? `<button class="btn sm" data-job-retry="${j.id}" style="margin-top:6px">Chạy lại</button>` : ''}</div>`;
       })
       .join('');
     clearTimeout(jobsTimer);
-    if (list.some((j) => j.status === 'running')) jobsTimer = setTimeout(refreshJobs, 1200);
+    if (list.some((j) => ACTIVE.includes(j.status))) jobsTimer = setTimeout(refreshJobs, 1200);
+    JOB_INDEX = new Map(list.map((j) => [String(j.id), j]));
   } catch {
     /* server restarting */
   }

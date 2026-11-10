@@ -52,7 +52,7 @@ img { display: block; }
 .job-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .job-step { color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .job-state { float: right; font-weight: 600; }
-.job-state.done { color: var(--good); } .job-state.error { color: var(--bad); } .job-state.running { color: var(--accent); }
+.job-state.succeeded { color: var(--good); } .job-state.failed, .job-state.interrupted { color: var(--bad); } .job-state.running, .job-state.queued { color: var(--accent); } .job-state.cancelled { color: var(--muted); }
 .bar { height: 4px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 6px; }
 .bar > i { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s ease; }
 

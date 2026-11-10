@@ -5,7 +5,8 @@ import { ROOT, records, saved, settingsStore } from './db.js';
 import { loadConfig } from './config.js';
 import { METRICS, metricLabel } from './core/metrics/definitions.js';
 import { configure, getConfig, stats } from './sources/innertube/client.js';
-import { startJob, getJob, listJobs } from './jobs.js';
+import { createRunner } from './jobs/runner.js';
+import { store } from './db.js';
 import * as svc from './services.js';
 import { researchMarkdown, channelMarkdown, commentsMarkdown } from './core/report/markdown.js';
 import { toCsv } from './core/report/csv.js';
@@ -94,22 +95,38 @@ const JOBS = {
     return { id, seed: b.seed, list };
   },
 };
+const runner = createRunner({ jobsRepo: store.jobs, handlers: Object.fromEntries(Object.entries(JOBS).map(([k, fn]) => [k, (params, ctx) => fn(params, ctx.progress)])) });
+runner.start();
+
+/** Job as the web UI sees it: small, no big results (those live in /records). */
+function jobView(j) {
+  const inline = j.result?.inline ? j.result : null;
+  return {
+    id: j.id, kind: j.kind, title: j.title, status: j.status, params: j.params,
+    progress: j.progress || { step: 'Đang chờ', done: 0, total: 0 },
+    error: j.error, resultId: j.record_id,
+    result: j.status === 'succeeded' ? inline || { id: j.record_id } : null,
+    startedAt: j.started_at, endedAt: j.finished_at,
+  };
+}
 
 /** @type {Array<[string, RegExp, (...a: any[]) => any]>} */
 const routes = [
   ['POST', /^\/api\/jobs\/(\w+)$/, async (req, res, m, body) => {
-    const fn = JOBS[m[1]];
-    if (!fn) return json(res, { error: 'Không có tác vụ này' }, 404);
+    if (!JOBS[m[1]]) return json(res, { error: 'Không có tác vụ này' }, 404);
     const title = body.keywords || body.topic || body.input || body.seed || body.ideas || body.videos || m[1];
-    const job = startJob(m[1], String(title).slice(0, 80), (p) => fn(body, p));
-    json(res, { id: job.id });
+    const { id, reused } = runner.enqueue('local', m[1], body, String(title).slice(0, 80));
+    json(res, { id, reused });
   }],
-  ['GET', /^\/api\/jobs$/, (req, res) => json(res, listJobs())],
+  ['POST', /^\/api\/jobs\/(\d+)\/cancel$/, (req, res, m) => {
+    runner.cancel(Number(m[1]));
+    json(res, { ok: true });
+  }],
+  ['GET', /^\/api\/jobs$/, (req, res) => json(res, runner.list('local').map(jobView))],
   ['GET', /^\/api\/jobs\/(\d+)$/, (req, res, m) => {
-    const j = getJob(m[1]);
+    const j = runner.get(Number(m[1]));
     if (!j) return json(res, { error: 'Không thấy tác vụ' }, 404);
-    // Inline results (e.g. related-keyword scores) are small and not saved, so send them whole.
-    json(res, { ...j, result: j.status === 'done' ? (j.result?.inline ? j.result : { id: j.result?.id ?? null }) : null });
+    json(res, jobView(j));
   }],
   ['GET', /^\/api\/records$/, (req, res, m, b, url) => json(res, records.list(url.searchParams.get('kind'), Number(url.searchParams.get('limit')) || 50))],
   ['GET', /^\/api\/records\/(\d+)$/, (req, res, m) => {
@@ -165,7 +182,7 @@ const routes = [
     json(res, { ...s, aiKey: s.aiKey ? '••••' : '' });
   }],
   ['GET', /^\/api\/metrics$/, (req, res) => json(res, METRICS)],
-  ['GET', /^\/api\/status$/, (req, res) => json(res, { ...getConfig(), requests: stats.requests, failures: stats.failures, counts: records.counts(), running: listJobs().filter((j) => j.status === 'running').length })],
+  ['GET', /^\/api\/status$/, (req, res) => json(res, { ...getConfig(), requests: stats.requests, failures: stats.failures, counts: records.counts(), running: runner.list('local').filter((j) => j.status === 'running').length })],
 ];
 
 const server = http.createServer(async (req, res) => {
