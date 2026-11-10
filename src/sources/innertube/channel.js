@@ -1,4 +1,4 @@
-import { call } from './innertube.js';
+import { call } from './client.js';
 import { parseCount, parseDuration, parseRelativeAge, parseJoined, text, findAll, findFirst, classifyInput } from './parse.js';
 
 const VIDEOS_TAB = 'EgZ2aWRlb3PyBgQKAjoA';

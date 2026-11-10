@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, settingsStore } from './db.js';
-import { configure } from './yt/innertube.js';
+import { configure } from './sources/innertube/client.js';
 import * as svc from './services.js';
 import { researchMarkdown, channelMarkdown, commentsMarkdown } from './core/report/markdown.js';
 import { records } from './db.js';

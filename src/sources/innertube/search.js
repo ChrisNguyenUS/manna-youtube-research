@@ -1,4 +1,4 @@
-import { call } from './innertube.js';
+import { call } from './client.js';
 import { parseCount, parseDuration, parseRelativeAge, text, findAll, findFirst } from './parse.js';
 
 // Search filter ("sp") is a small protobuf: { 1: sort, 2: { 1: uploadDate, 2: type, 3: duration } }.

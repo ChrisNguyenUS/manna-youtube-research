@@ -1,8 +1,8 @@
 // High-level research operations. Used by the HTTP server (as background jobs) and the CLI.
-import { searchVideosRegions, searchChannelsRegions, regionsFor, durationBucket } from './yt/search.js';
-import { resolveChannelId, getChannelInfo, getChannelVideos, getChannelShorts, getVideoDetails } from './yt/channel.js';
-import { getComments } from './yt/comments.js';
-import { mapLimit, suggest } from './yt/innertube.js';
+import { searchVideosRegions, searchChannelsRegions, regionsFor, durationBucket } from './sources/innertube/search.js';
+import { resolveChannelId, getChannelInfo, getChannelVideos, getChannelShorts, getVideoDetails } from './sources/innertube/channel.js';
+import { getComments } from './sources/innertube/comments.js';
+import { mapLimit, suggest } from './sources/innertube/client.js';
 import { cache, records, settingsStore } from './db.js';
 import { addVideoMetrics, channelStats, durationBuckets, median, sum, round, channelBaseline, outlierScore } from './core/metrics/index.js';
 import { titlePhrases, titlePatterns, titleShape, commentInsights } from './core/analysis/text.js';

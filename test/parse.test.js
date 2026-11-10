@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCount, parseRelativeAge, parseDuration, parseJoined, classifyInput } from '../src/yt/parse.js';
-import { buildSearchParams, durationBucket, parseChannelRenderer } from '../src/yt/search.js';
+import { parseCount, parseRelativeAge, parseDuration, parseJoined, classifyInput } from '../src/sources/innertube/parse.js';
+import { buildSearchParams, durationBucket, parseChannelRenderer } from '../src/sources/innertube/search.js';
 import { addVideoMetrics, channelStats, median, durationBuckets } from '../src/core/metrics/index.js';
 import { titlePatterns, titlePhrases, classifyComment, tokenize } from '../src/core/analysis/text.js';
 
@@ -116,8 +116,8 @@ test('Vietnamese title patterns and comment classification', () => {
   assert.deepEqual(tokenize('Kể chuyện #history @abc https://x.y'), ['kể', 'chuyện']);
 });
 
-import { regionsFor, mergeByRegion } from '../src/yt/search.js';
-import { realGl, configure } from '../src/yt/innertube.js';
+import { regionsFor, mergeByRegion } from '../src/sources/innertube/search.js';
+import { realGl, configure } from '../src/sources/innertube/client.js';
 
 test('global mode: regions and merge', () => {
   assert.deepEqual(regionsFor('VN'), ['VN']);

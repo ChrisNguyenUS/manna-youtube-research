@@ -1,4 +1,4 @@
-import { call } from './innertube.js';
+import { call } from './client.js';
 import { parseCount, parseRelativeAge, findAll } from './parse.js';
 
 function commentsEntryToken(nextJson) {

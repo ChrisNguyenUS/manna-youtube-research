@@ -4,7 +4,7 @@ import path from 'node:path';
 import { ROOT, records, saved, settingsStore } from './db.js';
 import { loadConfig } from './config.js';
 import { METRICS, metricLabel } from './core/metrics/definitions.js';
-import { configure, getConfig, stats } from './yt/innertube.js';
+import { configure, getConfig, stats } from './sources/innertube/client.js';
 import { startJob, getJob, listJobs } from './jobs.js';
 import * as svc from './services.js';
 import { researchMarkdown, channelMarkdown, commentsMarkdown } from './core/report/markdown.js';
