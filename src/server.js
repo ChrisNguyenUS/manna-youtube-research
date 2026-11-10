@@ -2,13 +2,13 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, records, saved, settingsStore } from './db.js';
+import { loadConfig } from './config.js';
 import { configure, getConfig, stats } from './yt/innertube.js';
 import { startJob, getJob, listJobs } from './jobs.js';
 import * as svc from './services.js';
 import { researchMarkdown, channelMarkdown, commentsMarkdown, toCsv } from './analysis/report.js';
 
-const PORT = Number(process.env.PORT) || 5178;
-const HOST = process.env.HOST || '127.0.0.1';
+const { port: PORT, host: HOST } = loadConfig();
 const PUBLIC = path.join(ROOT, 'public');
 
 configure(settingsStore.all());

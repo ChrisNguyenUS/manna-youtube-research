@@ -1,10 +1,10 @@
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const DATA_DIR = process.env.YTR_DATA_DIR || path.join(ROOT, 'data');
+import { ROOT, loadConfig } from './config.js';
+export { ROOT };
+const DATA_DIR = loadConfig().dataDir;
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
 export const db = new DatabaseSync(path.join(DATA_DIR, 'research.db'));
