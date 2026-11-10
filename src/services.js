@@ -8,6 +8,7 @@ import { addVideoMetrics, channelStats, durationBuckets, median, sum, round, cha
 import { titlePhrases, titlePatterns, titleShape, commentInsights } from './analysis/text.js';
 import { scoreKeyword as computeScore, autocompleteMatch, topChannels, normalize as normalizeKw } from './analysis/score.js';
 
+/** @type {(p?: any) => void} */
 const noop = () => {};
 const splitList = (s) => (Array.isArray(s) ? s : String(s || '').split(/[,\n]/)).map((x) => x.trim()).filter(Boolean);
 
@@ -20,6 +21,7 @@ export async function channelInfo(id, { about = false } = {}) {
   return info;
 }
 
+/** @param {string} id @param {{max?: number, channel?: any}} [o] */
 export async function channelVideos(id, { max = 30, channel } = {}) {
   const hit = cache.getChannelVideos(id, { min: max });
   if (hit) return hit.slice(0, max);
@@ -384,6 +386,7 @@ export async function research(params, progress = noop) {
 }
 
 /** Comments for the top-N videos of a research record (by outlier); merged insights stored on the record. */
+/** @param {number} recordId @param {{top?: number, max?: number, videoIds?: string[]}} [o] */
 export async function researchComments(recordId, { top = 5, max = 50, videoIds } = {}, progress = noop) {
   const rec = records.get(recordId);
   if (!rec) throw new Error('Không tìm thấy báo cáo');
@@ -411,6 +414,7 @@ const dirLabel = (d) => ({ top: 'Theo top', trend: 'Theo trend', keyword: 'Theo 
 const uploadLabel = (u) => ({ today: 'Hôm nay', week: '7 ngày', month: '30 ngày', year: '1 năm', any: 'Mọi lúc' })[u] || u;
 
 // ---------------- keyword ideas (autocomplete) ----------------
+/** @param {string} seed @param {{gl?: string, hl?: string, depth?: string}} [o] */
 export async function keywordIdeas(seed, { gl, hl = 'vi', depth = 'full' } = {}, progress = noop) {
   const s = settingsStore.all();
   const g = gl || s.gl;
@@ -455,6 +459,7 @@ function verdictFor(enriched) {
  * (count + median VPH), top channels, related keywords (names only; scored on demand), verdict.
  * Lite: top 20 + subs only — used to score related keywords when the user asks.
  */
+/** @param {string} keyword @param {{gl?: string, lite?: boolean, autocomplete?: string}} [o] */
 export async function scoreOneKeyword(keyword, { gl, lite = false, autocomplete: knownAc } = {}) {
   const s = settingsStore.all();
   const regions = regionsFor(gl || s.gl, s.globalRegions);

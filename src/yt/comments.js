@@ -73,6 +73,7 @@ export async function getComments(videoId, opts = {}, onProgress) {
     const st = sortTokens(json).newest || sortTokens(nx).newest;
     if (st) json = await call('next', { continuation: st });
   }
+  /** @type {any[]} */
   const out = [];
   const seen = new Set();
   const replyJobs = [];

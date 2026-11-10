@@ -105,6 +105,7 @@ function nextToken(json) {
 }
 
 /** Latest long videos of a channel (30 per page). */
+/** @param {string} channelId @param {{max?: number, channel?: any}} [o] @param {(n: number) => void} [onPage] */
 export async function getChannelVideos(channelId, { max = 120, channel } = {}, onPage) {
   let json = await call('browse', { browseId: channelId, params: VIDEOS_TAB });
   const out = [];

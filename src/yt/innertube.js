@@ -37,6 +37,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export const stats = { requests: 0, failures: 0 };
 
+/** @param {string} endpoint @param {any} body @param {{gl?: string}} [o] */
 export async function call(endpoint, body, { gl } = {}) {
   await acquire();
   try {
@@ -90,6 +91,7 @@ export async function mapLimit(items, fn, onEach) {
 }
 
 /** YouTube search autocomplete (public suggest endpoint). */
+/** @param {string} q @param {{gl?: string, hl?: string}} [o] */
 export async function suggest(q, { gl, hl = 'en' } = {}) {
   const url = `https://suggestqueries-clients6.youtube.com/complete/search?client=youtube&ds=yt&hl=${hl}&gl=${realGl(gl)}&q=${encodeURIComponent(q)}`;
   await acquire();

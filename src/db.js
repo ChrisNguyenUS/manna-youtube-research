@@ -41,7 +41,7 @@ const DAY = 86400000;
 
 export const cache = {
   getChannel(id, { maxAgeDays = 3, needAbout = false } = {}) {
-    const r = db.prepare('SELECT data, about, fetched_at FROM channels WHERE id = ?').get(id);
+    const r = /** @type {any} */ (db.prepare('SELECT data, about, fetched_at FROM channels WHERE id = ?').get(id));
     if (!r || now() - r.fetched_at > maxAgeDays * DAY || (needAbout && !r.about)) return null;
     return JSON.parse(r.data);
   },
@@ -49,7 +49,7 @@ export const cache = {
     db.prepare('INSERT OR REPLACE INTO channels (id, data, about, fetched_at) VALUES (?, ?, ?, ?)').run(info.id, JSON.stringify(info), about ? 1 : 0, now());
   },
   getChannelVideos(id, { maxAgeDays = 1, min = 0 } = {}) {
-    const r = db.prepare('SELECT data, fetched_at FROM channel_videos WHERE channel_id = ?').get(id);
+    const r = /** @type {any} */ (db.prepare('SELECT data, fetched_at FROM channel_videos WHERE channel_id = ?').get(id));
     if (!r || now() - r.fetched_at > maxAgeDays * DAY) return null;
     const list = JSON.parse(r.data);
     return list.length >= min ? list : null;
@@ -58,7 +58,7 @@ export const cache = {
     db.prepare('INSERT OR REPLACE INTO channel_videos (channel_id, data, fetched_at) VALUES (?, ?, ?)').run(id, JSON.stringify(list), now());
   },
   getVideo(id, { maxAgeDays = 7 } = {}) {
-    const r = db.prepare('SELECT data, fetched_at FROM video_details WHERE id = ?').get(id);
+    const r = /** @type {any} */ (db.prepare('SELECT data, fetched_at FROM video_details WHERE id = ?').get(id));
     if (!r || now() - r.fetched_at > maxAgeDays * DAY) return null;
     return JSON.parse(r.data);
   },
@@ -69,24 +69,24 @@ export const cache = {
 
 export const records = {
   add(kind, title, { ref = null, params = null, data = null } = {}) {
-    const r = db.prepare('INSERT INTO records (kind, title, ref, params, data, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(kind, title, ref, JSON.stringify(params), JSON.stringify(data), now());
+    const r = /** @type {any} */ (db.prepare('INSERT INTO records (kind, title, ref, params, data, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(kind, title, ref, JSON.stringify(params), JSON.stringify(data), now()));
     return Number(r.lastInsertRowid);
   },
   update(id, data) {
     db.prepare('UPDATE records SET data = ? WHERE id = ?').run(JSON.stringify(data), id);
   },
   get(id) {
-    const r = db.prepare('SELECT * FROM records WHERE id = ?').get(id);
+    const r = /** @type {any} */ (db.prepare('SELECT * FROM records WHERE id = ?').get(id));
     return r && { ...r, params: JSON.parse(r.params), data: JSON.parse(r.data) };
   },
   latestByRef(kind, ref) {
-    const r = db.prepare('SELECT * FROM records WHERE kind = ? AND ref = ? ORDER BY created_at DESC LIMIT 1').get(kind, ref);
+    const r = /** @type {any} */ (db.prepare('SELECT * FROM records WHERE kind = ? AND ref = ? ORDER BY created_at DESC LIMIT 1').get(kind, ref));
     return r && { ...r, params: JSON.parse(r.params), data: JSON.parse(r.data) };
   },
   list(kind, limit = 50) {
-    const rows = kind
+    const rows = /** @type {any[]} */ (kind
       ? db.prepare('SELECT id, kind, title, ref, params, created_at FROM records WHERE kind = ? ORDER BY created_at DESC LIMIT ?').all(kind, limit)
-      : db.prepare('SELECT id, kind, title, ref, params, created_at FROM records ORDER BY created_at DESC LIMIT ?').all(limit);
+      : db.prepare('SELECT id, kind, title, ref, params, created_at FROM records ORDER BY created_at DESC LIMIT ?').all(limit));
     return rows.map((r) => ({ ...r, params: JSON.parse(r.params) }));
   },
   remove(id) {
@@ -99,7 +99,7 @@ export const records = {
 
 export const saved = {
   list(kind) {
-    const rows = kind ? db.prepare('SELECT * FROM saved WHERE kind = ? ORDER BY created_at DESC').all(kind) : db.prepare('SELECT * FROM saved ORDER BY created_at DESC').all();
+    const rows = /** @type {any[]} */ (kind ? db.prepare('SELECT * FROM saved WHERE kind = ? ORDER BY created_at DESC').all(kind) : db.prepare('SELECT * FROM saved ORDER BY created_at DESC').all());
     return rows.map((r) => ({ ...r, data: JSON.parse(r.data) }));
   },
   put(kind, ref, title, data, note = '') {
@@ -112,7 +112,7 @@ export const saved = {
     db.prepare('DELETE FROM saved WHERE kind = ? AND ref = ?').run(kind, ref);
   },
   keys() {
-    return db.prepare('SELECT kind, ref FROM saved').all().map((r) => `${r.kind}:${r.ref}`);
+    return /** @type {any[]} */ (db.prepare('SELECT kind, ref FROM saved').all()).map((r) => `${r.kind}:${r.ref}`);
   },
 };
 
@@ -121,7 +121,7 @@ export const settingsStore = {
   all() {
     const rows = db.prepare('SELECT key, value FROM settings').all();
     const out = { ...DEFAULT_SETTINGS };
-    for (const r of rows) out[r.key] = JSON.parse(r.value);
+    for (const r of /** @type {any[]} */ (rows)) out[r.key] = JSON.parse(r.value);
     return out;
   },
   set(obj) {

@@ -93,6 +93,7 @@ const JOBS = {
   },
 };
 
+/** @type {Array<[string, RegExp, (...a: any[]) => any]>} */
 const routes = [
   ['POST', /^\/api\/jobs\/(\w+)$/, async (req, res, m, body) => {
     const fn = JOBS[m[1]];
