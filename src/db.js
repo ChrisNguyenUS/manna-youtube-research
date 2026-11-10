@@ -1,102 +1,37 @@
+// Transitional compatibility layer: the v0 API (no workspace argument) on top of the new store.
+// Removed in Task 10 once features receive the store through deps.
+import { loadConfig, ROOT } from './config.js';
 import { openDatabase } from './store/sqlite/db.js';
+import { createSqliteStore, DEFAULT_SETTINGS } from './store/sqlite/index.js';
 
-import { ROOT, loadConfig } from './config.js';
-export { ROOT };
-const DATA_DIR = loadConfig().dataDir;
+export { ROOT, DEFAULT_SETTINGS };
+export const store = createSqliteStore(openDatabase({ dataDir: loadConfig().dataDir }));
+export const db = store.db;
+export const cache = store.cache;
 
-export const db = openDatabase({ dataDir: DATA_DIR });
-
-const now = () => Date.now();
-const DAY = 86400000;
-
-export const cache = {
-  getChannel(id, { maxAgeDays = 3, needAbout = false } = {}) {
-    const r = /** @type {any} */ (db.prepare('SELECT data, about, fetched_at FROM channels WHERE id = ?').get(id));
-    if (!r || now() - r.fetched_at > maxAgeDays * DAY || (needAbout && !r.about)) return null;
-    return JSON.parse(r.data);
-  },
-  putChannel(info, about) {
-    db.prepare('INSERT OR REPLACE INTO channels (id, data, about, fetched_at) VALUES (?, ?, ?, ?)').run(info.id, JSON.stringify(info), about ? 1 : 0, now());
-  },
-  getChannelVideos(id, { maxAgeDays = 1, min = 0 } = {}) {
-    const r = /** @type {any} */ (db.prepare('SELECT data, fetched_at FROM channel_videos WHERE channel_id = ?').get(id));
-    if (!r || now() - r.fetched_at > maxAgeDays * DAY) return null;
-    const list = JSON.parse(r.data);
-    return list.length >= min ? list : null;
-  },
-  putChannelVideos(id, list) {
-    db.prepare('INSERT OR REPLACE INTO channel_videos (channel_id, data, fetched_at) VALUES (?, ?, ?)').run(id, JSON.stringify(list), now());
-  },
-  getVideo(id, { maxAgeDays = 7 } = {}) {
-    const r = /** @type {any} */ (db.prepare('SELECT data, fetched_at FROM video_details WHERE id = ?').get(id));
-    if (!r || now() - r.fetched_at > maxAgeDays * DAY) return null;
-    return JSON.parse(r.data);
-  },
-  putVideo(d) {
-    db.prepare('INSERT OR REPLACE INTO video_details (id, data, fetched_at) VALUES (?, ?, ?)').run(d.id, JSON.stringify(d), now());
-  },
-};
-
+const WS = 'local';
 export const records = {
-  add(kind, title, { ref = null, params = null, data = null } = {}) {
-    const r = /** @type {any} */ (db.prepare('INSERT INTO records (kind, title, ref, params, data, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(kind, title, ref, JSON.stringify(params), JSON.stringify(data), now()));
-    return Number(r.lastInsertRowid);
-  },
-  update(id, data) {
-    db.prepare('UPDATE records SET data = ? WHERE id = ?').run(JSON.stringify(data), id);
-  },
-  get(id) {
-    const r = /** @type {any} */ (db.prepare('SELECT * FROM records WHERE id = ?').get(id));
-    return r && { ...r, params: JSON.parse(r.params), data: JSON.parse(r.data) };
-  },
-  latestByRef(kind, ref) {
-    const r = /** @type {any} */ (db.prepare('SELECT * FROM records WHERE kind = ? AND ref = ? ORDER BY created_at DESC LIMIT 1').get(kind, ref));
-    return r && { ...r, params: JSON.parse(r.params), data: JSON.parse(r.data) };
-  },
-  list(kind, limit = 50) {
-    const rows = /** @type {any[]} */ (kind
-      ? db.prepare('SELECT id, kind, title, ref, params, created_at FROM records WHERE kind = ? ORDER BY created_at DESC LIMIT ?').all(kind, limit)
-      : db.prepare('SELECT id, kind, title, ref, params, created_at FROM records ORDER BY created_at DESC LIMIT ?').all(limit));
-    return rows.map((r) => ({ ...r, params: JSON.parse(r.params) }));
-  },
-  remove(id) {
-    db.prepare('DELETE FROM records WHERE id = ?').run(id);
-  },
-  counts() {
-    return Object.fromEntries(db.prepare('SELECT kind, COUNT(*) n FROM records GROUP BY kind').all().map((r) => [r.kind, r.n]));
-  },
+  /** @param {string} kind @param {string} title @param {any} [o] */
+  add: (kind, title, o) => store.records.add(WS, kind, title, o),
+  get: (id) => store.records.get(WS, id),
+  update: (id, data) => store.records.update(WS, id, data),
+  /** @param {string|null} [kind] @param {number} [limit] */
+  list: (kind, limit) => store.records.list(WS, kind, limit),
+  remove: (id) => store.records.remove(WS, id),
+  latestByRef: (kind, ref) => store.records.latestByRef(WS, kind, ref),
+  counts: () => store.records.counts(WS),
 };
-
 export const saved = {
-  list(kind) {
-    const rows = /** @type {any[]} */ (kind ? db.prepare('SELECT * FROM saved WHERE kind = ? ORDER BY created_at DESC').all(kind) : db.prepare('SELECT * FROM saved ORDER BY created_at DESC').all());
-    return rows.map((r) => ({ ...r, data: JSON.parse(r.data) }));
-  },
-  put(kind, ref, title, data, note = '') {
-    db.prepare('INSERT OR REPLACE INTO saved (kind, ref, title, note, data, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(kind, ref, title, note, JSON.stringify(data), now());
-  },
-  note(kind, ref, note) {
-    db.prepare('UPDATE saved SET note = ? WHERE kind = ? AND ref = ?').run(note, kind, ref);
-  },
-  remove(kind, ref) {
-    db.prepare('DELETE FROM saved WHERE kind = ? AND ref = ?').run(kind, ref);
-  },
-  keys() {
-    return /** @type {any[]} */ (db.prepare('SELECT kind, ref FROM saved').all()).map((r) => `${r.kind}:${r.ref}`);
-  },
+  /** @param {string} [kind] */
+  list: (kind) => store.saved.list(WS, kind),
+  /** @param {string} kind @param {string} ref @param {string} title @param {any} data @param {string} [note] */
+  put: (kind, ref, title, data, note) => store.saved.put(WS, kind, ref, title, data, note),
+  note: (kind, ref, note) => store.saved.note(WS, kind, ref, note),
+  remove: (kind, ref) => store.saved.remove(WS, kind, ref),
+  keys: () => store.saved.keys(WS),
 };
-
-export const DEFAULT_SETTINGS = { gl: 'US', concurrency: 4, delayMs: 200, minSubsForOutlier: 500, outlierMultiple: 3, globalRegions: 'US,GB,IN,CA,AU,PH,VN,ID', aiProvider: '', aiKey: '' };
 export const settingsStore = {
-  all() {
-    const rows = db.prepare('SELECT key, value FROM settings').all();
-    const out = { ...DEFAULT_SETTINGS };
-    for (const r of /** @type {any[]} */ (rows)) out[r.key] = JSON.parse(r.value);
-    return out;
-  },
-  set(obj) {
-    const st = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
-    for (const [k, v] of Object.entries(obj)) if (k in DEFAULT_SETTINGS) st.run(k, JSON.stringify(v));
-    return this.all();
-  },
+  all: () => store.settings.all(WS),
+  /** @param {Record<string, any>} o */
+  set: (o) => store.settings.set(WS, o),
 };
