@@ -1,8 +1,13 @@
 // Results of research tasks, scoped by workspace and versioned (schema_version).
+import { upgradeRecord, LATEST } from '../../upgrades/index.js';
 
 /** @param {import('node:sqlite').DatabaseSync} db @param {() => number} [now] */
 export function recordsRepo(db, now = Date.now) {
-  const parse = (r) => r && { ...r, params: r.params != null ? JSON.parse(r.params) : null, data: r.data != null ? JSON.parse(r.data) : null };
+  const parse = (r) => {
+    if (!r) return r;
+    const up = upgradeRecord(r.kind, r.schema_version ?? 1, r.data != null ? JSON.parse(r.data) : null);
+    return { ...r, params: r.params != null ? JSON.parse(r.params) : null, data: up.data, schema_version: up.version };
+  };
   /** @param {string} sql @param {...any} args */
   const one = (sql, ...args) => /** @type {any} */ (db.prepare(sql).get(...args));
   /** @param {string} sql @param {...any} args */
@@ -12,7 +17,7 @@ export function recordsRepo(db, now = Date.now) {
      * @param {string} ws @param {string} kind @param {string} title
      * @param {{ref?: string|null, params?: any, data?: any, schemaVersion?: number, jobId?: number|null}} [o]
      */
-    add(ws, kind, title, { ref = null, params = null, data = null, schemaVersion = 1, jobId = null } = {}) {
+    add(ws, kind, title, { ref = null, params = null, data = null, schemaVersion = LATEST[kind] ?? 1, jobId = null } = {}) {
       const r = db
         .prepare('INSERT INTO records (workspace_id, kind, title, ref, params, data, schema_version, job_id, created_at) VALUES (?,?,?,?,?,?,?,?,?)')
         .run(ws, kind, title, ref, JSON.stringify(params), JSON.stringify(data), schemaVersion, jobId, now());

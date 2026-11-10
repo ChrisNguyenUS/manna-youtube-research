@@ -165,8 +165,6 @@ export function videoGrid(list, { selected = new Set() } = {}) {
 export function mountVideoResults(container, videos, { key = 'vf', onComments, regions = [] } = {}) {
   const f = store(key, VIDEO_FILTER_DEFAULT);
   if (f.region && !regions.includes(f.region)) f.region = '';
-  // Records saved before VPH existed: derive it from views and age.
-  for (const v of videos) if (v.vph == null && v.views != null && v.age != null) v.vph = Math.round((v.views / Math.max(v.age * 24, 1)) * 10) / 10;
   const selected = new Set();
   container.innerHTML = `<div data-filters></div><div class="card" style="margin-top:14px"><div data-toolbar></div><div data-sel-bar></div><div data-list></div></div>`;
   container.querySelector('[data-filters]').innerHTML = videoFilterPanel(f, regions);
