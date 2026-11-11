@@ -85,6 +85,30 @@ node src/cli/index.js ideas "từ khoá 1" "từ khoá 2" --gl VN   # chấm đi
 
 Kết quả: `output/*.digest.md`, đồng thời hiện trong app.
 
+## TikTok (insight khách hàng)
+
+Nhóm **TikTok** trong menu có 3 màn:
+
+- **Insight khách hàng**: tìm video hot theo từ khoá, đọc comment của top video, gom lại thành khách hỏi gì, sợ gì, phàn nàn gì, muốn mua gì, cùng câu chữ thật họ hay dùng. Nút **Markdown** cho file gọn để đưa Claude viết góc quảng cáo và hook.
+- **Tìm video TikTok**: lưới video xếp theo Hot score (tương tác ÷ (ngày + 2)), lọc theo tuổi, like, comment; chọn video rồi bấm **Lấy comment**.
+- **Comment TikTok**: dán link (kể cả `vm.tiktok.com`), lấy tới 300 comment kèm trả lời.
+
+Tìm kiếm TikTok cần Chromium ẩn, cài một lần (~150 MB):
+
+```bash
+npm run setup:tiktok
+```
+
+Lấy comment theo link không cần bước này. Nếu TikTok chặn tìm kiếm, app báo lỗi, không tự chuyển sang dịch vụ trả phí.
+
+```bash
+node src/cli/index.js tiktok-insight "thi quốc tịch mỹ" "phỏng vấn quốc tịch" --top 10 --comments 300
+```
+
+Ghi chú:
+- App không lưu tên hay username người bình luận, chỉ lưu nội dung comment.
+- Từ khoá nên có chữ tiếng Việt và ghi rõ nước (vd "thi quốc tịch mỹ"); video không có từ khoá trong caption/hashtag bị bỏ.
+
 ## AI (sau này)
 
 App tự tính mọi số liệu. Mỗi báo cáo có nút **Markdown**: file gọn để đưa cho Claude, hoặc dùng skill `nghien-cuu-youtube`. Ô API key trong Cài đặt đã có sẵn để nối AI vào app sau.
