@@ -27,7 +27,13 @@ export function createTikTokSource({ fetch, loadPlaywright, hasPlaywright = play
   return {
     async searchVideos(q, o = {}, onPage) {
       if (!hasPlaywright()) throw Object.assign(new Error(SETUP), { code: 'tiktok_setup_required' });
-      return searchKeyword(browser, q, { ...searchOpts, ...(sleep ? { sleep } : {}), max: o.max ?? 60 }, onPage);
+      try {
+        return await searchKeyword(browser, q, { ...searchOpts, ...(sleep ? { sleep } : {}), max: o.max ?? 60 }, onPage);
+      } catch (e) {
+        // Package present but Chromium not downloaded (or deleted from the cache).
+        if (/Executable doesn't exist|playwright install|Cannot find (package|module)/i.test(e?.message || '')) throw Object.assign(new Error(SETUP), { code: 'tiktok_setup_required' });
+        throw e;
+      }
     },
     resolveVideo: comments.resolveVideo,
     getComments: comments.getComments,

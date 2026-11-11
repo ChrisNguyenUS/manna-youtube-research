@@ -4,6 +4,8 @@ import { throwIfCancelled } from '../../core/cancel.js';
 
 const realSleep = (ms) => new Promise((r) => setTimeout(r, ms));
 class Blocked extends Error {}
+const LOGIN_WALL = 2483;
+const loginRequired = () => Object.assign(new Error('TikTok đang yêu cầu đăng nhập mới cho tìm kiếm (mã 2483), chờ thêm không giúp được. Comment theo link vẫn dùng được.'), { code: 'tiktok_login_required' });
 
 /**
  * Returns [] when TikTok keeps blocking after all retries (the caller reports the keyword as empty).
@@ -31,6 +33,7 @@ export async function searchKeyword(browser, keyword, { max = 60, maxPages = 20,
             return { status: res.status, body: await res.json().catch(() => null) };
           }, searchApiPath(keyword, offset, searchId));
           const r = parseSearchPage(body, keyword);
+          if (i === 0 && r.statusCode === LOGIN_WALL) throw loginRequired();
           if (i === 0 && (!r.ok || r.videos.length === 0)) throw new Blocked();
           if (!r.ok) break;
           let added = 0;

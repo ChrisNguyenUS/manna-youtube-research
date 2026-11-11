@@ -33,7 +33,7 @@ function parseVideo(item, query) {
 /** A non-zero status_code alone is not an error: later pages come back as 203 with full results. */
 export function parseSearchPage(body, query) {
   const hasData = Array.isArray(body?.data) && body.data.length > 0;
-  if (!body || typeof body !== 'object' || (Number(body.status_code ?? 0) !== 0 && !hasData)) return { ok: false, videos: [], hasMore: false, cursor: 0, searchId: '' };
+  if (!body || typeof body !== 'object' || (Number(body.status_code ?? 0) !== 0 && !hasData)) return { ok: false, videos: [], hasMore: false, cursor: 0, searchId: '', statusCode: Number(body?.status_code ?? 0) };
   const videos = (body.data ?? []).filter((d) => d?.type === 1).map((d) => parseVideo(d.item, query)).filter(Boolean);
   return { ok: true, videos, hasMore: Boolean(body.has_more), cursor: Number(body.cursor ?? 0), searchId: String(body.log_pb?.impr_id ?? '') };
 }
@@ -53,6 +53,9 @@ export const isShortLink = (url) => /^https?:\/\/(vm|vt)\.tiktok\.com\//.test(ur
 export const commentListUrl = (videoId, cursor) => `${COMMENT_API}/?${new URLSearchParams({ aid: '1988', aweme_id: videoId, count: String(PAGE_SIZE), cursor: String(cursor) })}`;
 export const replyListUrl = (videoId, commentId, cursor) => `${COMMENT_API}/reply/?${new URLSearchParams({ aid: '1988', item_id: videoId, comment_id: commentId, count: String(PAGE_SIZE), cursor: String(cursor) })}`;
 
+/** Handles tagged inside a comment would identify people too. */
+export const maskMentions = (s) => s.replace(/@[\p{L}\p{N}._]+/gu, '@…');
+
 /** Commenter name/username are deliberately not read: reports must never identify customers. */
 export function parseCommentPage(body, parentId) {
   if (!body || typeof body !== 'object' || Number(body.status_code ?? 0) !== 0) return { ok: false, comments: [], hasMore: false, cursor: 0, total: 0 };
@@ -60,7 +63,7 @@ export function parseCommentPage(body, parentId) {
     id: String(c.cid),
     parentId,
     isReply: parentId !== null,
-    text: String(c.text ?? ''),
+    text: maskMentions(String(c.text ?? '')),
     likes: Number(c.digg_count ?? 0),
     replies: Number(c.reply_comment_total ?? 0),
     createdAt: iso(c.create_time),

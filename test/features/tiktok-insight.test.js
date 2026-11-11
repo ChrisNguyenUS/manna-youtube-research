@@ -56,3 +56,14 @@ test('comments by link: bad links skipped, good ones saved (Review Focus #2)', a
   assert.equal(rec.kind, 'tiktok_comments');
   assert.equal(rec.data.insight.counts.fears, 1);
 });
+
+test('I4: a link whose comments fail is skipped, the job continues, skipped is saved', async () => {
+  const tt = createFakeTikTok();
+  const orig = tt.getComments;
+  tt.getComments = async (id, o, p) => (id === '7000000000000000002' ? Promise.reject(new Error('TikTok từ chối trang comment')) : orig(id, o, p));
+  const a = testApp(undefined, tt);
+  const r = await a.features.tiktokComments({ videos: 'https://www.tiktok.com/@a/video/7000000000000000002\nhttps://www.tiktok.com/@a/video/7000000000000000001', max: 100 }, () => {});
+  assert.equal(r.jobs.length, 1);
+  assert.deepEqual(r.skipped, ['https://www.tiktok.com/@a/video/7000000000000000002']);
+  assert.deepEqual(a.store.records.get('local', r.jobs[0].id).data.skipped, ['https://www.tiktok.com/@a/video/7000000000000000002']);
+});

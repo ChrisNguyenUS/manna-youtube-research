@@ -39,7 +39,7 @@ export async function mount(root, params) {
   async function show(id) {
     const rec = await records.get(id);
     const d = rec.data;
-    out.innerHTML = `<div class="card"><div class="card-pad row"><div><a href="${esc(d.video.url)}" target="_blank" rel="noopener"><b>${esc(d.video.url)}</b></a><div class="muted small">${d.comments.length} comment · ${ago(rec.created_at)}</div></div>
+    out.innerHTML = `<div class="card"><div class="card-pad row"><div><a href="${esc(d.video.url)}" target="_blank" rel="noopener"><b>${esc(d.video.url)}</b></a><div class="muted small">${d.comments.length} comment · ${ago(rec.created_at)}${d.skipped?.length ? ` · bỏ qua ${d.skipped.length} link: ${esc(d.skipped.join(', '))}` : ''}</div></div>
       <span class="spacer"></span><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a><a class="btn sm" href="${records.exportUrl(id, 'md')}">${icon('download')} Markdown</a></div>
       ${commentGroups(d.insight, { extraTabs: [['top', 'Like nhiều nhất', d.insight.top]] })}</div>`;
     shown.off();
