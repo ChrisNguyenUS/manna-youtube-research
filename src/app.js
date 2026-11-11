@@ -69,5 +69,5 @@ export function createApp({ config = loadConfig(), source, store, tiktok } = {})
   handlers.tiktok_insight = (p, ctx) => features.tiktokInsight(p, ctx.progress);
   handlers.tiktok_comments = (p, ctx) => features.tiktokComments(p, ctx.progress);
   const runner = createRunner({ jobsRepo: store.jobs, handlers, onCancelled: (job) => store.records.removeByJob(job.id) });
-  return { config, store, source, tiktok, features, runner, ws, settings };
+  return { config, store, source, tiktok, features, runner, ws, settings, close: () => tiktok.close() };
 }
