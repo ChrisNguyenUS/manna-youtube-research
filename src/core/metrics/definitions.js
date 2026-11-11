@@ -31,6 +31,9 @@ export const METRICS = {
     version: 1,
     formula: 'view ÷ trung vị view 120 video dài gần nhất của kênh (trang Phân tích kênh)',
   },
+  hotScore: { label: { vi: 'Hot score', en: 'Hot score' }, unit: 'per_day', version: 1, formula: '(like + comment + share + save) ÷ (số ngày từ lúc đăng + 2)' },
+  engagementRate: { label: { vi: 'Tỉ lệ tương tác', en: 'Engagement rate' }, unit: 'x', version: 1, formula: '(like + comment + share + save) ÷ lượt xem' },
+  attentionPerDay: { label: { vi: 'Attention/ngày', en: 'Attention/day' }, unit: 'per_day', version: 1, formula: '(like + trả lời của comment) ÷ (số ngày từ lúc comment + 2)' },
 };
 
 /** @param {string} id @param {'vi'|'en'} [lang] */
