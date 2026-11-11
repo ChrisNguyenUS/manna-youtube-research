@@ -107,10 +107,15 @@ export function titleShape(videos) {
 const QUESTION_RE = /\?|(^|\s)(tại sao|vì sao|làm sao|làm thế nào|như thế nào|ở đâu|bao nhiêu|bao giờ|khi nào|có ai|ai biết|có phải|được không|có nên|nên làm gì|là gì|why|how|what|where|when|which|who|is there|does anyone|can someone|can you|anyone know)(?![\p{L}\p{N}])/iu;
 const COMPLAINT_RE = /(tiếc|chán|dở|tệ|sai rồi|không đúng|thất vọng|quá dài|dài dòng|nhiều quảng cáo|giật tít|câu view|lừa|ghét|khó nghe|nhạc to|giọng ai|ai voice|wrong|boring|hate|clickbait|misleading|too long|annoying|disappoint|ai generated|ai voice|fake|inaccurate|not true)/iu;
 const REQUEST_RE = /(làm video về|làm thêm|làm tiếp|phần 2|phần tiếp|tập tiếp|ra tiếp|mong ad|mong kênh|xin ad|ad ơi làm|nói về|please make|make a video|do a video|part 2|next video|more about|cover|can you do|talk about|would love to see|waiting for)/iu;
+const END = '(?![\\p{L}\\p{N}])';
+const START = '(?<![\\p{L}\\p{N}])';
+const words = (list) => new RegExp(`${START}(${list.join('|')})${END}`, 'iu');
+const FEAR_RE = words(['sợ', 'lo', 'lo lắng', 'có an toàn', 'có sao không', 'có bị', 'bị lừa', 'mất tiền', 'rủi ro', 'nguy hiểm', 'tác dụng phụ', 'có hại', 'scared', 'worried', 'afraid', 'is it safe', 'scam', 'risk']);
+const BUYING_RE = words(['giá', 'bao nhiêu tiền', 'bao nhiêu 1', 'mua ở đâu', 'mua sao', 'link mua', 'ship', 'có bán', 'inbox', 'ib', 'đặt hàng', 'order', 'price', 'how much', 'where to buy', 'link']);
 
 export function classifyComment(text) {
   const t = String(text || '');
-  return { question: QUESTION_RE.test(t), complaint: COMPLAINT_RE.test(t), request: REQUEST_RE.test(t) };
+  return { question: QUESTION_RE.test(t), complaint: COMPLAINT_RE.test(t), request: REQUEST_RE.test(t), fear: FEAR_RE.test(t), buying: BUYING_RE.test(t) };
 }
 
 export function commentInsights(comments, { limit = 25 } = {}) {
@@ -127,12 +132,16 @@ export function commentInsights(comments, { limit = 25 } = {}) {
   return {
     total: comments.length,
     questions: pick((c) => c.question),
+    fears: pick((c) => c.fear),
+    buying: pick((c) => c.buying),
     complaints: pick((c) => c.complaint),
     requests: pick((c) => c.request),
     top: [...tagged].sort(byLikes).slice(0, limit),
     phrases,
     counts: {
       questions: tagged.filter((c) => c.question).length,
+      fears: tagged.filter((c) => c.fear).length,
+      buying: tagged.filter((c) => c.buying).length,
       complaints: tagged.filter((c) => c.complaint).length,
       requests: tagged.filter((c) => c.request).length,
     },
