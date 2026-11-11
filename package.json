@@ -13,7 +13,11 @@
     "research": "node --disable-warning=ExperimentalWarning src/cli/index.js research",
     "test": "npm run typecheck && node --disable-warning=ExperimentalWarning --test 'test/**/*.test.js'",
     "typecheck": "tsc -p jsconfig.json",
-    "probe": "node --disable-warning=ExperimentalWarning scripts/probe.js"
+    "probe": "node --disable-warning=ExperimentalWarning scripts/probe.js",
+    "setup:tiktok": "npm install --no-save playwright@1.64.1 && npx playwright install chromium"
+  },
+  "optionalDependencies": {
+    "playwright": "1.64.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",

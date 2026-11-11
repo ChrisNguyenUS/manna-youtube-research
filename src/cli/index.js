@@ -4,11 +4,13 @@
 //   node src/cli/index.js channel "@handle"
 //   node src/cli/index.js comments <videoUrl...> [--max 100]
 //   node src/cli/index.js ideas "ý tưởng 1" "ý tưởng 2"
+//   node src/cli/index.js tiktok-insight "kw1" "kw2" [--top 10] [--comments 300] [--no-replies] [--all]
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT } from '../config.js';
 import { createApp } from '../app.js';
 import { researchMarkdown, channelMarkdown, commentsMarkdown } from '../core/report/markdown.js';
+import { tiktokInsightMarkdown } from '../core/report/tiktok.js';
 
 const app = createApp();
 const svc = app.features;
@@ -72,8 +74,16 @@ if (cmd === 'research') {
   const r = await svc.keywordScores({ keywords: pos, gl: flags.gl }, progress);
   process.stderr.write('\r\x1b[K');
   for (const x of r.results) console.log(x.error ? `lỗi: ${x.error} — ${x.keyword}` : `điểm ${String(x.overall).padStart(3)} (volume ${x.volume}, cạnh tranh ${x.competition}) · ${x.verdict.padEnd(11)} · view TB ${Math.round(x.stats.avgViews ?? 0)} · sub TB ${Math.round(x.stats.avgSubs ?? 0)} · mới 7 ngày ${x.stats.added7d}/${x.stats.results} — ${x.keyword}`);
+} else if (cmd === 'tiktok-insight') {
+  const r = await svc.tiktokInsight(
+    { keywords: pos, top: Number(flags.top) || 10, commentsPerVideo: Number(flags.comments) === 100 ? 100 : 300, replies: !flags['no-replies'], keepOffTopic: !!flags.all },
+    progress,
+  );
+  write(`tiktok-${slug(pos[0] || 'tiktok')}-${day}.digest.md`, tiktokInsightMarkdown(records.get(r.id).data));
+  console.log(`Báo cáo #${r.id} cũng có trong app (TikTok → Insight khách hàng).`);
+  await app.close();
 } else {
-  console.log('Lệnh: research | channel | comments | ideas  (xem đầu file src/cli/index.js)');
+  console.log('Lệnh: research | channel | comments | ideas | tiktok-insight  (xem đầu file src/cli/index.js)');
   process.exit(1);
 }
 process.exit(0);
