@@ -1,0 +1,6 @@
+{ "status_code": 0, "has_more": 1, "cursor": 50, "total": 1003,
+  "comments": [
+    { "cid": "c1", "text": "Phỏng vấn có khó không ạ?", "digg_count": 685, "reply_comment_total": 47, "create_time": 1729296000, "author_pin": false,
+      "user": { "unique_id": "secret_user", "nickname": "Secret Name" } },
+    { "cid": "c2", "text": "giá dịch vụ bao nhiêu", "digg_count": 3, "reply_comment_total": 0, "create_time": 0, "user": { "unique_id": "u2" } }
+  ] }
