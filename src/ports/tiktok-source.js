@@ -13,7 +13,7 @@
  * @property {number} comments
  * @property {number} shares
  * @property {number} saves
- * @property {string} author        @username of the video's creator (public), never of commenters
+ * @property {string} author        username of the video creator (public), never of commenters
  * @property {string|null} cover    cover image (expiring link)
  * @property {string} query         keyword that found the video
  */
