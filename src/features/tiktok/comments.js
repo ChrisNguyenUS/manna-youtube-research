@@ -1,0 +1,40 @@
+// Use case: comments of TikTok links (spec §4.3) + the helper the insight report shares.
+import { noop, splitList } from '../shared.js';
+import { attentionPerDay } from '../../core/tiktok/metrics.js';
+import { commentInsights } from '../../core/analysis/text.js';
+import { rethrowIfCancelled } from '../../core/cancel.js';
+
+/** Adds attentionPerDay, and parentText on replies (first 200 chars of the parent comment). */
+export function withAttention(comments, now) {
+  const byId = new Map(comments.map((c) => [c.id, c]));
+  return comments.map((c) => ({ ...c, attentionPerDay: attentionPerDay(c, now), ...(c.parentId ? { parentText: (byId.get(c.parentId)?.text || '').slice(0, 200) } : {}) }));
+}
+
+/** @param {{tiktok: import('../../ports/tiktok-source.js').TikTokSource, records: any, now: () => number}} deps */
+export function makeTikTokComments({ tiktok, records, now }) {
+  return async function tiktokComments(params, progress = noop) {
+    const links = splitList(String(params.videos || '').replace(/\s+/g, '\n'));
+    if (!links.length) throw new Error('Dán ít nhất một link TikTok');
+    const max = Number(params.max) === 100 ? 100 : 300;
+    const jobs = [];
+    const skipped = [];
+    for (const [i, link] of links.entries()) {
+      let video;
+      try {
+        video = await tiktok.resolveVideo(link);
+      } catch (e) {
+        rethrowIfCancelled(e);
+        skipped.push(link);
+        continue;
+      }
+      const label = `Comment TikTok ${i + 1}/${links.length}`;
+      progress({ step: label, done: 0, total: max });
+      const r = await tiktok.getComments(video.id, { max, replies: params.replies !== false }, (n) => progress({ step: label, done: n, total: max }));
+      const comments = withAttention(r.comments, now());
+      const data = { video, comments, insight: commentInsights(comments, { limit: 50 }), params };
+      jobs.push({ id: records.add('tiktok_comments', video.url, { ref: video.id, params, data }), video, count: comments.length });
+    }
+    if (!jobs.length) throw new Error('Không có link video TikTok hợp lệ');
+    return { jobs, skipped };
+  };
+}

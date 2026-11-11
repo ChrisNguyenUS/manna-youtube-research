@@ -14,6 +14,8 @@ import { makeResearch, makeResearchComments } from './features/topic-research.js
 import { makeKeywordIdeas } from './features/keyword-ideas.js';
 import { makeScoreOneKeyword, makeKeywordScores } from './features/keyword-score.js';
 import { makeTikTokSearch } from './features/tiktok/search.js';
+import { makeTikTokComments } from './features/tiktok/comments.js';
+import { makeTikTokInsight } from './features/tiktok/insight.js';
 
 /**
  * @param {{config?: ReturnType<typeof loadConfig>, source?: import('./ports/youtube-source.js').YouTubeSource, store?: import('./store/sqlite/index.js').Store,
@@ -44,6 +46,8 @@ export function createApp({ config = loadConfig(), source, store, tiktok } = {})
     keywordIdeas,
     keywordScores: makeKeywordScores({ ...base, scoreOneKeyword }),
     tiktokSearch,
+    tiktokComments: makeTikTokComments({ tiktok, records: base.records, now: base.now }),
+    tiktokInsight: makeTikTokInsight({ tiktok, records: base.records, now: base.now, tiktokSearch }),
   };
 
   /** Job kind → handler. ctx.progress throws after cancel, which is how jobs stop. */
@@ -61,6 +65,9 @@ export function createApp({ config = loadConfig(), source, store, tiktok } = {})
       return { id: base.records.add('keywords', p.seed, { params: p, data: { seed: p.seed, list } }) };
     },
   };
+  handlers.tiktok_search = (p, ctx) => features.tiktokSearch(p, ctx.progress);
+  handlers.tiktok_insight = (p, ctx) => features.tiktokInsight(p, ctx.progress);
+  handlers.tiktok_comments = (p, ctx) => features.tiktokComments(p, ctx.progress);
   const runner = createRunner({ jobsRepo: store.jobs, handlers, onCancelled: (job) => store.records.removeByJob(job.id) });
   return { config, store, source, tiktok, features, runner, ws, settings };
 }
