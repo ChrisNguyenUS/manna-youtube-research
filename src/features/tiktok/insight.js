@@ -1,0 +1,48 @@
+// Use case: customer insight from comments of the hottest on-topic TikTok videos (spec §4.2).
+import { noop } from '../shared.js';
+import { commentInsights } from '../../core/analysis/text.js';
+import { rethrowIfCancelled } from '../../core/cancel.js';
+import { withAttention } from './comments.js';
+
+const TOPS = [5, 10, 20, 30];
+
+/** @param {{tiktok: import('../../ports/tiktok-source.js').TikTokSource, records: any, now: () => number, tiktokSearch: Function}} deps */
+export function makeTikTokInsight({ tiktok, records, now, tiktokSearch }) {
+  return async function tiktokInsight(params, progress = noop) {
+    const top = TOPS.includes(Number(params.top)) ? Number(params.top) : 10;
+    const perVideo = Number(params.commentsPerVideo) === 100 ? 100 : 300;
+    const search = await tiktokSearch({ keywords: params.keywords, perKeyword: params.perKeyword, keepOffTopic: params.keepOffTopic }, progress, { save: false });
+    const picked = search.videos.filter((v) => v.comments > 0).slice(0, top);
+    const comments = [];
+    const failedVideos = [];
+    const videos = [];
+    for (const [i, v] of picked.entries()) {
+      const label = `Đọc comment ${i + 1}/${picked.length}`;
+      progress({ step: label, done: 0, total: perVideo });
+      try {
+        const r = await tiktok.getComments(v.id, { max: perVideo, replies: params.replies !== false }, (n) => progress({ step: label, done: n, total: perVideo }));
+        comments.push(...r.comments.map((c) => ({ ...c, videoId: v.id })));
+        videos.push({ ...v, commentsRead: r.comments.length });
+      } catch (e) {
+        rethrowIfCancelled(e);
+        failedVideos.push({ id: v.id, url: v.url, error: e.message });
+        videos.push({ ...v, commentsRead: 0 });
+      }
+    }
+    const scored = withAttention(comments, now());
+    const base = commentInsights(scored, { limit: 50 });
+    const insight = {
+      questions: base.questions,
+      fears: base.fears,
+      complaints: base.complaints,
+      buying: base.buying,
+      requests: base.requests,
+      phrases: base.phrases,
+      topByAttention: [...scored].filter((c) => c.attentionPerDay != null).sort((a, b) => b.attentionPerDay - a.attentionPerDay).slice(0, 100),
+      groupCounts: { questions: base.counts.questions, fears: base.counts.fears, complaints: base.counts.complaints, buying: base.counts.buying, requests: base.counts.requests },
+    };
+    const data = { keywords: search.keywords, counts: { ...search.counts, kept: search.videos.length, commentsRead: scored.length }, videos, comments: scored, insight, failedVideos };
+    const id = records.add('tiktok_insight', search.keywords.join(', '), { params, data });
+    return { id, ...data };
+  };
+}

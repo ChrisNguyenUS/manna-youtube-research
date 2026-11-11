@@ -11,6 +11,9 @@ import * as ideas from './views/ideas.js';
 import * as keywords from './views/keywords.js';
 import * as saved from './views/saved.js';
 import * as settings from './views/settings.js';
+import * as ttSearch from './views/tiktok/search.js';
+import * as ttInsight from './views/tiktok/insight.js';
+import * as ttComments from './views/tiktok/comments.js';
 
 const NAV = [
   ['Khám phá'],
@@ -24,6 +27,10 @@ const NAV = [
   ['/compare', 'columns', 'So sánh kênh', compare],
   ['/comments', 'message', 'Comment', comments],
   ['/ideas', 'bulb', 'Chấm điểm từ khoá', ideas],
+  ['TikTok'],
+  ['/tiktok/insight', 'message', 'Insight khách hàng', ttInsight],
+  ['/tiktok/search', 'search', 'Tìm video TikTok', ttSearch],
+  ['/tiktok/comments', 'message', 'Comment TikTok', ttComments],
   ['Lưu trữ'],
   ['/saved', 'bookmark', 'Đã lưu', saved],
   ['/settings', 'settings', 'Cài đặt', settings],

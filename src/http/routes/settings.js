@@ -21,7 +21,7 @@ export const settingsRoutes = [
     method: 'GET', path: '/api/v1/status',
     handler: ({ app, ws }) => {
       const s = app.settings();
-      return { gl: s.gl, concurrency: s.concurrency, delayMs: s.delayMs, ...app.source.stats(), counts: app.store.records.counts(ws), running: app.runner.list(ws).filter((j) => j.status === 'running').length };
+      return { gl: s.gl, concurrency: s.concurrency, delayMs: s.delayMs, ...app.source.stats(), counts: app.store.records.counts(ws), tiktok: app.tiktok.capabilities(), running: app.runner.list(ws).filter((j) => j.status === 'running').length };
     },
   },
 ];

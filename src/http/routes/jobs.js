@@ -3,6 +3,9 @@ import { validate } from '../validate.js';
 
 /** Input schema for each job kind (kinds themselves are registered in src/app.js). */
 export const JOB_SCHEMAS = {
+  tiktok_search: { keywords: 'string!', perKeyword: 'int?', keepOffTopic: 'bool?' },
+  tiktok_insight: { keywords: 'string!', perKeyword: 'int?', top: /** @type {any} */ ([5, 10, 20, 30]), commentsPerVideo: /** @type {any} */ ([100, 300]), replies: 'bool?', keepOffTopic: 'bool?' },
+  tiktok_comments: { videos: 'string!', max: /** @type {any} */ ([100, 300]), replies: 'bool?' },
   video_search: { keywords: 'string!', upload: ['any', 'today', 'week', 'month', 'year'], sort: ['relevance', 'popularity', 'date'], perKeyword: 'int?', exactTop: 'int?', gl: 'string?', minDur: 'int?', maxDur: 'int?', cc: 'bool?', likes: 'bool?' },
   channel_search: { keywords: 'string!', source: ['both', 'channels', 'videos'], perKeyword: 'int?', gl: 'string?', upload: ['any', 'today', 'week', 'month', 'year'] },
   channel_analysis: { input: 'string!', max: 'int?' },

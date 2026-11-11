@@ -50,11 +50,11 @@ export async function mount(root, params) {
         <img src="${thumb(d.video.id)}" alt="" style="width:120px;border-radius:6px">
         <div><a href="${ytVideo(d.video.id)}" target="_blank" rel="noopener"><b>${esc(d.video.title)}</b></a><div class="muted small">${esc(d.video.channelTitle || '')} · ${fmt(d.video.views)} view · ${d.comments.length} comment đã lấy ${d.disabled ? '· <b style="color:var(--bad)">video tắt comment</b>' : ''} · ${ago(rec.created_at)}</div></div>
         <span class="spacer"></span><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a><a class="btn sm" href="${records.exportUrl(id, 'md')}">${icon('download')} Markdown</a></div>
-      <div class="tabs">${[['questions', `Câu hỏi (${i.counts.questions})`], ['requests', `Muốn xem (${i.counts.requests})`], ['complaints', `Phàn nàn (${i.counts.complaints})`], ['top', 'Like nhiều nhất'], ['all', `Tất cả (${d.comments.length})`]].map(([k, l]) => `<button class="tab ${k === tab ? 'on' : ''}" data-tab="${k}">${l}</button>`).join('')}</div>
+      <div class="tabs">${[['questions', `Câu hỏi (${i.counts.questions})`], ['fears', `Lo sợ (${i.counts.fears ?? 0})`], ['buying', `Muốn mua (${i.counts.buying ?? 0})`], ['requests', `Muốn xem (${i.counts.requests})`], ['complaints', `Phàn nàn (${i.counts.complaints})`], ['top', 'Like nhiều nhất'], ['all', `Tất cả (${d.comments.length})`]].map(([k, l]) => `<button class="tab ${k === tab ? 'on' : ''}" data-tab="${k}">${l}</button>`).join('')}</div>
       <div class="card-pad"><div class="chips" style="margin-bottom:12px">${i.phrases.map((p) => `<span class="tag">${esc(p.phrase)} · <b>${p.count}</b></span>`).join('')}</div><div data-body></div></div></div>`;
     const body = out.querySelector('[data-body]');
     const render = () => {
-      let list = tab === 'all' ? [...d.comments].sort((a, b) => b.likes - a.likes) : i[tab];
+      let list = tab === 'all' ? [...d.comments].sort((a, b) => b.likes - a.likes) : i[tab] ?? []; // records before 2026-11-11 have no fears/buying
       if (tab === 'all') {
         if (q) list = list.filter((c) => c.text.toLowerCase().includes(q));
         body.innerHTML = `<input class="input sm" data-q placeholder="Tìm trong comment" value="${esc(q)}" style="max-width:300px;margin-bottom:10px">` + quotes(list.slice(0, 400));

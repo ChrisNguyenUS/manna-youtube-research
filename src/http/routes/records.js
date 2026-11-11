@@ -3,6 +3,21 @@ import { httpError, raw } from '../router.js';
 import { metricLabel } from '../../core/metrics/definitions.js';
 import { researchMarkdown, channelMarkdown, commentsMarkdown } from '../../core/report/markdown.js';
 import { toCsv } from '../../core/report/csv.js';
+import { tiktokInsightMarkdown, tiktokCommentsMarkdown } from '../../core/report/tiktok.js';
+import { classifyComment } from '../../core/analysis/text.js';
+
+const groupOf = (c) => ['question', 'fear', 'complaint', 'buying', 'request'].filter((k) => c[k]).join('; ');
+const TIKTOK_COMMENT_COLS = [
+  { key: 'text', label: 'Comment' }, { key: 'likes', label: 'Like' }, { key: 'replies', label: 'Trả lời' },
+  { key: 'attentionPerDay', label: 'Attention/ngày' }, { label: 'Là trả lời', get: (c) => (c.isReply ? 'Có' : '') },
+  { label: 'Nhóm', get: groupOf }, { key: 'videoId', label: 'Video' }, { label: 'Link video', get: (c) => (c.videoId ? `https://www.tiktok.com/video/${c.videoId}` : '') },
+];
+const TIKTOK_VIDEO_COLS = [
+  { key: 'caption', label: 'Caption' }, { key: 'url', label: 'Link' }, { key: 'author', label: 'Creator' }, { key: 'plays', label: 'View' },
+  { key: 'likes', label: 'Like' }, { key: 'comments', label: 'Comment' }, { key: 'shares', label: 'Share' }, { key: 'saves', label: 'Save' },
+  { key: 'hotScore', label: metricLabel('hotScore') }, { key: 'engagementRate', label: metricLabel('engagementRate') }, { key: 'ageDays', label: 'Tuổi (ngày)' },
+  { label: 'Đúng chủ đề', get: (v) => (v.onTopic ? 'Có' : '') }, { label: 'Từ khoá', get: (v) => (v.queries || []).join('; ') },
+];
 
 const attachment = (name) => ({ 'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(name)}` });
 const slug = (s) => String(s || 'export').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').toLowerCase().slice(0, 50) || 'export';
@@ -60,7 +75,7 @@ function exportRecord({ app, ws, params, query }) {
     const name = `${slug(r.title)}-${stamp()}`;
     const what = query.get('what');
     if (params.ext === 'md') {
-      const md = r.kind === 'research' ? researchMarkdown(r.data) : r.kind === 'channel_analysis' ? channelMarkdown(r.data) : r.kind === 'comments' ? commentsMarkdown(r.data) : '```json\n' + JSON.stringify(r.data, null, 2) + '\n```\n';
+      const md = r.kind === 'research' ? researchMarkdown(r.data) : r.kind === 'channel_analysis' ? channelMarkdown(r.data) : r.kind === 'comments' ? commentsMarkdown(r.data) : r.kind === 'tiktok_insight' ? tiktokInsightMarkdown(r.data) : r.kind === 'tiktok_comments' ? tiktokCommentsMarkdown(r.data) : '```json\n' + JSON.stringify(r.data, null, 2) + '\n```\n';
       return query.get('inline') ? raw(md, 'text/markdown; charset=utf-8') : raw(md, 'text/markdown; charset=utf-8', attachment(`${name}.md`));
     }
     let csv;
@@ -73,6 +88,8 @@ function exportRecord({ app, ws, params, query }) {
       { label: 'Mới 7 ngày', get: (x) => `${x.stats.added7d}/${x.stats.results}` }, { label: 'CC', get: (x) => `${x.stats.ccCount ?? '–'}/${x.stats.results}` }, { label: 'Tuổi TB (ngày)', get: (x) => Math.round(x.stats.avgAgeDays ?? 0) },
     ]);
     else if (r.kind === 'keywords') csv = toCsv(r.data.list, [{ key: 'keyword', label: 'Từ khoá' }, { key: 'hits', label: 'Số lần xuất hiện' }, { key: 'bestRank', label: 'Thứ hạng' }]);
+    else if (r.kind === 'tiktok_search') csv = toCsv(r.data.videos, TIKTOK_VIDEO_COLS);
+    else if (r.kind === 'tiktok_insight' || r.kind === 'tiktok_comments') csv = toCsv(r.data.comments.map((c) => ({ ...c, ...classifyComment(c.text), videoId: c.videoId ?? r.data.video?.id })), TIKTOK_COMMENT_COLS);
     else csv = toCsv(r.data.videos || [], VIDEO_COLS);
     return raw(csv, 'text/csv; charset=utf-8', attachment(`${name}.csv`));
 }

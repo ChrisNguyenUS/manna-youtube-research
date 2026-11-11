@@ -13,6 +13,9 @@ const RULES = {
   'store/': ['features/', 'http/', 'sources/', 'jobs/'],
   'http/': ['sources/', 'store/'],
   'cli/': ['sources/', 'store/'],
+  'sources/tiktok/': ['sources/innertube/', 'features/', 'http/', 'store/', 'jobs/'],
+  'sources/innertube/': ['sources/tiktok/', 'features/', 'http/', 'store/', 'jobs/'],
+  'features/tiktok/': ['sources/', 'store/', 'http/', 'cli/', 'app.js', 'features/video-search.js', 'features/channel-search.js', 'features/channel-analysis.js', 'features/comments.js', 'features/topic-research.js', 'features/keyword-ideas.js', 'features/keyword-score.js'],
 };
 const IO_MODULES = ['node:fs', 'node:http', 'node:sqlite', 'node:child_process', 'node:net'];
 
@@ -29,7 +32,7 @@ test('layers only import inward', () => {
   const problems = [];
   for (const file of walk(SRC)) {
     const rel = path.relative(SRC, file).split(path.sep).join('/');
-    const layer = Object.keys(RULES).find((l) => rel.startsWith(l));
+    const layer = Object.keys(RULES).sort((a, b) => b.length - a.length).find((l) => rel.startsWith(l)); // longest prefix wins
     if (!layer) continue;
     for (const spec of importsOf(file)) {
       if (layer === 'core/' && IO_MODULES.includes(spec)) problems.push(`${rel} imports ${spec} (core must be pure)`);

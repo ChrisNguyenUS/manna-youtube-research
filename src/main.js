@@ -16,6 +16,7 @@ srv.listen(app.config.port, app.config.host, () => {
 
 const shutdown = () => {
   app.runner.stop();
+  app.close().catch(() => {});
   srv.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 2000).unref();
 };

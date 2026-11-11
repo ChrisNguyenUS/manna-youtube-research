@@ -48,12 +48,14 @@ src/
       video.js              # vph, viewsPerDay, viewSub, age
       outlier.js            # channelBaseline, outlierScore
       channel.js            # channelStats
-    analysis/               # titles.js, comments.js, durations.js, keyword-score.js
+    analysis/               # titles.js, comments.js, durations.js, keyword-score.js, topic.js (lọc đúng chủ đề, bỏ dấu)
+    tiktok/metrics.js       # videoMetrics (Hot score, tương tác, tuổi), attentionPerDay
     tracking/diff.js        # so snapshot: video mới, tốc độ, đổi tiêu đề/thumbnail (v1.1)
-    report/                 # markdown.js, csv.js
+    report/                 # markdown.js, csv.js, tiktok.js (Markdown insight + comment TikTok)
   ports/                    # HỢP ĐỒNG (JSDoc interface + test hợp đồng dùng chung)
     youtube-source.js       # searchVideos, searchChannels, getChannel, getChannelVideos, getShorts,
                             # getVideo, getComments, suggest, capabilities()
+    tiktok-source.js        # searchVideos, resolveVideo, getComments, capabilities(), close()
     store.js                # repos: cache, records, saved, settings, jobs, tracking, license
     job-queue.js            # enqueue, get, list, cancel, onProgress
     clock.js                # now() — để test lịch quét
@@ -61,7 +63,9 @@ src/
     innertube/              # client.js (rate limit, retry), parse.js, search.js, channel.js, comments.js, suggest.js
       fixtures/             # phản hồi YouTube ghi sẵn (đã lược) cho test
     data-api/               # (v1.2) YouTube Data API v3, BYOK, quota tracker
-    fake/                   # nguồn giả trả fixture — dùng cho test features
+    tiktok/                 # index.js (createTikTokSource), browser.js (Chromium ẩn, đóng khi rảnh), search.js,
+                            # http.js (retry, giới hạn song song), comments.js, parse.js, fixtures/
+    fake/                   # nguồn giả trả fixture — dùng cho test features (tiktok.js cho TikTok)
   store/
     sqlite/
       db.js                 # mở DB, WAL, chạy migration, backup trước migration
@@ -81,6 +85,7 @@ src/
     keyword-score.js
     keyword-ideas.js
     tracking.js             # (v1.1)
+    tiktok/                 # search.js, comments.js, insight.js
   http/
     server.js               # node:http, static, error → JSON {error:{code,message}}
     router.js               # bảng route khai báo + validate
@@ -93,6 +98,7 @@ web/                        # frontend (đổi tên từ public/)
   http/client.js            # MỌI fetch đi qua đây (không đặt tên web/api/: trùng tiền tố /api/ của server)
   components/               # video-table.js, video-grid.js, filters.js, score-card.js, charts.js…
   views/                    # một màn một file, export mount(root, params) → trả về unmount()
+    tiktok/                 # search.js, insight.js, comments.js
   i18n/vi.js, en.js         # (v1.2)
 test/
   core/  sources/  features/  http/  arch.test.js
@@ -147,6 +153,8 @@ flowchart LR
 | `ports/` | `core/types.js` | adapter |
 | `features/` | `core/`, `ports/` (kiểu) | `sources/*`, `store/*`, `http/*` |
 | `sources/*`, `store/*` | `core/types.js`, `ports/` | `features/`, `http/` |
+| `sources/tiktok/` | `core/`, `ports/` | `sources/innertube/`, `features/`, `store/`, `http/`, `jobs/` |
+| `features/tiktok/` | `core/`, `ports/`, `features/shared.js` | `sources/`, `store/`, `http/`, use case YouTube |
 | `http/`, `cli/`, `desktop/` | `features/` qua deps được tiêm, `jobs/` | adapter trực tiếp |
 | `web/` | `web/` | không import gì từ `src/`; chỉ nói chuyện qua HTTP |
 
@@ -326,7 +334,7 @@ v1.2: chuyển sang **Preact + Vite** từng màn một (bắt đầu từ Chấ
 | A4 | Desktop trước SaaS | Mỗi khách cào bằng IP của mình, không chi phí proxy/server | Có 50 khách trả tiền |
 | A5 | Nguồn dữ liệu là port | Rủi ro YouTube đổi định dạng + rủi ro điều khoản | — |
 | A6 | Frontend JS thuần đến v1.1, Preact + Vite ở v1.2 | Không viết lại khi chưa cần; API có schema trước | — |
-| A7 | Không dependency runtime cho backend (trừ Electron ở desktop) | Cài/đóng gói đơn giản, ít lỗ hổng | Validation phức tạp → cân nhắc zod |
+| A7 | Không dependency runtime bắt buộc cho backend. Ngoại lệ duy nhất: `playwright` trong optionalDependencies, chỉ cho tìm kiếm TikTok (TikTok ký request bằng JS của họ); import động; bản desktop sẽ thay bằng cửa sổ ẩn Electron | Cài/đóng gói đơn giản, ít lỗ hổng | Validation phức tạp → cân nhắc zod |
 
 ---
 

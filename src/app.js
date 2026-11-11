@@ -3,6 +3,7 @@ import { loadConfig } from './config.js';
 import { openDatabase } from './store/sqlite/db.js';
 import { createSqliteStore } from './store/sqlite/index.js';
 import { createInnertubeSource } from './sources/innertube/index.js';
+import { createTikTokSource } from './sources/tiktok/index.js';
 import { createRunner } from './jobs/runner.js';
 import { makeEnrich, recordsFor } from './features/shared.js';
 import { makeVideoSearch } from './features/video-search.js';
@@ -12,17 +13,23 @@ import { makeFetchComments } from './features/comments.js';
 import { makeResearch, makeResearchComments } from './features/topic-research.js';
 import { makeKeywordIdeas } from './features/keyword-ideas.js';
 import { makeScoreOneKeyword, makeKeywordScores } from './features/keyword-score.js';
+import { makeTikTokSearch } from './features/tiktok/search.js';
+import { makeTikTokComments } from './features/tiktok/comments.js';
+import { makeTikTokInsight } from './features/tiktok/insight.js';
 
 /**
- * @param {{config?: ReturnType<typeof loadConfig>, source?: import('./ports/youtube-source.js').YouTubeSource, store?: import('./store/sqlite/index.js').Store}} [o]
+ * @param {{config?: ReturnType<typeof loadConfig>, source?: import('./ports/youtube-source.js').YouTubeSource, store?: import('./store/sqlite/index.js').Store,
+ *   tiktok?: import('./ports/tiktok-source.js').TikTokSource}} [o]
  */
-export function createApp({ config = loadConfig(), source, store } = {}) {
+export function createApp({ config = loadConfig(), source, store, tiktok } = {}) {
   store ??= createSqliteStore(openDatabase({ dataDir: config.dataDir }));
   const ws = 'local'; // workspace; becomes the signed-in workspace when the app goes multi-user
   const settings = () => store.settings.all(ws);
   source ??= createInnertubeSource(settings());
+  tiktok ??= createTikTokSource();
   const base = { source, store, ws, settings, now: Date.now, records: recordsFor(store, ws) };
   const enrich = makeEnrich(base);
+  const tiktokSearch = makeTikTokSearch({ tiktok, records: base.records, now: base.now });
 
   const videoSearch = makeVideoSearch({ ...base, enrich });
   const keywordIdeas = makeKeywordIdeas(base);
@@ -38,6 +45,9 @@ export function createApp({ config = loadConfig(), source, store } = {}) {
     researchComments,
     keywordIdeas,
     keywordScores: makeKeywordScores({ ...base, scoreOneKeyword }),
+    tiktokSearch,
+    tiktokComments: makeTikTokComments({ tiktok, records: base.records, now: base.now }),
+    tiktokInsight: makeTikTokInsight({ tiktok, records: base.records, now: base.now, tiktokSearch }),
   };
 
   /** Job kind → handler. ctx.progress throws after cancel, which is how jobs stop. */
@@ -55,6 +65,9 @@ export function createApp({ config = loadConfig(), source, store } = {}) {
       return { id: base.records.add('keywords', p.seed, { params: p, data: { seed: p.seed, list } }) };
     },
   };
+  handlers.tiktok_search = (p, ctx) => features.tiktokSearch(p, ctx.progress);
+  handlers.tiktok_insight = (p, ctx) => features.tiktokInsight(p, ctx.progress);
+  handlers.tiktok_comments = (p, ctx) => features.tiktokComments(p, ctx.progress);
   const runner = createRunner({ jobsRepo: store.jobs, handlers, onCancelled: (job) => store.records.removeByJob(job.id) });
-  return { config, store, source, features, runner, ws, settings };
+  return { config, store, source, tiktok, features, runner, ws, settings, close: () => tiktok.close() };
 }
