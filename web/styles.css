@@ -273,6 +273,11 @@ table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 
 .tip { position: fixed; pointer-events: none; background: var(--text); color: #fff; font-size: 12px; padding: 6px 9px; border-radius: 6px; max-width: 320px; z-index: 60; }
 
+.tt-cover { aspect-ratio: 3 / 4; background: var(--line); display: grid; place-items: center; }
+.tt-cover::before { content: '▶'; position: absolute; color: var(--muted); font-size: 28px; }
+.tt-cover img { position: relative; z-index: 1; }
+.nav-item .tt-mark { font-weight: 700; font-size: 11px; color: var(--muted); }
+
 @media (max-width: 760px) {
   .shell { grid-template-columns: 1fr; }
   .sidebar { display: none; }

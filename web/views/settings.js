@@ -28,4 +28,6 @@ export async function mount(root) {
     await settingsApi.save(body);
     toast('Đã lưu cài đặt');
   });
+  const st = await (await import('../http/client.js')).status.get();
+  root.querySelector('.callout.info').insertAdjacentHTML('afterend', `<div class="section-label">TikTok</div><div class="callout ${st.tiktok?.searchReady ? 'info' : ''}">${st.tiktok?.searchReady ? 'Tìm kiếm TikTok: sẵn sàng.' : `Tìm kiếm TikTok chưa sẵn sàng. ${esc(st.tiktok?.reason || '')} (khoảng 150 MB). Comment TikTok vẫn dùng được.`}</div>`);
 }

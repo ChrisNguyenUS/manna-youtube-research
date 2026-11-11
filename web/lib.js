@@ -140,7 +140,7 @@ export async function refreshJobs() {
     /* server restarting */
   }
 }
-const LABELS = { video_search: 'Tìm video', channel_search: 'Tìm kênh', channel_analysis: 'Phân tích kênh', research: 'Nghiên cứu chủ đề', research_comments: 'Đọc comment', comments: 'Lấy comment', idea_check: 'Chấm điểm từ khoá', keyword_score: 'Chấm điểm từ khoá liên quan', keywords: 'Từ khoá' };
+const LABELS = { tiktok_search: 'Tìm video TikTok', tiktok_insight: 'Insight TikTok', tiktok_comments: 'Comment TikTok', video_search: 'Tìm video', channel_search: 'Tìm kênh', channel_analysis: 'Phân tích kênh', research: 'Nghiên cứu chủ đề', research_comments: 'Đọc comment', comments: 'Lấy comment', idea_check: 'Chấm điểm từ khoá', keyword_score: 'Chấm điểm từ khoá liên quan', keywords: 'Từ khoá' };
 
 export function progressCard(title) {
   return `<div class="card progress-card" data-progress><b>${esc(title)}</b><div class="muted small" data-step>Bắt đầu…</div><div class="bar"><i style="width:4%"></i></div></div>`;
