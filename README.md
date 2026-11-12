@@ -97,6 +97,10 @@ Cả hai màn trên có bộ lọc video trước khi đọc comment: **View t�
 
 > Từ tháng 11/2026 TikTok bắt đăng nhập mới cho tìm kiếm (mã 2483), kể cả với trình duyệt thường. Lấy comment theo link vẫn không cần đăng nhập.
 
+**Đăng nhập TikTok (một lần):** vào **Cài đặt → TikTok → Đăng nhập TikTok**, hoặc chạy `npm run login:tiktok`. Một cửa sổ Chromium mở ra, bạn tự đăng nhập ở đó (quét mã QR bằng app TikTok là nhanh nhất), cửa sổ tự đóng khi xong. App không thấy mật khẩu, chỉ giữ phiên đăng nhập (cookie) trong `data/tiktok-session.json`, chỉ tài khoản máy của bạn đọc được. Mọi lượt tìm sau dùng phiên này cho tới khi hết hạn (TikTok thường để khoảng 2 tháng); hết hạn thì app báo đăng nhập lại. Đăng xuất: nút **Đăng xuất** trong Cài đặt hoặc `node src/cli/index.js tiktok-logout`. Nên dùng tài khoản phụ: scrape nhiều có thể khiến TikTok hạn chế tài khoản.
+
+API: `GET /api/v1/tiktok/login` (trạng thái), `POST` (mở cửa sổ, trả về khi đăng nhập xong; `409` nếu đóng cửa sổ, `408` sau 10 phút), `DELETE` (đăng xuất).
+
 Tìm kiếm TikTok cần Chromium ẩn, cài một lần (~150 MB):
 
 ```bash
@@ -112,6 +116,37 @@ node src/cli/index.js tiktok-insight "thi quốc tịch mỹ" "phỏng vấn qu�
 Ghi chú:
 - App không lưu tên hay username người bình luận, chỉ lưu nội dung comment.
 - Từ khoá nên có chữ tiếng Việt và ghi rõ nước (vd "thi quốc tịch mỹ"); video không có từ khoá trong caption/hashtag bị bỏ.
+
+### API scrape video TikTok
+
+Gọi thẳng, chờ trả về danh sách video (giống actor `tiktok-search` cũ, cùng tên trường: `videoId`, `videoUrl`, `playCount`, `likeCount`, `engagementRate`, `hotScore`, `authorUsername`, `authorName`, `authorVerified`, `musicTitle`, `scrapedAt`…). Mỗi từ khoá mất khoảng 15–60 giây; đóng request là dừng scrape. Mỗi lúc chỉ chạy một lượt scrape, lượt sau xếp hàng.
+
+```bash
+curl -s localhost:5178/api/v1/tiktok/videos -H 'content-type: application/json' \
+  -d '{"keywords": ["bảo lãnh vợ chồng", "eb3"], "perKeyword": 60, "maxAgeDays": 30, "limit": 20}'
+```
+
+Hoặc mở trên trình duyệt: `http://localhost:5178/api/v1/tiktok/videos?keywords=eb3&sort=trending&limit=20`
+
+| Tham số | Mặc định | Ý nghĩa |
+|---|---|---|
+| `keywords` | bắt buộc | chuỗi cách nhau bằng dấu phẩy, hoặc mảng |
+| `perKeyword` | 60 | số video lấy mỗi từ khoá (10–200) |
+| `sort` | `score` | `score` (tổng hợp), `trending`, `engagement`, `fresh`, `hot` (Hot score cũ) |
+| `limit` | tất cả | chỉ trả N video đầu |
+| `minPlays`, `minLikes`, `maxAgeDays`, `minEngagement` | 0 | lọc như màn Tìm video (`minEngagement` tính bằng %) |
+| `keepOffTopic` | false | giữ cả video không có từ khoá trong caption/hashtag |
+| `save` | false | lưu lại để mở trong app (trả `recordId`) |
+
+**Thứ tự xếp hạng** (`sort=score`), từ nặng tới nhẹ:
+
+1. **Trending (50%)**: view/ngày = view ÷ (số ngày tuổi + 2), đổi ra bách phân vị 0–100 trong cùng lượt tìm.
+2. **Tương tác (30%)**: trung bình bách phân vị của tổng tương tác (like + comment + share + save) và tỉ lệ tương tác ÷ view. Cần cả hai: nhiều tương tác nhưng tỉ lệ thấp là video cũ viral, tỉ lệ cao nhưng ít tương tác là video quá nhỏ.
+3. **Hợp thời (20%)**: 100 × 0,5^(số ngày tuổi ÷ 14). Đăng hôm nay 100, 2 tuần 50, 4 tuần 25.
+
+Mỗi video trả kèm `trendingScore`, `engagementScore`, `freshnessScore`, `score` để thấy vì sao nó đứng ở hạng đó. Bằng điểm thì xét tiếp trending, rồi tương tác, rồi hợp thời.
+
+Lỗi: `400` sai tham số; `503` khi TikTok không trả lời được, kèm `error.code` là `tiktok_setup_required` (chưa cài Chromium), `tiktok_login_required` (TikTok bắt đăng nhập, mã 2483) hoặc `tiktok_blocked` (bị chặn, thử lại sau).
 
 ## AI (sau này)
 

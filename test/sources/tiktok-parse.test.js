@@ -13,9 +13,11 @@ test('search page: videos only, normalized, paging fields', () => {
     id: '7376610463154572560', url: 'https://www.tiktok.com/@creator1/video/7376610463154572560',
     caption: 'Đậu rồi! #thiquoctichmy #n400', hashtags: ['thiquoctichmy', 'n400'], createdAt: '2024-10-19T12:00:00.000Z',
     durationSec: 45, plays: 1000, likes: 100, comments: 20, shares: 5, saves: 15, author: 'creator1',
+    authorName: 'Creator One', authorVerified: true, musicTitle: 'original sound - creator1',
     cover: 'https://p16.tiktokcdn.com/cover.jpg', query: 'thi quốc tịch mỹ',
   });
   assert.equal(p.videos[1].createdAt, null);
+  assert.deepEqual([p.videos[1].authorName, p.videos[1].authorVerified, p.videos[1].musicTitle], ['', false, ''], 'missing creator fields default to empty');
   assert.deepEqual([p.hasMore, p.cursor, p.searchId], [true, 12, 'IMPR123']);
 });
 test('a 203 page with data is not an error; an error status without data is', () => {

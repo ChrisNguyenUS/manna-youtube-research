@@ -50,5 +50,11 @@ export const settings = {
 
 export const metrics = { load: () => api('/metrics') };
 export const status = { get: () => api('/status') };
+/** TikTok sign-in: start() opens a window on this computer and resolves once the user has signed in there. */
+export const tiktokLogin = {
+  get: () => api('/tiktok/login'),
+  start: () => api('/tiktok/login', { method: 'POST', body: {} }),
+  logout: () => api('/tiktok/login', { method: 'DELETE', body: {} }),
+};
 /** @param {string[]} ids */
 export const compareChannels = (ids) => api('/compare', { method: 'POST', body: { ids } });

@@ -25,6 +25,9 @@ function parseVideo(item, query) {
     shares: Number(s.shareCount ?? 0),
     saves: Number(s.collectCount ?? 0),
     author,
+    authorName: String(item.author.nickname ?? ''),
+    authorVerified: Boolean(item.author.verified),
+    musicTitle: String(item.music?.title ?? ''),
     cover: item.video?.cover ? String(item.video.cover) : null,
     query,
   };
