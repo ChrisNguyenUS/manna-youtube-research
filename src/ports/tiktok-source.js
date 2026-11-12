@@ -36,6 +36,7 @@
 /**
  * @typedef {object} TikTokSource
  * @property {(q: string, o?: {max?: number}, onPage?: (n: number) => void) => Promise<TikTokVideo[]>} searchVideos
+ * @property {(q: string) => Promise<{suggestions: string[], related: string[]}>} relatedKeywords   TikTok's autocomplete + "others searched for"
  * @property {(urlOrId: string) => Promise<{id: string, url: string}>} resolveVideo   expands vm.tiktok.com / vt.tiktok.com
  * @property {(id: string, o?: {max?: number, replies?: boolean, maxRepliesPerComment?: number}, onProgress?: (n: number) => void) => Promise<{comments: TikTokComment[], total: number}>} getComments
  * @property {() => Promise<LoginStatus>} login   opens a visible window; the user signs in to TikTok themselves; saves the session

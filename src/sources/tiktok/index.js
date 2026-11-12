@@ -1,7 +1,7 @@
 // TikTokSource adapter: search through a hidden Chromium, comments over plain HTTP.
 import { createRequire } from 'node:module';
 import { createBrowser } from './browser.js';
-import { searchKeyword } from './search.js';
+import { searchKeyword, relatedKeywords } from './search.js';
 import { createTikTokHttp } from './http.js';
 import { makeComments } from './comments.js';
 import { createSession } from './session.js';
@@ -38,6 +38,15 @@ export function createTikTokSource({ fetch, loadPlaywright, hasPlaywright = play
       if (!hasPlaywright()) throw setupRequired();
       try {
         return await searchKeyword(browser, q, { ...searchOpts, ...(sleep ? { sleep } : {}), signedIn: session.has, max: o.max ?? 60 }, onPage);
+      } catch (e) {
+        if (isMissingChromium(e)) throw setupRequired();
+        throw e;
+      }
+    },
+    async relatedKeywords(q) {
+      if (!hasPlaywright()) throw setupRequired();
+      try {
+        return await relatedKeywords(browser, q, { ...(sleep ? { sleep } : {}), ...(searchOpts.warmupMs != null ? { warmupMs: searchOpts.warmupMs } : {}), signedIn: session.has });
       } catch (e) {
         if (isMissingChromium(e)) throw setupRequired();
         throw e;

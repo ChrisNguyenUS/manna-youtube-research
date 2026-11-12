@@ -56,5 +56,10 @@ export const tiktokLogin = {
   start: () => api('/tiktok/login', { method: 'POST', body: {} }),
   logout: () => api('/tiktok/login', { method: 'DELETE', body: {} }),
 };
+/** "Tìm theo chủ đề": related keywords for a topic (about 10 seconds). */
+export const tiktokTopic = {
+  /** @param {string} topic @param {number} [limit] */
+  keywords: (topic, limit) => api('/tiktok/topic/keywords', { method: 'POST', body: { topic, limit } }),
+};
 /** @param {string[]} ids */
 export const compareChannels = (ids) => api('/compare', { method: 'POST', body: { ids } });

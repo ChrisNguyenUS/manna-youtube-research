@@ -34,6 +34,15 @@ export const tiktokRoutes = [
   { method: 'GET', path: '/api/v1/tiktok/login', handler: ({ app }) => app.tiktok.loginStatus() },
   { method: 'POST', path: '/api/v1/tiktok/login', handler: ({ app, signal }) => runWithSignal(signal ?? new AbortController().signal, null, () => app.tiktok.login()) },
   { method: 'DELETE', path: '/api/v1/tiktok/login', handler: async ({ app }) => (await app.tiktok.logout(), app.tiktok.loginStatus()) },
+  // Related keywords for "Tìm theo chủ đề" (about 10 seconds): TikTok's autocomplete and "others searched for", grouped by intent.
+  {
+    method: 'POST', path: '/api/v1/tiktok/topic/keywords',
+    handler: ({ app, body, signal }) => {
+      const v = validate({ topic: 'string!', limit: 'int?' }, body);
+      if (!v.ok) throw httpError('invalid_input', v.message, v.field);
+      return runWithSignal(signal ?? new AbortController().signal, null, () => app.features.tiktokTopicKeywords(v.value));
+    },
+  },
   { method: 'POST', path: '/api/v1/tiktok/videos', handler: ({ app, body, signal }) => scrape(app, body, signal) },
   {
     method: 'GET', path: '/api/v1/tiktok/videos',

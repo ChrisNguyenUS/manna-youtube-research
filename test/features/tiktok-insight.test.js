@@ -6,7 +6,7 @@ import { tiktokInsightMarkdown } from '../../src/core/report/tiktok.js';
 
 const until = (fn, ms = 3000) => new Promise((res, rej) => { const s = Date.now(); const t = setInterval(() => { if (fn()) (clearInterval(t), res(undefined)); else if (Date.now() - s > ms) (clearInterval(t), rej(new Error('timeout'))); }, 5); });
 
-test('insight: top on-topic videos with comments, five groups, attention ranking', async () => {
+test('insight: top on-topic videos with comments, question themes, fears, buying, attention ranking', async () => {
   const a = testApp();
   const r = await a.features.tiktokInsight({ keywords: 'thi quốc tịch mỹ', top: 5 }, () => {});
   assert.deepEqual(r.videos.map((v) => v.id).sort(), ['7000000000000000001', '7000000000000000002'], 'off-topic and zero-comment videos skipped');
@@ -16,7 +16,7 @@ test('insight: top on-topic videos with comments, five groups, attention ranking
   const reply = r.comments.find((c) => c.isReply);
   assert.equal(reply.parentText, 'Phỏng vấn có khó không ạ?');
   assert.ok(r.insight.topByAttention[0].attentionPerDay >= r.insight.topByAttention.at(-1).attentionPerDay);
-  assert.deepEqual(Object.keys(r.insight.groupCounts).sort(), ['buying', 'complaints', 'fears', 'questions', 'requests']);
+  assert.deepEqual(Object.keys(r.insight.groupCounts).sort(), ['buying', 'fears', 'questions']);
 });
 
 test('no commenter identity in record or Markdown (Review Focus #5)', async () => {
@@ -25,7 +25,7 @@ test('no commenter identity in record or Markdown (Review Focus #5)', async () =
   const stored = JSON.stringify(a.store.records.get('local', r.id).data);
   assert.doesNotMatch(stored, /unique_id|nickname|"user"/);
   const md = tiktokInsightMarkdown(a.store.records.get('local', r.id).data);
-  for (const h of ['## Run info', '## Video hot', '## Khách đang hỏi', '## Khách lo sợ', '## Khách muốn mua', '## Câu chữ thật', '## Comment nổi bật']) assert.ok(md.includes(h), h);
+  for (const h of ['## Run info', '## Video đã đọc comment', '## Khách đang hỏi gì', '## Nỗi sợ và rào cản', '## Đang cân nhắc mua', '## Câu chữ thật của khách', '## Comment nổi bật', '## Viết báo cáo từ dữ liệu trên']) assert.ok(md.includes(h), h);
 });
 
 test('feature clamps an unsupported top to 10 (HTTP rejects it earlier)', async () => {

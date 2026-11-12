@@ -41,6 +41,19 @@ export function parseSearchPage(body, query) {
   return { ok: true, videos, hasMore: Boolean(body.has_more), cursor: Number(body.cursor ?? 0), searchId: String(body.log_pb?.impr_id ?? '') };
 }
 
+/** Autocomplete for a keyword (works when fetched from inside a tiktok.com page). */
+export function suggestApiPath(keyword) {
+  return `/api/search/general/sug/?${new URLSearchParams({ aid: '1988', app_name: 'tiktok_web', device_platform: 'web_pc', keyword })}`;
+}
+
+const cleanWords = (list) => [...new Set(list.map((w) => String(w ?? '').replace(/\s+/g, ' ').trim()).filter(Boolean))];
+
+/** Autocomplete words: `sug_list[].content`. */
+export const parseSuggestions = (body) => cleanWords((body?.sug_list ?? []).map((s) => s?.content));
+
+/** "Others searched for" under a search: `data[].word` of /api/search/suggest/guide/. */
+export const parseRelatedSearches = (body) => cleanWords((Array.isArray(body?.data) ? body.data : []).map((d) => d?.word));
+
 export const PAGE_SIZE = 50;
 const COMMENT_API = 'https://www.tiktok.com/api/comment/list';
 

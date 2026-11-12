@@ -46,7 +46,7 @@ test('insight export: markdown and csv', async () => {
   const { id } = await (await post(`${s.base}/api/v1/jobs/tiktok_insight`, { keywords: 'thi quốc tịch mỹ', top: 5 })).json();
   const j = await waitJob(s.base, id);
   const md = await (await fetch(`${s.base}/api/v1/records/${j.result.id}/export.md?inline=1`)).text();
-  assert.match(md, /## Khách lo sợ/);
+  assert.match(md, /## Nỗi sợ và rào cản/);
   const csv = await (await fetch(`${s.base}/api/v1/records/${j.result.id}/export.csv`)).text();
   assert.match(csv.split('\n')[0], /Comment,Like,Trả lời,Attention\/ngày,Là trả lời,Nhóm,Video/);
   s.close();
@@ -57,4 +57,29 @@ test('app.close closes the TikTok browser', async () => {
   const app = testApp(undefined, tiktok);
   await app.close();
   assert.equal(tiktok.state.closed, 1);
+});
+
+test('topic: keywords API, scan job, exports (md, csv, xlsx)', async () => {
+  const s = await boot();
+  try {
+    const kw = await (await post(`${s.base}/api/v1/tiktok/topic/keywords`, { topic: 'thi quốc tịch mỹ' })).json();
+    assert.equal(kw.keywords[0].keyword, 'thi quốc tịch mỹ');
+    assert.equal((await post(`${s.base}/api/v1/tiktok/topic/keywords`, {})).status, 400);
+    assert.equal((await post(`${s.base}/api/v1/jobs/tiktok_topic`, { topic: 'x', sort: 'nope' })).status, 400);
+    const { id } = await (await post(`${s.base}/api/v1/jobs/tiktok_topic`, { topic: 'thi quốc tịch mỹ', keywords: 'thi quốc tịch mỹ', perKeyword: 3, topComments: 3 })).json();
+    const j = await waitJob(s.base, id);
+    assert.equal(j.status, 'succeeded');
+    assert.equal(j.title, 'thi quốc tịch mỹ');
+    const md = await (await fetch(`${s.base}/api/v1/records/${j.result.id}/export.md?inline=1`)).text();
+    assert.match(md, /## thi quốc tịch mỹ/);
+    assert.match(md, /tym/);
+    const csv = await (await fetch(`${s.base}/api/v1/records/${j.result.id}/export.csv`)).text();
+    assert.match(csv.split('\n')[0], /Từ khoá,Hạng,Caption/);
+    const x = await fetch(`${s.base}/api/v1/records/${j.result.id}/export.xlsx`);
+    assert.equal(x.headers.get('content-type'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    const bytes = new Uint8Array(await x.arrayBuffer());
+    assert.equal(String.fromCharCode(bytes[0], bytes[1]), 'PK');
+  } finally {
+    s.close();
+  }
 });

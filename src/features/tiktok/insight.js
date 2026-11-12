@@ -1,6 +1,8 @@
 // Use case: customer insight from comments of the hottest on-topic TikTok videos (spec §4.2).
 import { noop } from '../shared.js';
-import { commentInsights, hasWords } from '../../core/analysis/text.js';
+import { hasWords } from '../../core/analysis/text.js';
+import { customerVoice } from '../../core/analysis/customer-voice.js';
+import { rankVideos } from '../../core/tiktok/rank.js';
 import { rethrowIfCancelled } from '../../core/cancel.js';
 import { withAttention } from './comments.js';
 
@@ -13,7 +15,8 @@ export function makeTikTokInsight({ tiktok, records, now, tiktokSearch }) {
     const perVideo = Number(params.commentsPerVideo) === 100 ? 100 : 300;
     const { keywords, perKeyword, keepOffTopic, minPlays, minLikes, maxAgeDays, minEngagement } = params;
     const search = await tiktokSearch({ keywords, perKeyword, keepOffTopic, minPlays, minLikes, maxAgeDays, minEngagement }, progress, { save: false });
-    const picked = search.videos.filter((v) => v.comments > 0).slice(0, top);
+    // Same order as the scrape API: trending, then engagement, then freshness.
+    const picked = rankVideos(/** @type {any[]} */ (search.videos.filter((v) => v.comments > 0))).slice(0, top);
     const comments = [];
     const failedVideos = [];
     const videos = [];
@@ -31,16 +34,16 @@ export function makeTikTokInsight({ tiktok, records, now, tiktokSearch }) {
       }
     }
     const scored = withAttention(comments, now());
-    const base = commentInsights(scored, { limit: 50 });
+    const voice = customerVoice(scored, { limit: 50 });
     const insight = {
-      questions: base.questions,
-      fears: base.fears,
-      complaints: base.complaints,
-      buying: base.buying,
-      requests: base.requests,
-      phrases: base.phrases,
+      version: 2,
+      questions: voice.questions,
+      themes: voice.themes,
+      fears: voice.fears,
+      buying: voice.buying,
+      voiceLines: voice.voiceLines,
       topByAttention: [...scored].filter((c) => c.attentionPerDay != null).sort((a, b) => b.attentionPerDay - a.attentionPerDay).slice(0, 100),
-      groupCounts: { questions: base.counts.questions, fears: base.counts.fears, complaints: base.counts.complaints, buying: base.counts.buying, requests: base.counts.requests },
+      groupCounts: voice.counts,
     };
     const data = { keywords: search.keywords, counts: { ...search.counts, kept: search.videos.length, commentsRead: scored.length }, videos, comments: scored, insight, failedVideos };
     const id = records.add('tiktok_insight', search.keywords.join(', '), { params, data });

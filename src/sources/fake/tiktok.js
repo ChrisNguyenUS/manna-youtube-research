@@ -22,7 +22,12 @@ export const FAKE_COMMENTS = [
 ];
 
 /** @returns {import('../../ports/tiktok-source.js').TikTokSource & {state: {closed: number, searches: number, logins: number}}} */
-export function createFakeTikTok({ videos = FAKE_VIDEOS, comments = FAKE_COMMENTS, delayMs = 0, searchReady = true } = {}) {
+export const FAKE_RELATED = {
+  suggestions: ['thi quốc tịch mỹ 2026', 'thi quốc tịch mỹ mất bao lâu', 'thi quốc tịch mỹ hết bao nhiêu tiền', 'thi quốc tịch nhật'],
+  related: ['phỏng vấn quốc tịch mỹ', 'cách học 100 câu hỏi quốc tịch', 'thi quốc tịch mỹ mới nhất'],
+};
+
+export function createFakeTikTok({ videos = FAKE_VIDEOS, comments = FAKE_COMMENTS, delayMs = 0, searchReady = true, related = FAKE_RELATED } = {}) {
   const state = { closed: 0, searches: 0, logins: 0 };
   /** @type {import('../../ports/tiktok-source.js').LoginStatus} */
   let login = { loggedIn: false, savedAt: null, expiresAt: null };
@@ -37,15 +42,22 @@ export function createFakeTikTok({ videos = FAKE_VIDEOS, comments = FAKE_COMMENT
       await wait();
       return videos.slice(0, o.max ?? 60).map((v) => ({ ...v, query: q }));
     },
+    async relatedKeywords() {
+      if (!searchReady) throw Object.assign(new Error('Cần cài: npm run setup:tiktok'), { code: 'tiktok_setup_required' });
+      requests++;
+      await wait();
+      return { suggestions: [...related.suggestions], related: [...related.related] };
+    },
     async resolveVideo(u) {
       const id = String(u).match(/(\d{15,25})/)?.[1];
       if (!id) throw new Error(`Không phải link video TikTok: ${u}`);
       return { id, url: `https://www.tiktok.com/@creator/video/${id}` };
     },
-    async getComments(id, o = {}) {
+    async getComments(id, o = {}, onProgress) {
       requests++;
       await wait();
       const list = comments.filter((c) => o.replies !== false || !c.isReply).slice(0, (o.max ?? 300) + 50);
+      onProgress?.(list.length);
       return { comments: list.map((c) => ({ ...c })), total: list.length };
     },
     async login() {

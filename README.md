@@ -87,9 +87,10 @@ Kết quả: `output/*.digest.md`, đồng thời hiện trong app.
 
 ## TikTok (insight khách hàng)
 
-Nhóm **TikTok** trong menu có 3 màn:
+Nhóm **TikTok** trong menu có 4 màn:
 
-- **Insight khách hàng**: tìm video hot theo từ khoá, đọc comment của top video, gom lại thành khách hỏi gì, sợ gì, phàn nàn gì, muốn mua gì, cùng câu chữ thật họ hay dùng. Nút **Markdown** cho file gọn để đưa Claude viết góc quảng cáo và hook.
+- **Tìm theo chủ đề**: gõ một chủ đề (vd "bảo lãnh vợ chồng"), app lấy từ khoá liên quan từ chính TikTok (gợi ý khi gõ và mục "Những người khác tìm kiếm"), gộp biến thể kiểu "… 2026", "… mới nhất", bỏ từ khoá về nước khác, chia theo ý định (thời gian, chi phí, cách làm, phỏng vấn…). Bạn bật/tắt hoặc thêm từ khoá rồi bấm **Quét**: mỗi từ khoá thành một cột video top (lọc view tối thiểu, ngày đăng; xếp theo tổng hợp, view, view/ngày hoặc mới nhất), mỗi video kèm 3 comment nhiều tym nhất. Cột nào xong hiện cột đó. **Bảng gộp** gom video trùng giữa các từ khoá. **Excel** xuất file .xlsx (sheet Video giống "kho nghiên cứu viral": chủ đề, từ khoá, link, view, top 3 comment; sheet Từ khoá). **Quét lại** một chủ đề cũ thì mỗi video ghi thêm số view tăng từ lần quét trước, video mới có nhãn **Mới**. Không cần AI: mọi bước đều là luật cố định. Khoảng 15 giây mỗi từ khoá (gồm lấy comment).
+- **Insight khách hàng**: tìm video top theo từ khoá (cùng thứ tự với API scrape: trending → tương tác → hợp thời), đọc comment, gom câu hỏi theo nhóm (mất bao lâu, hết bao nhiêu tiền, tài chính bảo trợ, giấy tờ, phỏng vấn hỏi gì, trường hợp của tôi có được không, tự làm hay thuê dịch vụ), đếm số câu hỏi + tim + trả lời mỗi nhóm; nỗi sợ theo ngành di trú (giấy xanh, bổ sung, bị từ chối, chờ lâu, kết hôn giả…); người đang cân nhắc mua (hỏi giá, xin tư vấn, tự làm hay thuê); câu chữ thật là câu ngắn nguyên văn được nhiều người phản ứng. Comment của bên bán dịch vụ ("để lại số điện thoại, chuyên viên liên hệ…") bị bỏ. Comment có nhiều trả lời được tính ngang comment nhiều tim. Nút **Markdown** cho file gọn kèm sẵn khung báo cáo (3 phát hiện, khoảng trống, 5 góc quảng cáo, quy tắc không hứa kết quả) để đưa Claude viết.
 - **Tìm video TikTok**: lưới video xếp theo Hot score (tương tác ÷ (ngày + 2)), lọc theo tuổi, like, comment; chọn video rồi bấm **Lấy comment**.
 - **Comment TikTok**: dán link (kể cả `vm.tiktok.com`), lấy tới 300 comment kèm trả lời.
 
@@ -99,7 +100,9 @@ Cả hai màn trên có bộ lọc video trước khi đọc comment: **View t�
 
 **Đăng nhập TikTok (một lần):** vào **Cài đặt → TikTok → Đăng nhập TikTok**, hoặc chạy `npm run login:tiktok`. Một cửa sổ Chromium mở ra, bạn tự đăng nhập ở đó (quét mã QR bằng app TikTok là nhanh nhất), cửa sổ tự đóng khi xong. App không thấy mật khẩu, chỉ giữ phiên đăng nhập (cookie) trong `data/tiktok-session.json`, chỉ tài khoản máy của bạn đọc được. Mọi lượt tìm sau dùng phiên này cho tới khi hết hạn (TikTok thường để khoảng 2 tháng); hết hạn thì app báo đăng nhập lại. Đăng xuất: nút **Đăng xuất** trong Cài đặt hoặc `node src/cli/index.js tiktok-logout`. Nên dùng tài khoản phụ: scrape nhiều có thể khiến TikTok hạn chế tài khoản.
 
-API: `GET /api/v1/tiktok/login` (trạng thái), `POST` (mở cửa sổ, trả về khi đăng nhập xong; `409` nếu đóng cửa sổ, `408` sau 10 phút), `DELETE` (đăng xuất).
+API từ khoá liên quan: `POST /api/v1/tiktok/topic/keywords` với `{"topic": "bảo lãnh vợ chồng"}` (khoảng 10 giây). Quét chủ đề là job nền `POST /api/v1/jobs/tiktok_topic` (`topic`, `keywords` tuỳ chọn, `perKeyword`, `sort`, `minPlays`, `maxAgeDays`, `topComments` 0 hoặc 3); file Excel ở `/api/v1/records/<id>/export.xlsx`.
+
+API đăng nhập: `GET /api/v1/tiktok/login` (trạng thái), `POST` (mở cửa sổ, trả về khi đăng nhập xong; `409` nếu đóng cửa sổ, `408` sau 10 phút), `DELETE` (đăng xuất).
 
 Tìm kiếm TikTok cần Chromium ẩn, cài một lần (~150 MB):
 

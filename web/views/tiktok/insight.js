@@ -9,7 +9,7 @@ export async function mount(root, params) {
   const st = store('tt-insight-form', FORM);
   root.innerHTML = `
     <div class="page-head"><div><h1>${icon('message')} Insight khách hàng (TikTok)</h1>
-      <p>Comment của các video hot đúng chủ đề: khách hỏi gì, sợ gì, than gì, muốn mua gì, và câu chữ thật của họ. Xuất Markdown để Claude viết góc quảng cáo và hook.</p></div></div>
+      <p>Comment của các video top đúng chủ đề: khách hỏi gì (theo nhóm), sợ gì, ai đang cân nhắc thuê dịch vụ, và câu chữ thật của họ. Xuất Markdown để Claude viết góc quảng cáo và hook.</p></div></div>
     <div class="card card-pad" data-form>
       <div class="field"><label>Từ khoá (tiếng Việt, cụ thể, ghi rõ nước)</label><input class="input" data-k="keywords" placeholder="VD: phỏng vấn quốc tịch, thi quốc tịch mỹ" value="${esc(st.keywords)}"></div>
       <div class="row" style="margin-top:12px"><span class="small muted">Top video</span>${chips('top', [5, 10, 20, 30].map((v) => ({ v, label: String(v) })), st.top)}
@@ -53,11 +53,15 @@ export async function mount(root, params) {
         <div class="kpi"><div class="label">Comment đã đọc</div><div class="value">${fmt(d.counts.commentsRead)}</div></div>
         <div class="kpi"><div class="label">Câu hỏi</div><div class="value">${g.questions}</div></div>
         <div class="kpi"><div class="label">Lo sợ</div><div class="value">${g.fears}</div></div>
-        <div class="kpi"><div class="label">Muốn mua</div><div class="value">${g.buying}</div></div></div>
+        <div class="kpi"><div class="label">${d.insight.themes ? 'Cân nhắc mua' : 'Muốn mua'}</div><div class="value">${g.buying}</div></div></div>
+      ${d.insight.themes ? `<div class="card" style="margin-top:14px"><div class="card-head"><h3>Khách đang hỏi gì</h3><span class="sub">Gom theo nhóm, xếp theo số câu hỏi + tim + trả lời</span></div>
+        <div class="tt-themes">${d.insight.themes.map((t) => `<div class="tt-theme"><div class="row between"><b>${esc(t.label)}</b><span class="small muted">${t.count} câu hỏi · ♥ ${fmt(t.likes)} · ↩ ${fmt(t.replies)}</span></div>${quotes(t.examples)}</div>`).join('') || emptyState('Chưa có câu hỏi')}</div></div>` : ''}
       <div class="card" style="margin-top:14px"><div class="card-head"><h3>Khách đang nói gì</h3><span class="sub">Trích nguyên văn, không có tên người viết</span></div>
         ${commentGroups(d.insight, { extraTabs: [['top', 'Comment nổi bật', d.insight.topByAttention]] })}</div>
-      <div class="card" style="margin-top:14px"><div class="card-head"><h3>Câu chữ thật</h3><span class="sub">Cụm từ lặp lại ≥ 3 lần: nguyên liệu cho hook</span></div>
-        <div class="card-pad"><div class="chips">${d.insight.phrases.map((p) => `<span class="tag">${esc(p.phrase)} · <b>${p.count}</b></span>`).join('') || '<span class="muted">Chưa đủ comment</span>'}</div></div></div>
+      ${d.insight.voiceLines ? `<div class="card" style="margin-top:14px"><div class="card-head"><h3>Câu chữ thật của khách</h3><span class="sub">Câu ngắn nguyên văn được nhiều người phản ứng: nguyên liệu cho hook</span></div>
+        <div class="card-pad">${d.insight.voiceLines.map((v) => `<div class="tt-voice">“${esc(v.text)}” <span class="small muted">♥ ${fmt(v.likes)} · ↩ ${fmt(v.replies)}</span></div>`).join('') || '<span class="muted">Chưa đủ comment</span>'}</div></div>`
+        : `<div class="card" style="margin-top:14px"><div class="card-head"><h3>Câu chữ thật</h3><span class="sub">Cụm từ lặp lại ≥ 3 lần: nguyên liệu cho hook</span></div>
+        <div class="card-pad"><div class="chips">${(d.insight.phrases || []).map((p) => `<span class="tag">${esc(p.phrase)} · <b>${p.count}</b></span>`).join('') || '<span class="muted">Chưa đủ comment</span>'}</div></div></div>`}
       <div class="card" style="margin-top:14px"><div class="card-head"><h3>Video hot</h3></div><div class="vgrid">${d.videos.map((v) => tiktokVideoCard(v)).join('') || emptyState('Không có')}</div></div>`;
     shown.off();
     shown.add(bindCommentGroups(out));
