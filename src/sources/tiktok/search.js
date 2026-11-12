@@ -1,8 +1,7 @@
 // TikTok "Top" search, fetched from inside a tiktok.com page so TikTok's own script signs it.
 import { searchApiPath, parseSearchPage } from './parse.js';
-import { throwIfCancelled } from '../../core/cancel.js';
+import { throwIfCancelled, sleep as cancellableSleep } from '../../core/cancel.js';
 
-const realSleep = (ms) => new Promise((r) => setTimeout(r, ms));
 class Blocked extends Error {}
 const LOGIN_WALL = 2483;
 const loginRequired = () => Object.assign(new Error('TikTok đang yêu cầu đăng nhập mới cho tìm kiếm (mã 2483), chờ thêm không giúp được. Comment theo link vẫn dùng được.'), { code: 'tiktok_login_required' });
@@ -14,7 +13,7 @@ const loginRequired = () => Object.assign(new Error('TikTok đang yêu cầu đ�
  * @param {{max?: number, maxPages?: number, pageDelayMs?: number, warmupMs?: number, retryDelaysMs?: number[], sleep?: (ms: number) => Promise<void>}} [o]
  * @param {(n: number) => void} [onPage]
  */
-export async function searchKeyword(browser, keyword, { max = 60, maxPages = 20, pageDelayMs = 1500, warmupMs = 3000, retryDelaysMs = [5000, 10000, 20000], sleep = realSleep } = {}, onPage) {
+export async function searchKeyword(browser, keyword, { max = 60, maxPages = 20, pageDelayMs = 1500, warmupMs = 3000, retryDelaysMs = [5000, 10000, 20000], sleep = cancellableSleep } = {}, onPage) {
   for (let attempt = 0; attempt <= retryDelaysMs.length; attempt++) {
     throwIfCancelled();
     try {

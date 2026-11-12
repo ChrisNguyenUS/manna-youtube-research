@@ -1,4 +1,4 @@
-# Kiến trúc — YouTube Research
+# Kiến trúc — Content Research
 
 > Mục đích: một chỗ duy nhất trả lời "code mới đặt ở đâu, được gọi cái gì, không được gọi cái gì". Đọc trước khi thêm tính năng. Sản phẩm: [youtube-research-prd.md](youtube-research-prd.md).
 > Cập nhật: 2026-11-09 · Áp dụng từ giai đoạn 0 trong [kế hoạch tái cấu trúc](plans/2026-11-09-architecture-refactor.md).

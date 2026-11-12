@@ -2,7 +2,7 @@
   "name": "youtube-research",
   "version": "0.1.0",
   "private": true,
-  "description": "Nghiên cứu YouTube trên máy: tìm video, lọc kênh, phân tích kênh, lấy comment. Không cần key, không tốn phí.",
+  "description": "Content Research: nghiên cứu content YouTube và TikTok trên máy. Không cần key, không tốn phí.",
   "type": "module",
   "engines": {
     "node": ">=22.13"

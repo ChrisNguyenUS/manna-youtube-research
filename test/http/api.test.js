@@ -66,8 +66,8 @@ test('malformed JSON body → 400', async () => {
 
 test('static files and SPA fallback; no path traversal', async () => {
   const s = await boot();
-  assert.match(await (await fetch(`${s.base}/`)).text(), /<title>YouTube Research/);
-  assert.match(await (await fetch(`${s.base}/some/route`)).text(), /<title>YouTube Research/);
+  assert.match(await (await fetch(`${s.base}/`)).text(), /<title>Content Research/);
+  assert.match(await (await fetch(`${s.base}/some/route`)).text(), /<title>Content Research/);
   const t = await fetch(`${s.base}/..%2f..%2fpackage.json`);
   assert.doesNotMatch(await t.text(), /"devDependencies"/);
   s.close();

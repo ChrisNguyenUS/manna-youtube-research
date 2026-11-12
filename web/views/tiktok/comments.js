@@ -27,23 +27,38 @@ export async function mount(root, params) {
     if (!st.videos) return toast('Dán link TikTok', 'error');
     out.innerHTML = progressCard('Đang lấy comment TikTok');
     try {
-      await runJob('tiktok_comments', st, (p) => updateProgress(out, p));
+      const res = await runJob('tiktok_comments', st, (p) => updateProgress(out, p));
       history();
-      const latest = await records.list('tiktok_comments', 1);
-      if (latest[0]) show(latest[0].id);
+      showMany(res?.jobs || [], res?.skipped || []);
     } catch (e) {
       out.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
     }
   });
 
-  async function show(id) {
+  // A multi-link job: one tab per video; the first opens right away.
+  function showMany(jobs, skipped) {
+    if (!jobs.length) return;
+    if (jobs.length === 1 && !skipped.length) return show(jobs[0].id);
+    out.innerHTML = `<div class="tabs" data-many>${jobs.map((j, i) => `<button class="tab ${i ? '' : 'on'}" data-rec="${j.id}">Video ${i + 1} (${j.count})</button>`).join('')}</div>
+      ${skipped.length ? `<div class="callout" style="margin:10px 0">Bỏ qua ${skipped.length} link: ${esc(skipped.join(', '))}</div>` : ''}<div data-one></div>`;
+    const tabs = out.querySelector('[data-many]');
+    tabs.addEventListener('click', (e) => {
+      const b = /** @type {HTMLElement} */ (e.target).closest('[data-rec]');
+      if (!b) return;
+      tabs.querySelectorAll('[data-rec]').forEach((x) => x.classList.toggle('on', x === b));
+      show(b.dataset.rec, out.querySelector('[data-one]'));
+    });
+    show(jobs[0].id, out.querySelector('[data-one]'));
+  }
+
+  async function show(id, target = out) {
     const rec = await records.get(id);
     const d = rec.data;
-    out.innerHTML = `<div class="card"><div class="card-pad row"><div><a href="${esc(d.video.url)}" target="_blank" rel="noopener"><b>${esc(d.video.url)}</b></a><div class="muted small">${d.comments.length} comment · ${ago(rec.created_at)}${d.skipped?.length ? ` · bỏ qua ${d.skipped.length} link: ${esc(d.skipped.join(', '))}` : ''}</div></div>
+    target.innerHTML = `<div class="card"><div class="card-pad row"><div><a href="${esc(d.video.url)}" target="_blank" rel="noopener"><b>${esc(d.video.url)}</b></a><div class="muted small">${d.comments.length} comment · ${ago(rec.created_at)}${d.skipped?.length ? ` · bỏ qua ${d.skipped.length} link: ${esc(d.skipped.join(', '))}` : ''}</div></div>
       <span class="spacer"></span><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a><a class="btn sm" href="${records.exportUrl(id, 'md')}">${icon('download')} Markdown</a></div>
       ${commentGroups(d.insight, { extraTabs: [['top', 'Like nhiều nhất', d.insight.top]] })}</div>`;
     shown.off();
-    shown.add(bindCommentGroups(out));
+    shown.add(bindCommentGroups(target));
   }
   async function history() {
     const list = await records.list('tiktok_comments', 40);

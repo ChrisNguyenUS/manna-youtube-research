@@ -1,6 +1,6 @@
-# YouTube Research
+# Content Research
 
-App nghiên cứu YouTube chạy trên máy: tìm video, lọc kênh kiểu Playboard, phân tích kênh, lấy comment, kiểm tra ý tưởng. **Không cần API key, không tốn phí, không cần `npm install`** (Node ≥ 22.13, dùng `node:sqlite` có sẵn).
+App nghiên cứu content YouTube và TikTok chạy trên máy: tìm video, lọc kênh kiểu Playboard, phân tích kênh, lấy comment, kiểm tra ý tưởng. **Không cần API key, không tốn phí, không cần `npm install`** (Node ≥ 22.13, dùng `node:sqlite` có sẵn).
 
 ```bash
 npm start          # mở http://localhost:5178
@@ -10,10 +10,10 @@ npm test           # unit test parser + chỉ số
 ### Icon bấm là chạy
 
 ```bash
-bash scripts/make-app.sh          # tạo /Applications/YouTube Research.app
+bash scripts/make-app.sh          # tạo /Applications/Content Research.app + lối tắt trên Desktop
 ```
 
-Bấm icon: nếu server chưa chạy thì bật nền (log ở `data/server.log`), rồi mở trình duyệt. Server chạy tiếp tới khi tắt máy hoặc `pkill -f src/main.js`. Đổi đường dẫn repo hay cài lại Node thì chạy lại lệnh trên.
+Bấm **Content Research**: nếu server chưa chạy thì bật nền (log ở `data/server.log`), rồi mở app trong cửa sổ riêng (cửa sổ app của Chrome, không có tab hay thanh địa chỉ; máy không có Chrome thì mở trình duyệt mặc định). Đóng cửa sổ thì server vẫn chạy; bấm **Stop Content Research** để tắt. Đổi đường dẫn repo hay cài lại Node thì chạy lại lệnh trên.
 
 ## Lấy dữ liệu thế nào
 

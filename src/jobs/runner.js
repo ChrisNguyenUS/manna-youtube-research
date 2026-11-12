@@ -72,7 +72,7 @@ export function createRunner({ jobsRepo, handlers, maxParallel = 2, now = Date.n
     } catch (e) {
       // Abort reason tells a user cancel apart from the app shutting down (then the job can be re-run).
       const status = !ac.signal.aborted ? 'failed' : ac.signal.reason === SHUTDOWN ? 'interrupted' : 'cancelled';
-      jobsRepo.update(job.id, { status, finished_at: now(), error: status === 'failed' ? String(e?.message || e) : null });
+      jobsRepo.update(job.id, { status, finished_at: now(), error: status === 'failed' ? String(e?.message || e) : null, error_code: status === 'failed' && typeof e?.code === 'string' ? e.code : null });
       if (status === 'cancelled') {
         try {
           onCancelled(job);

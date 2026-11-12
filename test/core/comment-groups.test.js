@@ -6,7 +6,8 @@ test('fear catches Vietnamese and English worries', () => {
   for (const t of ['Em sợ bị lừa mất tiền', 'uống cái này có sao không ạ', 'có tác dụng phụ không', 'is it safe for kids?', 'looks like a scam']) assert.equal(classifyComment(t).fear, true, t);
 });
 test('fear does not fire on look-alike words', () => {
-  for (const t of ['cái lọ này đẹp', 'logo mới xịn', 'lo go']) assert.equal(classifyComment(t).fear, t === 'lo go', t);
+  // Bare "lo" is too broad ("lo cho con"); only phrases like "lo quá" count.
+  for (const t of ['cái lọ này đẹp', 'logo mới xịn', 'lo quá đi']) assert.equal(classifyComment(t).fear, t === 'lo quá đi', t);
 });
 test('buying catches purchase intent', () => {
   for (const t of ['giá bao nhiêu vậy shop', 'mua ở đâu ạ', 'có ship Cần Thơ không', 'ib em nha', 'how much is it', 'where to buy']) assert.equal(classifyComment(t).buying, true, t);

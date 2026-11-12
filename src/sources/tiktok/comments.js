@@ -27,9 +27,13 @@ export function makeComments(http) {
       const raw = String(urlOrId || '').trim();
       let url = raw;
       if (isShortLink(raw)) url = await http.finalUrl(raw);
+      const isId = /^\d{15,25}$/.test(url);
+      // Only tiktok.com links, and the saved URL is rebuilt so nothing typed by hand ends up in a link.
+      if (!isId && !/^https?:\/\/([a-z0-9-]+\.)*tiktok\.com\//i.test(url)) throw new Error(`Không phải link video TikTok: ${raw}`);
       const id = extractVideoId(url);
       if (!id) throw new Error(`Không phải link video TikTok: ${raw}`);
-      return { id, url: /^\d+$/.test(url) ? `https://www.tiktok.com/video/${id}` : url.split('?')[0] };
+      const m = isId ? null : url.match(/\/@([\w.-]+)\/(video|photo)\//);
+      return { id, url: m ? `https://www.tiktok.com/@${m[1]}/${m[2]}/${id}` : `https://www.tiktok.com/video/${id}` };
     },
     /** @param {string} id @param {{max?: number, replies?: boolean, maxRepliesPerComment?: number}} [o] @param {(n: number) => void} [onProgress] */
     async getComments(id, { max = 300, replies = true, maxRepliesPerComment = 20 } = {}, onProgress) {

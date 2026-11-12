@@ -1,17 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f97316"/>
-      <stop offset="1" stop-color="#d9480f"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fb923c"/>
+      <stop offset="1" stop-color="#c2410c"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".22"/>
+      <stop offset=".5" stop-color="#fff" stop-opacity="0"/>
     </linearGradient>
   </defs>
-  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
-  <!-- video frame -->
-  <rect x="230" y="290" width="470" height="330" rx="70" fill="#fff"/>
-  <path d="M405 375 L555 455 L405 535 Z" fill="#e8590c"/>
-  <!-- magnifier -->
-  <circle cx="640" cy="610" r="118" fill="none" stroke="#fff" stroke-width="44"/>
-  <circle cx="640" cy="610" r="96" fill="#e8590c"/>
-  <path d="M590 640 L620 610 L650 630 L690 585" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M726 696 L800 770" stroke="#fff" stroke-width="56" stroke-linecap="round"/>
+  <!-- macOS-style squircle tile -->
+  <rect x="100" y="100" width="824" height="824" rx="190" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="190" fill="url(#shine)"/>
+  <!-- speech bubble: the comments / customer voice -->
+  <path d="M232 262 h250 a56 56 0 0 1 56 56 v108 a56 56 0 0 1 -56 56 h-150 l-62 58 v-58 h-38 a56 56 0 0 1 -56 -56 v-108 a56 56 0 0 1 56 -56 z" fill="#fff" opacity=".92"/>
+  <circle cx="290" cy="372" r="22" fill="#ea580c"/>
+  <circle cx="357" cy="372" r="22" fill="#ea580c"/>
+  <circle cx="424" cy="372" r="22" fill="#ea580c"/>
+  <!-- magnifier with a play button: researching videos -->
+  <circle cx="575" cy="575" r="178" fill="#c2410c" stroke="#fff" stroke-width="52"/>
+  <path d="M530 495 L660 575 L530 655 Z" fill="#fff" stroke="#fff" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M712 712 L812 812" stroke="#fff" stroke-width="74" stroke-linecap="round"/>
 </svg>

@@ -110,8 +110,8 @@ const REQUEST_RE = /(làm video về|làm thêm|làm tiếp|phần 2|phần ti�
 const END = '(?![\\p{L}\\p{N}])';
 const START = '(?<![\\p{L}\\p{N}])';
 const words = (list) => new RegExp(`${START}(${list.join('|')})${END}`, 'iu');
-const FEAR_RE = words(['sợ', 'lo', 'lo lắng', 'có an toàn', 'có sao không', 'có bị', 'bị lừa', 'mất tiền', 'rủi ro', 'nguy hiểm', 'tác dụng phụ', 'có hại', 'scared', 'worried', 'afraid', 'is it safe', 'scam', 'risk']);
-const BUYING_RE = words(['giá', 'bao nhiêu tiền', 'bao nhiêu 1', 'mua ở đâu', 'mua sao', 'link mua', 'ship', 'có bán', 'inbox', 'ib', 'đặt hàng', 'order', 'price', 'how much', 'where to buy', 'link']);
+const FEAR_RE = words(['sợ', 'lo lắng', 'lo sợ', 'lo quá', 'lo lắm', 'lo ghê', 'lo là', 'có an toàn', 'có sao không', 'có bị \\S+(?: \\S+)? không', 'bị lừa', 'mất tiền', 'rủi ro', 'nguy hiểm', 'tác dụng phụ', 'có hại', 'scared', 'worried', 'afraid', 'is it safe', 'scam', 'risk']);
+const BUYING_RE = words(['giá bao nhiêu', 'giá sao', 'giá nhiêu', 'giá thế nào', 'báo giá', 'xin giá', 'bao nhiêu tiền', 'bao nhiêu 1', 'mua ở đâu', 'mua sao', 'link mua', 'xin link', 'cho link', 'link đâu', 'link ở đâu', 'ship', 'có bán', 'inbox', 'ib', 'đặt hàng', 'order', 'price', 'how much', 'where to buy']);
 
 export function classifyComment(text) {
   const t = String(text || '');

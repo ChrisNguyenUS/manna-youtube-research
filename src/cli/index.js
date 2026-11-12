@@ -75,6 +75,10 @@ if (cmd === 'research') {
   process.stderr.write('\r\x1b[K');
   for (const x of r.results) console.log(x.error ? `lỗi: ${x.error} — ${x.keyword}` : `điểm ${String(x.overall).padStart(3)} (volume ${x.volume}, cạnh tranh ${x.competition}) · ${x.verdict.padEnd(11)} · view TB ${Math.round(x.stats.avgViews ?? 0)} · sub TB ${Math.round(x.stats.avgSubs ?? 0)} · mới 7 ngày ${x.stats.added7d}/${x.stats.results} — ${x.keyword}`);
 } else if (cmd === 'tiktok-insight') {
+  if (flags.top != null && ![5, 10, 20, 30].includes(Number(flags.top))) {
+    console.error('--top phải là 5, 10, 20 hoặc 30');
+    process.exit(1);
+  }
   const r = await svc.tiktokInsight(
     { keywords: pos, top: Number(flags.top) || 10, commentsPerVideo: Number(flags.comments) === 100 ? 100 : 300, replies: !flags['no-replies'], keepOffTopic: !!flags.all },
     progress,

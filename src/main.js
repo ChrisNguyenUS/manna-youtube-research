@@ -11,14 +11,14 @@ srv.on('error', (e) => {
 });
 srv.listen(app.config.port, app.config.host, () => {
   app.runner.start();
-  console.log(`YouTube Research → http://localhost:${/** @type {any} */ (srv.address()).port}`);
+  console.log(`Content Research → http://localhost:${/** @type {any} */ (srv.address()).port}`);
 });
 
-const shutdown = () => {
+const shutdown = async () => {
+  setTimeout(() => process.exit(0), 2000).unref(); // hard cap if the browser or a socket hangs
   app.runner.stop();
-  app.close().catch(() => {});
+  await app.close().catch(() => {}); // close Chromium before exiting
   srv.close(() => process.exit(0));
-  setTimeout(() => process.exit(0), 2000).unref();
 };
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);

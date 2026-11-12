@@ -23,7 +23,7 @@ export function jobView(j) {
   return {
     id: j.id, kind: j.kind, title: j.title, status: j.status, params: j.params,
     progress: j.progress || { step: 'Đang chờ', done: 0, total: 0 },
-    error: j.error, resultId: j.record_id,
+    error: j.error, errorCode: j.error_code ?? null, resultId: j.record_id,
     result: j.status === 'succeeded' ? inline || { id: j.record_id } : null,
     startedAt: j.started_at, endedAt: j.finished_at,
   };

@@ -45,7 +45,7 @@ const COMMENT_API = 'https://www.tiktok.com/api/comment/list';
 export function extractVideoId(urlOrId) {
   const s = String(urlOrId || '').trim();
   if (/^\d{15,25}$/.test(s)) return s;
-  return s.match(/\/(?:video|photo)\/(\d{15,25})/)?.[1] ?? null;
+  return s.match(/\/(?:video|photo|v)\/(\d{15,25})/)?.[1] ?? null;
 }
 /** @param {string} url */
 export const isShortLink = (url) => /^https?:\/\/(vm|vt)\.tiktok\.com\//.test(url) || /^https?:\/\/(www\.)?tiktok\.com\/t\//.test(url);

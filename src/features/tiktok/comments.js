@@ -45,6 +45,7 @@ export function makeTikTokComments({ tiktok, records, now }) {
       const data = { video, comments, insight: commentInsights(comments, { limit: 50 }), params, skipped };
       return { id: records.add('tiktok_comments', video.url, { ref: video.id, params, data }), video, count: comments.length };
     });
-    return { jobs, skipped };
+    // inline: the runner keeps this result, so the screen can show every video of a multi-link job.
+    return { inline: true, jobs, skipped };
   };
 }

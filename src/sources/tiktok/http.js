@@ -1,13 +1,12 @@
 // Polite HTTP for TikTok's public JSON endpoints: limited concurrency, small delay, retry with backoff.
-import { throwIfCancelled } from '../../core/cancel.js';
+import { throwIfCancelled, sleep as cancellableSleep } from '../../core/cancel.js';
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
-const realSleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** Only the parts of fetch/Response this module uses, so tests can pass a small fake.
  * @typedef {(url: string, init?: any) => Promise<{status: number, url?: string, json: () => Promise<any>}>} FetchLike */
 /** @param {{fetch?: FetchLike, concurrency?: number, delayMs?: number, retries?: number, sleep?: (ms: number) => Promise<void>}} [o] */
-export function createTikTokHttp({ fetch: doFetch = /** @type {FetchLike} */ (globalThis.fetch), concurrency = 3, delayMs = 300, retries = 4, sleep = realSleep } = {}) {
+export function createTikTokHttp({ fetch: doFetch = /** @type {FetchLike} */ (globalThis.fetch), concurrency = 3, delayMs = 300, retries = 4, sleep = cancellableSleep } = {}) {
   let active = 0;
   const queue = [];
   const stats = { requests: 0, failures: 0 };

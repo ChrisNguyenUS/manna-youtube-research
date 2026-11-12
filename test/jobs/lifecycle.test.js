@@ -92,7 +92,7 @@ test('a second server on the same port exits without touching the first one\'s j
   const a = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', 'src/main.js'], { env });
   let outA = '';
   a.stdout.on('data', (d) => (outA += d));
-  await until(() => outA.includes('YouTube Research'), 8000);
+  await until(() => outA.includes('Content Research'), 8000);
   const db = new DatabaseSync(path.join(dataDir, 'research.db'));
   db.prepare("INSERT INTO jobs (workspace_id, kind, title, status, params, idempotency_key, created_at) VALUES ('local','research','live','running','{}','k',1)").run();
   const b = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', 'src/main.js'], { env });
