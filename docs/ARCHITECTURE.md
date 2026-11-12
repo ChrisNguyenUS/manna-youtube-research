@@ -49,7 +49,7 @@ src/
       outlier.js            # channelBaseline, outlierScore
       channel.js            # channelStats
     analysis/               # titles.js, comments.js, durations.js, keyword-score.js, topic.js (lọc đúng chủ đề, bỏ dấu), customer-voice.js (câu hỏi theo nhóm, nỗi sợ, người sắp mua)
-    tiktok/metrics.js       # videoMetrics (Hot score, tương tác, tuổi), attentionPerDay; rank.js (trending → tương tác → hợp thời); keywords.js (từ khoá liên quan: gộp, bỏ nước khác, ý định)
+    tiktok/metrics.js       # videoMetrics (Hot score, tương tác, tuổi), attentionPerDay; rank.js (trending → tương tác → hợp thời); keywords.js (từ khoá liên quan: gộp, bỏ nước khác, ý định); on-topic.js (luật lọc đúng chủ đề dùng chung, đo trên test/fixtures/tiktok-on-topic.json)
     tracking/diff.js        # so snapshot: video mới, tốc độ, đổi tiêu đề/thumbnail (v1.1)
     report/                 # markdown.js, csv.js, tiktok.js (Markdown insight, comment, chủ đề TikTok), xlsx.js (file Excel không cần thư viện)
   ports/                    # HỢP ĐỒNG (JSDoc interface + test hợp đồng dùng chung)

@@ -1,7 +1,7 @@
 // Use case: TikTok videos for keywords, strict on-topic filter, ranked by Hot score (spec §4.1).
 import { noop, splitList } from '../shared.js';
 import { videoMetrics } from '../../core/tiktok/metrics.js';
-import { keywordInText } from '../../core/analysis/topic.js';
+import { classifyOnTopic, OFF_TOPIC_REASONS } from '../../core/tiktok/on-topic.js';
 
 /** @param {{tiktok: import('../../ports/tiktok-source.js').TikTokSource, records: any, now: () => number}} deps */
 export function makeTikTokSearch({ tiktok, records, now }) {
@@ -29,8 +29,13 @@ export function makeTikTokSearch({ tiktok, records, now }) {
     }
     if (emptyKeywords.length === keywords.length) throw Object.assign(new Error('TikTok đang chặn tìm kiếm, thử lại sau vài phút'), { code: 'tiktok_blocked' });
     const t = now();
-    const all = [...merged.values()].map((v) => ({ ...v, ...videoMetrics(v, t), onTopic: keywordInText(`${v.caption} ${v.hashtags.join(' ')}`, v.queries) }));
+    const found = [...merged.values()];
+    const verdicts = classifyOnTopic(found, keywords);
+    const all = found.map((v, i) => ({ ...v, ...videoMetrics(v, t), onTopic: verdicts[i].onTopic, onTopicVia: verdicts[i].via, offTopicReason: verdicts[i].reason }));
     const topical = params.keepOffTopic ? all : all.filter((v) => v.onTopic);
+    // What the filter left out, so the screen can show it and the user can judge the rule.
+    const offTopicVideos = params.keepOffTopic ? [] : all.filter((v) => !v.onTopic).sort((a, b) => b.plays - a.plays).slice(0, 60)
+      .map((v) => ({ id: v.id, url: v.url, caption: v.caption.slice(0, 200), author: v.author, plays: v.plays, reason: OFF_TOPIC_REASONS[v.offTopicReason] }));
     // View / like / age / engagement thresholds (0 or empty = no limit), as in the tiktok-actors pipeline.
     const minPlays = Number(params.minPlays) || 0;
     const minLikes = Number(params.minLikes) || 0;
@@ -43,6 +48,7 @@ export function makeTikTokSearch({ tiktok, records, now }) {
     const result = {
       keywords,
       videos: kept,
+      offTopicVideos,
       counts: { found: merged.size, duplicates: rows - merged.size, offTopic: all.length - topical.length, belowFilters: topical.length - kept.length, zeroComment: kept.filter((v) => v.comments === 0).length, emptyKeywords },
     };
     const id = save ? records.add('tiktok_search', keywords.join(', '), { params, data: result }) : null;

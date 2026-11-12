@@ -315,3 +315,8 @@ table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .tt-voice { padding: 6px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
 .tt-voice:first-child { border-top: none; }
 .tt-table td.num { white-space: nowrap; }
+.tt-off { margin-top: 6px; font-size: 12px; }
+.tt-off summary { cursor: pointer; color: var(--muted); }
+.tt-off > div { padding: 4px 0; border-top: 1px dashed var(--line); }
+.tt-col-junk { opacity: 0.75; border-style: dashed; }
+.chip.tt-dropped-soft { border-style: dashed; color: var(--muted); }

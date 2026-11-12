@@ -1,6 +1,6 @@
 import { records } from '../../http/client.js';
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState } from '../../lib.js';
-import { tiktokVideoCard, commentGroups, bindCommentGroups, quotes, tiktokVideoFilters } from '../../components/index.js';
+import { tiktokVideoCard, commentGroups, bindCommentGroups, quotes, tiktokVideoFilters, offTopicDetails } from '../../components/index.js';
 import { scope } from '../../dom.js';
 
 const FORM = { keywords: '', top: 10, commentsPerVideo: 300, replies: true, keepOffTopic: false, minPlays: 0, minLikes: 0, maxAgeDays: 0, minEngagement: 0 };
@@ -48,6 +48,7 @@ export async function mount(root, params) {
     out.innerHTML = `
       <div class="card card-pad"><div class="row between"><div><h2 style="margin:0;font-size:18px">${esc(d.keywords.join(', '))}</h2><div class="muted small">${ago(rec.created_at)} · ${d.counts.found} video tìm được · ${d.counts.offTopic} lạc đề bỏ${d.counts.belowFilters ? ` · ${d.counts.belowFilters} dưới ngưỡng lọc` : ''}${d.failedVideos.length ? ` · ${d.failedVideos.length} video lỗi` : ''}</div></div>
         <div class="head-actions"><a class="btn sm" href="${records.exportUrl(id, 'md')}">${icon('download')} Markdown</a><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div></div></div>
+      ${offTopicDetails(d.offTopicVideos, d.offTopicVideos ? d.counts.offTopic : 0)}
       <div class="kpis" style="margin-top:14px">
         <div class="kpi"><div class="label">Video đọc comment</div><div class="value">${d.videos.length}</div></div>
         <div class="kpi"><div class="label">Comment đã đọc</div><div class="value">${fmt(d.counts.commentsRead)}</div></div>
