@@ -14,6 +14,7 @@ import * as settings from './views/settings.js';
 import * as ttSearch from './views/tiktok/search.js';
 import * as ttInsight from './views/tiktok/insight.js';
 import * as ttComments from './views/tiktok/comments.js';
+import * as ttTopic from './views/tiktok/topic.js';
 
 const NAV = [
   ['Khám phá'],
@@ -28,6 +29,7 @@ const NAV = [
   ['/comments', 'message', 'Comment', comments],
   ['/ideas', 'bulb', 'Chấm điểm từ khoá', ideas],
   ['TikTok'],
+  ['/tiktok/topic', 'compass', 'Tìm theo chủ đề', ttTopic],
   ['/tiktok/insight', 'message', 'Insight khách hàng', ttInsight],
   ['/tiktok/search', 'search', 'Tìm video TikTok', ttSearch],
   ['/tiktok/comments', 'message', 'Comment TikTok', ttComments],

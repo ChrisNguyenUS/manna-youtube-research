@@ -48,10 +48,10 @@ src/
       video.js              # vph, viewsPerDay, viewSub, age
       outlier.js            # channelBaseline, outlierScore
       channel.js            # channelStats
-    analysis/               # titles.js, comments.js, durations.js, keyword-score.js, topic.js (lọc đúng chủ đề, bỏ dấu)
-    tiktok/metrics.js       # videoMetrics (Hot score, tương tác, tuổi), attentionPerDay; rank.js (trending → tương tác → hợp thời)
+    analysis/               # titles.js, comments.js, durations.js, keyword-score.js, topic.js (lọc đúng chủ đề, bỏ dấu), customer-voice.js (câu hỏi theo nhóm, nỗi sợ, người sắp mua)
+    tiktok/metrics.js       # videoMetrics (Hot score, tương tác, tuổi), attentionPerDay; rank.js (trending → tương tác → hợp thời); keywords.js (từ khoá liên quan: gộp, bỏ nước khác, ý định)
     tracking/diff.js        # so snapshot: video mới, tốc độ, đổi tiêu đề/thumbnail (v1.1)
-    report/                 # markdown.js, csv.js, tiktok.js (Markdown insight + comment TikTok)
+    report/                 # markdown.js, csv.js, tiktok.js (Markdown insight, comment, chủ đề TikTok), xlsx.js (file Excel không cần thư viện)
   ports/                    # HỢP ĐỒNG (JSDoc interface + test hợp đồng dùng chung)
     youtube-source.js       # searchVideos, searchChannels, getChannel, getChannelVideos, getShorts,
                             # getVideo, getComments, suggest, capabilities()
@@ -85,12 +85,12 @@ src/
     keyword-score.js
     keyword-ideas.js
     tracking.js             # (v1.1)
-    tiktok/                 # search.js, comments.js, insight.js, scrape.js (API scrape, xếp hạng core/tiktok/rank.js)
+    tiktok/                 # search.js, comments.js, insight.js, scrape.js (API scrape, xếp hạng core/tiktok/rank.js), topic.js (Tìm theo chủ đề, quét lại so view)
   http/
     server.js               # node:http, static, error → JSON {error:{code,message}}
     router.js               # bảng route khai báo + validate
     validate.js             # schema nhỏ không phụ thuộc (hoặc zod nếu chấp nhận dependency)
-    routes/                 # jobs.js, records.js, saved.js, settings.js, status.js, tracking.js, tiktok.js (/api/v1/tiktok/videos)
+    routes/                 # jobs.js, records.js, saved.js, settings.js, status.js, tracking.js, tiktok.js (/api/v1/tiktok/videos, /api/v1/tiktok/topic/keywords)
   license/                  # (v1.2) service.js, verify.js — chỉ dùng qua middleware
   cli/index.js
 desktop/                    # (v1.2) Electron main, tray, notify, updater
@@ -98,7 +98,7 @@ web/                        # frontend (đổi tên từ public/)
   http/client.js            # MỌI fetch đi qua đây (không đặt tên web/api/: trùng tiền tố /api/ của server)
   components/               # video-table.js, video-grid.js, filters.js, score-card.js, charts.js…
   views/                    # một màn một file, export mount(root, params) → trả về unmount()
-    tiktok/                 # search.js, insight.js, comments.js
+    tiktok/                 # topic.js, search.js, insight.js, comments.js
   i18n/vi.js, en.js         # (v1.2)
 test/
   core/  sources/  features/  http/  arch.test.js

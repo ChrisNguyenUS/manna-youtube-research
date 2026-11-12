@@ -55,7 +55,7 @@ test('M6: multi-link comments job returns every record inline; insight quotes na
   assert.equal(r.jobs.length, 2);
   const ins = await a.features.tiktokInsight({ keywords: 'thi quốc tịch mỹ', top: 5 }, () => {});
   const md = tiktokInsightMarkdown(a.store.records.get('local', ins.id).data);
-  const fearLine = md.split('## Khách lo sợ')[1].split('\n').find((l) => l.startsWith('- '));
+  const fearLine = md.split('## Nỗi sợ và rào cản')[1].split('\n').find((l) => l.startsWith('- '));
   assert.match(fearLine, /tiktok\.com\/video\/7000000000000000001/);
 });
 

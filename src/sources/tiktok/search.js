@@ -1,5 +1,5 @@
 // TikTok "Top" search, fetched from inside a tiktok.com page so TikTok's own script signs it.
-import { searchApiPath, parseSearchPage } from './parse.js';
+import { searchApiPath, parseSearchPage, suggestApiPath, parseSuggestions, parseRelatedSearches } from './parse.js';
 import { throwIfCancelled, sleep as cancellableSleep } from '../../core/cancel.js';
 
 class Blocked extends Error {}
@@ -65,4 +65,35 @@ export async function searchKeyword(browser, keyword, { max = 60, maxPages = 20,
     }
   }
   return [];
+}
+
+const GUIDE_PATH = '/api/search/suggest/guide/';
+
+/**
+ * Keywords TikTok itself links to `keyword`: its autocomplete, and the "others searched for" list it shows
+ * on the search page (only correct when the search page asks for it, so the page is opened and the answer read).
+ * @param {ReturnType<typeof import('./browser.js').createBrowser>} browser
+ * @param {string} keyword
+ * @param {{warmupMs?: number, guideTimeoutMs?: number, sleep?: (ms: number) => Promise<void>, signedIn?: () => boolean}} [o]
+ * @returns {Promise<{suggestions: string[], related: string[]}>}
+ */
+export async function relatedKeywords(browser, keyword, { warmupMs = 3000, guideTimeoutMs = 20_000, sleep = cancellableSleep, signedIn = () => false } = {}) {
+  throwIfCancelled();
+  return browser.withPage(async (page) => {
+    await page.waitForLoadState('load').catch(() => {});
+    await sleep(warmupMs);
+    const fetchJson = (path) => page.evaluate(async (p) => {
+      const res = await fetch(p, { credentials: 'include' });
+      return res.json().catch(() => null);
+    }, path);
+    const sug = await fetchJson(suggestApiPath(keyword));
+    if (Number(sug?.status_code) === LOGIN_WALL) throw loginRequired(signedIn());
+    throwIfCancelled();
+    const guide = page
+      .waitForResponse((r) => r.url().includes(GUIDE_PATH) && new URL(r.url()).searchParams.get('keyword') === keyword, { timeout: guideTimeoutMs })
+      .then((r) => r.json())
+      .catch(() => null);
+    await page.goto(`https://www.tiktok.com/search?q=${encodeURIComponent(keyword)}`, { waitUntil: 'domcontentloaded', timeout: 60_000 }).catch(() => {});
+    return { suggestions: parseSuggestions(sug), related: parseRelatedSearches(await guide) };
+  });
 }

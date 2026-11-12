@@ -43,6 +43,6 @@ test('insight leaves out unreadable comments and quotes show the video rank', as
   const r = await a.features.tiktokInsight({ keywords: 'thi quốc tịch mỹ', top: 5 }, () => {});
   assert.ok(!r.insight.topByAttention.some((c) => c.id === 'e1'));
   const md = tiktokInsightMarkdown(a.store.records.get('local', r.id).data);
-  const line = md.split('## Khách lo sợ')[1].split('\n').find((l) => l.startsWith('- '));
+  const line = md.split('## Nỗi sợ và rào cản')[1].split('\n').find((l) => l.startsWith('- '));
   assert.match(line, /video #1/);
 });

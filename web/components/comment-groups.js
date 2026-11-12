@@ -13,7 +13,7 @@ export function commentGroups(insight, { counts = insight.groupCounts || insight
     ['buying', `Muốn mua (${counts.buying ?? 0})`, insight.buying],
     ['requests', `Muốn xem thêm (${counts.requests ?? 0})`, insight.requests],
     ...extraTabs,
-  ];
+  ].filter(([, , list]) => list !== undefined); // newer TikTok insight has no complaints/requests groups
   return `<div class="cg"><div class="tabs">${tabs.map(([k, l], i) => `<button class="tab ${i ? '' : 'on'}" data-cg="${k}">${esc(l)}</button>`).join('')}</div>
     ${tabs.map(([k, , list], i) => `<div class="card-pad" data-cg-body="${k}" ${i ? 'hidden' : ''}>${quotes(list ?? [])}</div>`).join('')}</div>`;
 }

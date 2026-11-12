@@ -3,7 +3,8 @@ import { httpError, raw } from '../router.js';
 import { metricLabel } from '../../core/metrics/definitions.js';
 import { researchMarkdown, channelMarkdown, commentsMarkdown } from '../../core/report/markdown.js';
 import { toCsv } from '../../core/report/csv.js';
-import { tiktokInsightMarkdown, tiktokCommentsMarkdown } from '../../core/report/tiktok.js';
+import { tiktokInsightMarkdown, tiktokCommentsMarkdown, tiktokTopicMarkdown, tiktokTopicSheets } from '../../core/report/tiktok.js';
+import { toXlsx } from '../../core/report/xlsx.js';
 import { classifyComment } from '../../core/analysis/text.js';
 
 const groupOf = (c) => ['question', 'fear', 'complaint', 'buying', 'request'].filter((k) => c[k]).join('; ');
@@ -75,11 +76,19 @@ function exportRecord({ app, ws, params, query }) {
     const name = `${slug(r.title)}-${stamp()}`;
     const what = query.get('what');
     if (params.ext === 'md') {
-      const md = r.kind === 'research' ? researchMarkdown(r.data) : r.kind === 'channel_analysis' ? channelMarkdown(r.data) : r.kind === 'comments' ? commentsMarkdown(r.data) : r.kind === 'tiktok_insight' ? tiktokInsightMarkdown(r.data) : r.kind === 'tiktok_comments' ? tiktokCommentsMarkdown(r.data) : '```json\n' + JSON.stringify(r.data, null, 2) + '\n```\n';
+      const md = r.kind === 'research' ? researchMarkdown(r.data) : r.kind === 'channel_analysis' ? channelMarkdown(r.data) : r.kind === 'comments' ? commentsMarkdown(r.data) : r.kind === 'tiktok_insight' ? tiktokInsightMarkdown(r.data) : r.kind === 'tiktok_comments' ? tiktokCommentsMarkdown(r.data) : r.kind === 'tiktok_topic' ? tiktokTopicMarkdown(r.data) : '```json\n' + JSON.stringify(r.data, null, 2) + '\n```\n';
       return query.get('inline') ? raw(md, 'text/markdown; charset=utf-8') : raw(md, 'text/markdown; charset=utf-8', attachment(`${name}.md`));
     }
+    if (params.ext === 'xlsx') {
+      if (r.kind !== 'tiktok_topic') throw httpError('invalid_input', 'Chỉ có file Excel cho Tìm theo chủ đề', 'ext');
+      return raw(Buffer.from(toXlsx(tiktokTopicSheets(r.data))), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', attachment(`${name}.xlsx`));
+    }
     let csv;
-    if (r.kind === 'channel_search') csv = toCsv(r.data.channels, CHANNEL_COLS);
+    if (r.kind === 'tiktok_topic') csv = toCsv(r.data.columns.flatMap((c) => c.videos.map((v) => ({ ...v, keyword: c.keyword }))), [
+      { key: 'keyword', label: 'Từ khoá' }, { key: 'rank', label: 'Hạng' }, ...TIKTOK_VIDEO_COLS.slice(0, 8), { key: 'ageDays', label: 'Tuổi (ngày)' }, { key: 'playsPerDay', label: 'View/ngày' },
+      { label: 'Tăng view', get: (v) => v.gain ?? '' }, { label: 'Top 3 comment', get: (v) => (v.topComments ?? []).map((c) => `${c.text} (${c.likes} tym)`).join(' | ') },
+    ]);
+    else if (r.kind === 'channel_search') csv = toCsv(r.data.channels, CHANNEL_COLS);
     else if (r.kind === 'comments') csv = toCsv(r.data.comments.map((c) => ({ ...c, videoTitle: r.data.video.title })), COMMENT_COLS);
     else if (r.kind === 'research' && what === 'comments') csv = toCsv([...(r.data.comments?.insights.top || [])], COMMENT_COLS);
     else if (r.kind === 'idea_check' && r.data.results[0]?.stats) csv = toCsv(r.data.results.filter((x) => !x.error), [

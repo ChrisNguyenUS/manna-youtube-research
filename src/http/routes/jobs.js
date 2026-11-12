@@ -6,6 +6,7 @@ export const JOB_SCHEMAS = {
   tiktok_search: { keywords: 'string!', perKeyword: 'int?', keepOffTopic: 'bool?', minPlays: 'int?', minLikes: 'int?', maxAgeDays: 'int?', minEngagement: 'int?' },
   tiktok_insight: { keywords: 'string!', perKeyword: 'int?', top: /** @type {any} */ ([5, 10, 20, 30]), commentsPerVideo: /** @type {any} */ ([100, 300]), replies: 'bool?', keepOffTopic: 'bool?', minPlays: 'int?', minLikes: 'int?', maxAgeDays: 'int?', minEngagement: 'int?' },
   tiktok_comments: { videos: 'string!', max: /** @type {any} */ ([100, 300]), replies: 'bool?' },
+  tiktok_topic: { topic: 'string!', keywords: 'string?', maxKeywords: 'int?', perKeyword: 'int?', sort: /** @type {any} */ (['score', 'plays', 'trending', 'fresh']), minPlays: 'int?', maxAgeDays: 'int?', topComments: /** @type {any} */ ([0, 3]) },
   video_search: { keywords: 'string!', upload: ['any', 'today', 'week', 'month', 'year'], sort: ['relevance', 'popularity', 'date'], perKeyword: 'int?', exactTop: 'int?', gl: 'string?', minDur: 'int?', maxDur: 'int?', cc: 'bool?', likes: 'bool?' },
   channel_search: { keywords: 'string!', source: ['both', 'channels', 'videos'], perKeyword: 'int?', gl: 'string?', upload: ['any', 'today', 'week', 'month', 'year'] },
   channel_analysis: { input: 'string!', max: 'int?' },
@@ -29,7 +30,7 @@ export function jobView(j) {
   };
 }
 
-const titleOf = (b, kind) => String(b.keywords || b.topic || b.input || b.seed || b.ideas || b.videos || kind).slice(0, 80);
+const titleOf = (b, kind) => String((kind === 'tiktok_topic' && b.topic) || b.keywords || b.topic || b.input || b.seed || b.ideas || b.videos || kind).slice(0, 80);
 
 export const jobRoutes = [
   {
