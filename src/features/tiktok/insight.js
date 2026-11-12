@@ -1,6 +1,6 @@
 // Use case: customer insight from comments of the hottest on-topic TikTok videos (spec §4.2).
 import { noop } from '../shared.js';
-import { commentInsights } from '../../core/analysis/text.js';
+import { commentInsights, hasWords } from '../../core/analysis/text.js';
 import { rethrowIfCancelled } from '../../core/cancel.js';
 import { withAttention } from './comments.js';
 
@@ -11,7 +11,8 @@ export function makeTikTokInsight({ tiktok, records, now, tiktokSearch }) {
   return async function tiktokInsight(params, progress = noop) {
     const top = TOPS.includes(Number(params.top)) ? Number(params.top) : 10;
     const perVideo = Number(params.commentsPerVideo) === 100 ? 100 : 300;
-    const search = await tiktokSearch({ keywords: params.keywords, perKeyword: params.perKeyword, keepOffTopic: params.keepOffTopic }, progress, { save: false });
+    const { keywords, perKeyword, keepOffTopic, minPlays, minLikes, maxAgeDays, minEngagement } = params;
+    const search = await tiktokSearch({ keywords, perKeyword, keepOffTopic, minPlays, minLikes, maxAgeDays, minEngagement }, progress, { save: false });
     const picked = search.videos.filter((v) => v.comments > 0).slice(0, top);
     const comments = [];
     const failedVideos = [];
@@ -21,7 +22,7 @@ export function makeTikTokInsight({ tiktok, records, now, tiktokSearch }) {
       progress({ step: label, done: 0, total: perVideo });
       try {
         const r = await tiktok.getComments(v.id, { max: perVideo, replies: params.replies !== false }, (n) => progress({ step: label, done: n, total: perVideo }));
-        comments.push(...r.comments.map((c) => ({ ...c, videoId: v.id })));
+        comments.push(...r.comments.filter((c) => hasWords(c.text)).map((c) => ({ ...c, videoId: v.id, videoRank: i + 1 })));
         videos.push({ ...v, commentsRead: r.comments.length });
       } catch (e) {
         rethrowIfCancelled(e);

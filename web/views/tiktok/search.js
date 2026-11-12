@@ -1,9 +1,9 @@
 import { records } from '../../http/client.js';
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips } from '../../lib.js';
-import { tiktokVideoCard } from '../../components/index.js';
+import { tiktokVideoCard, tiktokVideoFilters } from '../../components/index.js';
 import { scope } from '../../dom.js';
 
-const FORM = { keywords: '', perKeyword: 60, keepOffTopic: false };
+const FORM = { keywords: '', perKeyword: 60, keepOffTopic: false, minPlays: 0, minLikes: 0, maxAgeDays: 0, minEngagement: 0 };
 const FILTER = { age: '', minLikes: '', minComments: '', onTopic: true, sort: 'hot' };
 const SORTS = { hot: 'hotScore', plays: 'plays', likes: 'likes', shares: 'shares', saves: 'saves', new: 'ageDays' };
 
@@ -18,6 +18,7 @@ export async function mount(root, params) {
       <div class="field"><label>Từ khoá (cách nhau bằng dấu phẩy)</label><input class="input" data-k="keywords" placeholder="VD: phỏng vấn quốc tịch, thi quốc tịch mỹ" value="${esc(st.keywords)}"></div>
       <div class="row" style="margin-top:12px"><span class="small muted">Video mỗi từ khoá</span>${chips('perKeyword', [30, 60, 120, 200].map((v) => ({ v, label: String(v) })), st.perKeyword)}
         <label class="check" style="margin-left:12px"><input type="checkbox" data-k="keepOffTopic" ${st.keepOffTopic ? 'checked' : ''}> Giữ cả video lạc đề</label></div>
+      ${tiktokVideoFilters(st)}
       <div class="row" style="margin-top:14px"><button class="btn primary lg" data-run>${icon('search')} Tìm video</button><span class="muted small">~1–2 phút mỗi từ khoá · miễn phí</span></div>
     </div>
     <div data-out style="margin-top:14px"></div><div class="card" data-history style="margin-top:14px"></div>`;
@@ -48,7 +49,7 @@ export async function mount(root, params) {
     const c = d.counts;
     out.innerHTML = `<div class="kpis">
         <div class="kpi"><div class="label">Video giữ lại</div><div class="value">${d.videos.length}</div><div class="hint">${c.found} tìm được · ${c.duplicates} trùng</div></div>
-        <div class="kpi"><div class="label">Lạc đề đã bỏ</div><div class="value">${c.offTopic}</div><div class="hint">caption không có từ khoá</div></div>
+        <div class="kpi"><div class="label">Lạc đề đã bỏ</div><div class="value">${c.offTopic}</div><div class="hint">caption không có từ khoá${c.belowFilters ? ` · ${c.belowFilters} dưới ngưỡng lọc` : ''}</div></div>
         <div class="kpi"><div class="label">Không có comment</div><div class="value">${c.zeroComment}</div><div class="hint">${c.emptyKeywords.length ? `Từ khoá không ra video: ${esc(c.emptyKeywords.join(', '))}` : 'mọi từ khoá đều có video'}</div></div></div>
       <div class="filter-table" style="margin-top:14px" data-filters>
         <div class="filter-row"><div class="fr-label">Đăng trong</div>${chips('age', [7, 30, 90].map((v) => ({ v, label: `${v} ngày` })), f.age)}<div></div></div>

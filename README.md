@@ -93,6 +93,10 @@ Nhóm **TikTok** trong menu có 3 màn:
 - **Tìm video TikTok**: lưới video xếp theo Hot score (tương tác ÷ (ngày + 2)), lọc theo tuổi, like, comment; chọn video rồi bấm **Lấy comment**.
 - **Comment TikTok**: dán link (kể cả `vm.tiktok.com`), lấy tới 300 comment kèm trả lời.
 
+Cả hai màn trên có bộ lọc video trước khi đọc comment: **View tối thiểu**, **Like tối thiểu**, **Đăng trong** N ngày, **Tương tác ≥** (like + comment + share + save) ÷ view. Comment chỉ có emoji, sticker hoặc @tag bị bỏ khỏi báo cáo.
+
+> Từ tháng 11/2026 TikTok bắt đăng nhập mới cho tìm kiếm (mã 2483), kể cả với trình duyệt thường. Lấy comment theo link vẫn không cần đăng nhập.
+
 Tìm kiếm TikTok cần Chromium ẩn, cài một lần (~150 MB):
 
 ```bash

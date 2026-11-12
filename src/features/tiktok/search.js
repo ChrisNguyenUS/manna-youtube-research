@@ -30,12 +30,20 @@ export function makeTikTokSearch({ tiktok, records, now }) {
     if (emptyKeywords.length === keywords.length) throw Object.assign(new Error('TikTok đang chặn tìm kiếm, thử lại sau vài phút'), { code: 'tiktok_blocked' });
     const t = now();
     const all = [...merged.values()].map((v) => ({ ...v, ...videoMetrics(v, t), onTopic: keywordInText(`${v.caption} ${v.hashtags.join(' ')}`, v.queries) }));
-    const kept = params.keepOffTopic ? all : all.filter((v) => v.onTopic);
+    const topical = params.keepOffTopic ? all : all.filter((v) => v.onTopic);
+    // View / like / age / engagement thresholds (0 or empty = no limit), as in the tiktok-actors pipeline.
+    const minPlays = Number(params.minPlays) || 0;
+    const minLikes = Number(params.minLikes) || 0;
+    const maxAgeDays = Number(params.maxAgeDays) || 0;
+    const minEngagement = (Number(params.minEngagement) || 0) / 100;
+    const passes = (v) =>
+      v.plays >= minPlays && v.likes >= minLikes && (!maxAgeDays || (v.ageDays != null && v.ageDays <= maxAgeDays)) && (!minEngagement || (v.engagementRate ?? 0) >= minEngagement);
+    const kept = topical.filter(passes);
     kept.sort((a, b) => (b.hotScore ?? -Infinity) - (a.hotScore ?? -Infinity) || b.interactions - a.interactions);
     const result = {
       keywords,
       videos: kept,
-      counts: { found: merged.size, duplicates: rows - merged.size, offTopic: all.length - kept.length, zeroComment: kept.filter((v) => v.comments === 0).length, emptyKeywords },
+      counts: { found: merged.size, duplicates: rows - merged.size, offTopic: all.length - topical.length, belowFilters: topical.length - kept.length, zeroComment: kept.filter((v) => v.comments === 0).length, emptyKeywords },
     };
     const id = save ? records.add('tiktok_search', keywords.join(', '), { params, data: result }) : null;
     return { id, ...result };

@@ -7,4 +7,5 @@ export * from './patterns.js';
 export * from './score-card.js';
 export * from './tiktok-video-card.js';
 export * from './comment-groups.js';
+export * from './tiktok-filters.js';
 export { median } from '../lib.js';
