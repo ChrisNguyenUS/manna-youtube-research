@@ -5,6 +5,8 @@
 //   node src/cli/index.js comments <videoUrl...> [--max 100]
 //   node src/cli/index.js ideas "ý tưởng 1" "ý tưởng 2"
 //   node src/cli/index.js tiktok-insight "kw1" "kw2" [--top 10] [--comments 300] [--no-replies] [--all]
+//   node src/cli/index.js tiktok-login     (mở cửa sổ để bạn tự đăng nhập TikTok; tìm kiếm cần bước này)
+//   node src/cli/index.js tiktok-logout
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT } from '../config.js';
@@ -86,8 +88,20 @@ if (cmd === 'research') {
   write(`tiktok-${slug(pos[0] || 'tiktok')}-${day}.digest.md`, tiktokInsightMarkdown(records.get(r.id).data));
   console.log(`Báo cáo #${r.id} cũng có trong app (TikTok → Insight khách hàng).`);
   await app.close();
+} else if (cmd === 'tiktok-login') {
+  console.log('Đã mở cửa sổ Chromium. Đăng nhập TikTok ở đó (quét mã QR bằng app TikTok là nhanh nhất), cửa sổ sẽ tự đóng khi xong.');
+  try {
+    const st = await app.tiktok.login();
+    console.log(`✔ Đã đăng nhập TikTok${st.expiresAt ? `, phiên dùng tới ${st.expiresAt.slice(0, 10)}` : ''}. Tìm kiếm TikTok dùng được rồi.`);
+  } catch (e) {
+    console.error(`✘ ${e.message}`);
+    process.exit(1);
+  }
+} else if (cmd === 'tiktok-logout') {
+  await app.tiktok.logout();
+  console.log('✔ Đã xoá phiên đăng nhập TikTok trên máy này.');
 } else {
-  console.log('Lệnh: research | channel | comments | ideas | tiktok-insight  (xem đầu file src/cli/index.js)');
+  console.log('Lệnh: research | channel | comments | ideas | tiktok-insight | tiktok-login | tiktok-logout  (xem đầu file src/cli/index.js)');
   process.exit(1);
 }
 process.exit(0);

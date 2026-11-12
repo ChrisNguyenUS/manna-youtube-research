@@ -1,7 +1,7 @@
 // Single source of truth for metric names and formulas (docs/ARCHITECTURE.md §6).
 // UI tooltips, CSV headers and Markdown labels read from here. Changing a formula: bump `version`.
 
-/** @typedef {{label: {vi: string, en: string}, unit: 'x'|'count'|'per_hour'|'per_day'|'days', formula: string, version: number}} MetricDef */
+/** @typedef {{label: {vi: string, en: string}, unit: 'x'|'count'|'per_hour'|'per_day'|'days'|'score', formula: string, version: number}} MetricDef */
 
 /** @type {Record<string, MetricDef>} */
 export const METRICS = {
@@ -34,6 +34,11 @@ export const METRICS = {
   hotScore: { label: { vi: 'Hot score', en: 'Hot score' }, unit: 'per_day', version: 1, formula: '(like + comment + share + save) ÷ (số ngày từ lúc đăng + 2)' },
   engagementRate: { label: { vi: 'Tỉ lệ tương tác', en: 'Engagement rate' }, unit: 'x', version: 1, formula: '(like + comment + share + save) ÷ lượt xem' },
   attentionPerDay: { label: { vi: 'Attention/ngày', en: 'Attention/day' }, unit: 'per_day', version: 1, formula: '(like + trả lời của comment) ÷ (số ngày từ lúc comment + 2)' },
+  playsPerDay: { label: { vi: 'View/ngày (TikTok)', en: 'Plays/day (TikTok)' }, unit: 'per_day', version: 1, formula: 'lượt xem TikTok ÷ (số ngày từ lúc đăng + 2), cùng mẫu số với Hot score' },
+  trendingScore: { label: { vi: 'Điểm trending', en: 'Trending score' }, unit: 'score', version: 1, formula: 'bách phân vị của View/ngày (TikTok) trong cùng lượt tìm, 0–100' },
+  engagementScore: { label: { vi: 'Điểm tương tác', en: 'Engagement score' }, unit: 'score', version: 1, formula: 'trung bình bách phân vị của tổng tương tác và tỉ lệ tương tác trong cùng lượt tìm, 0–100' },
+  freshnessScore: { label: { vi: 'Điểm hợp thời', en: 'Freshness score' }, unit: 'score', version: 1, formula: '100 × 0,5^(số ngày tuổi ÷ 14): đăng hôm nay 100, 14 ngày 50, 28 ngày 25' },
+  tiktokScore: { label: { vi: 'Điểm tổng', en: 'Overall score' }, unit: 'score', version: 1, formula: '0,5 × trending + 0,3 × tương tác + 0,2 × hợp thời' },
 };
 
 /** @param {string} id @param {'vi'|'en'} [lang] */

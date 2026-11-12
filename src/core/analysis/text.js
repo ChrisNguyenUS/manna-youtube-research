@@ -104,7 +104,9 @@ export function titleShape(videos) {
 }
 
 // ---------- comments ----------
-const QUESTION_RE = /\?|(^|\s)(tại sao|vì sao|làm sao|làm thế nào|như thế nào|ở đâu|bao nhiêu|bao giờ|khi nào|có ai|ai biết|có phải|được không|có nên|nên làm gì|là gì|why|how|what|where|when|which|who|is there|does anyone|can someone|can you|anyone know)(?![\p{L}\p{N}])/iu;
+// Vietnamese questions often skip the "?": common question phrases, and a trailing không/ko/chưa.
+const QUESTION_TAIL_RE = /(?<![\p{L}\p{N}])(không|ko|hông|chưa)[\s.!…]*$/iu;
+const QUESTION_RE = /\?|(^|\s)(cho hỏi|cho mình hỏi|cho em hỏi|cho tôi hỏi|bao lâu|thế nào|như nào|mất mấy|mấy tháng|mấy ngày|mấy năm|mấy lần|phải không|đúng không|không ạ|ko ạ|chưa ạ|gì vậy|gì ạ|tại sao|vì sao|làm sao|làm thế nào|như thế nào|ở đâu|bao nhiêu|bao giờ|khi nào|có ai|ai biết|có phải|được không|có nên|nên làm gì|là gì|why|how|what|where|when|which|who|is there|does anyone|can someone|can you|anyone know)(?![\p{L}\p{N}])/iu;
 const COMPLAINT_RE = /(tiếc|chán|dở|tệ|sai rồi|không đúng|thất vọng|quá dài|dài dòng|nhiều quảng cáo|giật tít|câu view|lừa|ghét|khó nghe|nhạc to|giọng ai|ai voice|wrong|boring|hate|clickbait|misleading|too long|annoying|disappoint|ai generated|ai voice|fake|inaccurate|not true)/iu;
 const REQUEST_RE = /(làm video về|làm thêm|làm tiếp|phần 2|phần tiếp|tập tiếp|ra tiếp|mong ad|mong kênh|xin ad|ad ơi làm|nói về|please make|make a video|do a video|part 2|next video|more about|cover|can you do|talk about|would love to see|waiting for)/iu;
 const END = '(?![\\p{L}\\p{N}])';
@@ -113,9 +115,15 @@ const words = (list) => new RegExp(`${START}(${list.join('|')})${END}`, 'iu');
 const FEAR_RE = words(['sợ', 'lo lắng', 'lo sợ', 'lo quá', 'lo lắm', 'lo ghê', 'lo là', 'có an toàn', 'có sao không', 'có bị \\S+(?: \\S+)? không', 'bị lừa', 'mất tiền', 'rủi ro', 'nguy hiểm', 'tác dụng phụ', 'có hại', 'scared', 'worried', 'afraid', 'is it safe', 'scam', 'risk']);
 const BUYING_RE = words(['giá bao nhiêu', 'giá sao', 'giá nhiêu', 'giá thế nào', 'báo giá', 'xin giá', 'bao nhiêu tiền', 'bao nhiêu 1', 'mua ở đâu', 'mua sao', 'link mua', 'xin link', 'cho link', 'link đâu', 'link ở đâu', 'ship', 'có bán', 'inbox', 'ib', 'đặt hàng', 'order', 'price', 'how much', 'where to buy']);
 
+/** False for comments with nothing to read: emoji, @tags, [sticker] tags, a stray letter. */
+export function hasWords(text) {
+  const bare = String(text || '').replace(/@\S+/g, '').replace(/\[[^\]]*\]/g, '');
+  return (bare.match(/[\p{L}\p{N}]/gu) ?? []).length >= 2;
+}
+
 export function classifyComment(text) {
   const t = String(text || '');
-  return { question: QUESTION_RE.test(t), complaint: COMPLAINT_RE.test(t), request: REQUEST_RE.test(t), fear: FEAR_RE.test(t), buying: BUYING_RE.test(t) };
+  return { question: QUESTION_RE.test(t) || QUESTION_TAIL_RE.test(t.trim()), complaint: COMPLAINT_RE.test(t), request: REQUEST_RE.test(t), fear: FEAR_RE.test(t), buying: BUYING_RE.test(t) };
 }
 
 export function commentInsights(comments, { limit = 25 } = {}) {

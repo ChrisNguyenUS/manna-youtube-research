@@ -28,6 +28,39 @@ export async function mount(root) {
     await settingsApi.save(body);
     toast('Đã lưu cài đặt');
   });
-  const st = await (await import('../http/client.js')).status.get();
-  root.querySelector('.callout.info').insertAdjacentHTML('afterend', `<div class="section-label">TikTok</div><div class="callout ${st.tiktok?.searchReady ? 'info' : ''}">${st.tiktok?.searchReady ? 'Tìm kiếm TikTok: sẵn sàng.' : `Tìm kiếm TikTok chưa sẵn sàng. ${esc(st.tiktok?.reason || '')} (khoảng 150 MB). Comment TikTok vẫn dùng được.`}</div>`);
+  const { status, tiktokLogin } = await import('../http/client.js');
+  const st = await status.get();
+  root.querySelector('.callout.info').insertAdjacentHTML('afterend', `<div class="section-label">TikTok</div><div data-tiktok></div>`);
+  const box = root.querySelector('[data-tiktok]');
+  const day = (iso) => (iso ? new Date(iso).toLocaleDateString('vi-VN') : '');
+
+  /** @param {{loggedIn: boolean, savedAt: string|null, expiresAt: string|null}} login @param {string} [note] */
+  function render(login, note = '') {
+    if (!st.tiktok?.searchReady) {
+      box.innerHTML = `<div class="callout">Tìm kiếm TikTok chưa sẵn sàng. ${esc(st.tiktok?.reason || '')} (khoảng 150 MB). Comment TikTok vẫn dùng được.</div>`;
+      return;
+    }
+    box.innerHTML = login.loggedIn
+      ? `<div class="callout info">Đã đăng nhập TikTok${login.savedAt ? ` (lưu ngày ${day(login.savedAt)}` : ''}${login.expiresAt ? `, hết hạn ${day(login.expiresAt)})` : login.savedAt ? ')' : ''}. Tìm kiếm TikTok dùng phiên này.</div>
+         <div class="row" style="margin-top:10px"><button class="btn" data-login>${icon('refresh')} Đăng nhập lại</button><button class="btn" data-logout>${icon('trash')} Đăng xuất</button></div>`
+      : `<div class="callout">TikTok bắt đăng nhập mới cho tìm kiếm. Bấm nút dưới: một cửa sổ Chromium mở ra, bạn tự đăng nhập TikTok ở đó (quét mã QR bằng app TikTok là nhanh nhất). App chỉ giữ phiên đăng nhập trên máy này, không thấy mật khẩu.</div>
+         <div class="row" style="margin-top:10px"><button class="btn primary" data-login>${icon('key')} Đăng nhập TikTok</button></div>`;
+    if (note) box.insertAdjacentHTML('beforeend', `<div class="help" style="margin-top:8px">${esc(note)}</div>`);
+    box.querySelector('[data-login]')?.addEventListener('click', async (e) => {
+      const btn = /** @type {HTMLButtonElement} */ (e.currentTarget);
+      btn.disabled = true;
+      btn.textContent = 'Đang chờ bạn đăng nhập trong cửa sổ Chromium…';
+      try {
+        render(await tiktokLogin.start());
+        toast('Đã đăng nhập TikTok');
+      } catch (err) {
+        render(await tiktokLogin.get(), err.message);
+      }
+    });
+    box.querySelector('[data-logout]')?.addEventListener('click', async () => {
+      render(await tiktokLogin.logout());
+      toast('Đã đăng xuất TikTok trên máy này');
+    });
+  }
+  render(await tiktokLogin.get());
 }

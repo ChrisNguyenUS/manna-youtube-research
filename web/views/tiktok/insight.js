@@ -1,9 +1,9 @@
 import { records } from '../../http/client.js';
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState } from '../../lib.js';
-import { tiktokVideoCard, commentGroups, bindCommentGroups, quotes } from '../../components/index.js';
+import { tiktokVideoCard, commentGroups, bindCommentGroups, quotes, tiktokVideoFilters } from '../../components/index.js';
 import { scope } from '../../dom.js';
 
-const FORM = { keywords: '', top: 10, commentsPerVideo: 300, replies: true, keepOffTopic: false };
+const FORM = { keywords: '', top: 10, commentsPerVideo: 300, replies: true, keepOffTopic: false, minPlays: 0, minLikes: 0, maxAgeDays: 0, minEngagement: 0 };
 
 export async function mount(root, params) {
   const st = store('tt-insight-form', FORM);
@@ -16,6 +16,7 @@ export async function mount(root, params) {
         <span class="small muted" style="margin-left:12px">Comment mỗi video</span>${chips('commentsPerVideo', [100, 300].map((v) => ({ v, label: String(v) })), st.commentsPerVideo)}</div>
       <div class="row" style="margin-top:8px"><label class="check"><input type="checkbox" data-k="replies" ${st.replies ? 'checked' : ''}> Lấy cả trả lời</label>
         <label class="check" style="margin-left:12px"><input type="checkbox" data-k="keepOffTopic" ${st.keepOffTopic ? 'checked' : ''}> Giữ cả video lạc đề</label></div>
+      ${tiktokVideoFilters(st)}
       <div class="row" style="margin-top:14px"><button class="btn primary lg" data-run>${icon('doc')} Lập báo cáo</button><span class="muted small">~3–5 phút cho 10 video · miễn phí</span></div>
     </div>
     <div data-out style="margin-top:14px"></div><div class="card" data-history style="margin-top:14px"></div>`;
@@ -45,7 +46,7 @@ export async function mount(root, params) {
     const d = rec.data;
     const g = d.insight.groupCounts;
     out.innerHTML = `
-      <div class="card card-pad"><div class="row between"><div><h2 style="margin:0;font-size:18px">${esc(d.keywords.join(', '))}</h2><div class="muted small">${ago(rec.created_at)} · ${d.counts.found} video tìm được · ${d.counts.offTopic} lạc đề bỏ${d.failedVideos.length ? ` · ${d.failedVideos.length} video lỗi` : ''}</div></div>
+      <div class="card card-pad"><div class="row between"><div><h2 style="margin:0;font-size:18px">${esc(d.keywords.join(', '))}</h2><div class="muted small">${ago(rec.created_at)} · ${d.counts.found} video tìm được · ${d.counts.offTopic} lạc đề bỏ${d.counts.belowFilters ? ` · ${d.counts.belowFilters} dưới ngưỡng lọc` : ''}${d.failedVideos.length ? ` · ${d.failedVideos.length} video lỗi` : ''}</div></div>
         <div class="head-actions"><a class="btn sm" href="${records.exportUrl(id, 'md')}">${icon('download')} Markdown</a><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div></div></div>
       <div class="kpis" style="margin-top:14px">
         <div class="kpi"><div class="label">Video đọc comment</div><div class="value">${d.videos.length}</div></div>
@@ -64,7 +65,7 @@ export async function mount(root, params) {
 
   async function history() {
     const list = await records.list('tiktok_insight', 30);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>${icon('doc')} Báo cáo đã lập</h3></div>${list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/tiktok/insight?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa có báo cáo nào')}`;
+    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Báo cáo đã lập</h3></div>${list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/tiktok/insight?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa có báo cáo nào')}`;
     root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));
   }
   history();

@@ -1,4 +1,5 @@
 // Composition root: the only place that picks concrete adapters (docs/ARCHITECTURE.md §2.3).
+import path from 'node:path';
 import { loadConfig } from './config.js';
 import { openDatabase } from './store/sqlite/db.js';
 import { createSqliteStore } from './store/sqlite/index.js';
@@ -16,6 +17,7 @@ import { makeScoreOneKeyword, makeKeywordScores } from './features/keyword-score
 import { makeTikTokSearch } from './features/tiktok/search.js';
 import { makeTikTokComments } from './features/tiktok/comments.js';
 import { makeTikTokInsight } from './features/tiktok/insight.js';
+import { makeTikTokScrape } from './features/tiktok/scrape.js';
 
 /**
  * @param {{config?: ReturnType<typeof loadConfig>, source?: import('./ports/youtube-source.js').YouTubeSource, store?: import('./store/sqlite/index.js').Store,
@@ -26,7 +28,8 @@ export function createApp({ config = loadConfig(), source, store, tiktok } = {})
   const ws = 'local'; // workspace; becomes the signed-in workspace when the app goes multi-user
   const settings = () => store.settings.all(ws);
   source ??= createInnertubeSource(settings());
-  tiktok ??= createTikTokSource();
+  // The user's own TikTok sign-in (cookies only, never a password), next to the database.
+  tiktok ??= createTikTokSource({ sessionFile: path.join(config.dataDir, 'tiktok-session.json') });
   const base = { source, store, ws, settings, now: Date.now, records: recordsFor(store, ws) };
   const enrich = makeEnrich(base);
   const tiktokSearch = makeTikTokSearch({ tiktok, records: base.records, now: base.now });
@@ -48,6 +51,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok } = {})
     tiktokSearch,
     tiktokComments: makeTikTokComments({ tiktok, records: base.records, now: base.now }),
     tiktokInsight: makeTikTokInsight({ tiktok, records: base.records, now: base.now, tiktokSearch }),
+    tiktokScrape: makeTikTokScrape({ tiktokSearch, now: base.now }),
   };
 
   /** Job kind → handler. ctx.progress throws after cancel, which is how jobs stop. */
