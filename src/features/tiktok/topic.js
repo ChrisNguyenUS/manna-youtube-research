@@ -4,7 +4,7 @@ import { noop, splitList } from '../shared.js';
 import { videoMetrics } from '../../core/tiktok/metrics.js';
 import { rankVideos } from '../../core/tiktok/rank.js';
 import { expandKeywords, intentOf, INTENT_LABELS, foldWords, topHashtags } from '../../core/tiktok/keywords.js';
-import { keywordInText } from '../../core/analysis/topic.js';
+import { classifyOnTopic, OFF_TOPIC_REASONS } from '../../core/tiktok/on-topic.js';
 import { hasWords } from '../../core/analysis/text.js';
 import { median } from '../../core/metrics/video.js';
 import { rethrowIfCancelled } from '../../core/cancel.js';
@@ -50,6 +50,7 @@ export function makeTikTokTopicScan({ tiktok, records, now }) {
     const minPlays = Number(params.minPlays) || 0;
     const maxAgeDays = Number(params.maxAgeDays) || 0;
     const topComments = params.topComments === 0 ? 0 : 3;
+    const keepOffTopic = Boolean(params.keepOffTopic);
 
     // Keywords: the ones the user picked on screen, or TikTok's related searches when none were sent.
     let keywordList = splitList(params.keywords);
@@ -71,12 +72,15 @@ export function makeTikTokTopicScan({ tiktok, records, now }) {
 
     const scannedAt = new Date(now()).toISOString();
     const data = {
-      topic, scannedAt, status: 'running', params: { perKeyword, sort, minPlays, maxAgeDays, topComments },
+      topic, scannedAt, status: 'running', params: { perKeyword, sort, minPlays, maxAgeDays, topComments, keepOffTopic },
       keywords: discovered, columns: [], summary: null, hashtags: [],
       previous: prev ? { id: prev.id, scannedAt: prev.data.scannedAt } : null,
     };
     const id = records.add('tiktok_topic', topic, { ref, params, data });
     const commentCache = new Map();
+    // Every video seen in this scan: the topic's hashtags are learned from all of them, not one keyword at a time.
+    /** @type {Map<string, any>} */
+    const pool = new Map();
 
     async function commentsOf(videoId) {
       if (commentCache.has(videoId)) return commentCache.get(videoId);
@@ -96,13 +100,26 @@ export function makeTikTokTopicScan({ tiktok, records, now }) {
       for (const [i, kw] of keywordList.entries()) {
         const step = `Quét "${kw}" (${i + 1}/${keywordList.length})`;
         progress({ step, done: i, total: keywordList.length, recordId: id });
-        const col = { keyword: kw, intent: intentOf(kw), intentLabel: INTENT_LABELS[intentOf(kw)], videos: [], found: 0, stats: null, error: null };
+        const col = { keyword: kw, intent: intentOf(kw), intentLabel: INTENT_LABELS[intentOf(kw)], videos: [], found: 0, offTopic: 0, offTopicVideos: [], junk: false, stats: null, error: null };
         try {
           // Fetch more than shown, so the view/age filters still leave a full column.
           const list = await tiktok.searchVideos(kw, { max: Math.min(Math.max(perKeyword * 3, 30), 60) });
           col.found = list.length;
           const t = now();
-          let vids = list.map((v) => ({ ...v, ...videoMetrics(v, t), onTopic: keywordInText(`${v.caption} ${v.hashtags.join(' ')}`, [kw, topic]) }));
+          for (const v of list) pool.set(v.id, v);
+          const poolList = [...pool.values()];
+          const verdicts = classifyOnTopic(poolList, [topic, kw]);
+          const verdictOf = new Map(poolList.map((v, k) => [v.id, verdicts[k]]));
+          let vids = list.map((v) => ({ ...v, ...videoMetrics(v, t), onTopic: verdictOf.get(v.id).onTopic, offTopicReason: verdictOf.get(v.id).reason }));
+          // Counted among the videos the view/age filters would show: smaller ones are left out either way.
+          const shown = vids.filter((v) => v.plays >= minPlays && (!maxAgeDays || (v.ageDays != null && v.ageDays <= maxAgeDays)));
+          const off = shown.filter((v) => !v.onTopic).sort((a, b) => b.plays - a.plays);
+          col.offTopic = off.length;
+          col.offTopicVideos = off.slice(0, 10).map((v) => ({ url: v.url, caption: v.caption.slice(0, 160), author: v.author, plays: v.plays, reason: OFF_TOPIC_REASONS[v.offTopicReason] }));
+          // A suggestion TikTok made whose videos, among those big enough to show, are mostly unrelated
+          // ("Di Trú Mỹ - Vogue": its top videos are JISOO and dance clips, the on-topic ones are small).
+          col.junk = shown.length >= 4 && off.length > shown.length / 2;
+          if (!keepOffTopic) vids = vids.filter((v) => v.onTopic);
           vids = vids.filter((v) => v.plays >= minPlays && (!maxAgeDays || (v.ageDays != null && v.ageDays <= maxAgeDays)));
           let ranked = rankVideos(vids, { sort: sort === 'plays' ? 'score' : sort });
           if (sort === 'plays') ranked = ranked.sort((a, b) => b.plays - a.plays).map((v, k) => ({ ...v, rank: k + 1 }));
@@ -146,6 +163,8 @@ export function makeTikTokTopicScan({ tiktok, records, now }) {
         maxPlays: all.length ? Math.max(...all.map((v) => v.plays)) : 0,
         fresh30: all.filter((v) => v.ageDays != null && v.ageDays <= 30).length,
         newSincePrevious: prev ? all.filter((v) => v.isNew).length : null,
+        offTopic: data.columns.reduce((s, c) => s + (c.offTopic ?? 0), 0),
+        junkKeywords: data.columns.filter((c) => c.junk).map((c) => c.keyword),
       };
       data.hashtags = topHashtags(all);
       data.status = 'done';

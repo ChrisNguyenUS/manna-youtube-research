@@ -65,3 +65,30 @@ test('login wall stops the scan and the half-done record is not used as the next
   await assert.rejects(() => a.features.tiktokTopicScan({ topic: 'x', keywords: 'x' }, () => {}), (/** @type {any} */ e) => e.code === 'tiktok_login_required');
   assert.equal(a.store.records.latestByRef('local', 'tiktok_topic', 'x').data.status, 'failed');
 });
+
+test('off-topic videos are left out of a column and listed; a keyword that mostly brings unrelated videos is flagged as junk', async () => {
+  const mk = (id, caption, hashtags = [], plays = 200_000) => ({ ...FAKE_VIDEOS[0], id, caption, hashtags, plays });
+  const byKeyword = {
+    'di trú mỹ': [mk('7100000000000000001', 'Luật di trú mới', ['dinhcumy', 'thexanhmy']), mk('7100000000000000002', 'Tin di trú hôm nay', ['dinhcumy', 'thexanhmy']), mk('7100000000000000003', 'Ông Trump siết thẻ xanh', ['dinhcumy', 'thexanhmy'])],
+    'Di Trú Mỹ - Vogue': [mk('7100000000000000004', 'JISOO in VOGUE CHINA', ['jisoo'], 2_600_000), mk('7100000000000000005', 'Vogue dance', ['dance']), mk('7100000000000000006', 'phonk session', ['phonk']), mk('7100000000000000007', 'Di trú Mỹ cần biết', ['dinhcumy'])],
+  };
+  const tt = createFakeTikTok();
+  tt.searchVideos = async (q) => (byKeyword[q] ?? []).map((v) => ({ ...v, query: q }));
+  const a = testApp(undefined, tt);
+  const r = await a.features.tiktokTopicScan({ topic: 'di trú mỹ', keywords: 'di trú mỹ, Di Trú Mỹ - Vogue', topComments: 0 }, () => {});
+  const d = a.store.records.get('local', r.id).data;
+  assert.equal(d.columns[0].videos.length, 3, '"Ông Trump siết thẻ xanh" kept through the topic hashtags');
+  const vogue = d.columns[1];
+  assert.equal(vogue.junk, true);
+  assert.deepEqual(vogue.videos.map((v) => v.caption), ['Di trú Mỹ cần biết']);
+  assert.equal(vogue.offTopic, 3);
+  assert.equal(vogue.offTopicVideos[0].caption, 'JISOO in VOGUE CHINA');
+  assert.deepEqual(d.summary.junkKeywords, ['Di Trú Mỹ - Vogue']);
+  const all = await a.features.tiktokTopicScan({ topic: 'di trú mỹ', keywords: 'Di Trú Mỹ - Vogue', keepOffTopic: true, topComments: 0 }, () => {});
+  assert.equal(a.store.records.get('local', all.id).data.columns[0].videos.length, 4, 'keepOffTopic keeps them');
+});
+
+test('video search lists what the on-topic rule dropped, with the reason', async () => {
+  const r = await testApp().features.tiktokSearch({ keywords: 'thi quốc tịch mỹ' }, () => {});
+  assert.ok(r.offTopicVideos.some((v) => v.caption === 'Đi thi chỉ để biết giải nhì' && v.reason === 'không khớp chủ đề'));
+});

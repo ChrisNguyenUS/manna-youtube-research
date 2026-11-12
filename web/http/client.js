@@ -5,6 +5,8 @@ const BASE = '/api/v1';
 export async function api(path, { method = 'GET', body } = {}) {
   const res = await fetch(BASE + path, { method, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
   const data = await res.json().catch(() => ({}));
+  // The page is always loaded fresh from disk, but a server started before an update still runs the old code.
+  if (res.status === 404 && data.error?.message === 'Không có API này') throw new Error('Server đang chạy bản cũ, chưa có tính năng này. Tắt app (Stop Content Research) rồi mở lại.');
   if (!res.ok) throw new Error(data.error?.message || data.error || `Lỗi ${res.status}`);
   return data;
 }

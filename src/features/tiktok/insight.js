@@ -45,7 +45,7 @@ export function makeTikTokInsight({ tiktok, records, now, tiktokSearch }) {
       topByAttention: [...scored].filter((c) => c.attentionPerDay != null).sort((a, b) => b.attentionPerDay - a.attentionPerDay).slice(0, 100),
       groupCounts: voice.counts,
     };
-    const data = { keywords: search.keywords, counts: { ...search.counts, kept: search.videos.length, commentsRead: scored.length }, videos, comments: scored, insight, failedVideos };
+    const data = { keywords: search.keywords, counts: { ...search.counts, kept: search.videos.length, commentsRead: scored.length }, videos, comments: scored, insight, failedVideos, offTopicVideos: search.offTopicVideos ?? [] };
     const id = records.add('tiktok_insight', search.keywords.join(', '), { params, data });
     return { id, ...data };
   };

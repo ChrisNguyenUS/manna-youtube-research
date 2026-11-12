@@ -138,8 +138,16 @@ Hoặc mở trên trình duyệt: `http://localhost:5178/api/v1/tiktok/videos?ke
 | `sort` | `score` | `score` (tổng hợp), `trending`, `engagement`, `fresh`, `hot` (Hot score cũ) |
 | `limit` | tất cả | chỉ trả N video đầu |
 | `minPlays`, `minLikes`, `maxAgeDays`, `minEngagement` | 0 | lọc như màn Tìm video (`minEngagement` tính bằng %) |
-| `keepOffTopic` | false | giữ cả video không có từ khoá trong caption/hashtag |
+| `keepOffTopic` | false | giữ cả video lạc đề (xem **Lọc đúng chủ đề** bên dưới). Video bị bỏ nằm trong `offTopicVideos`, mỗi video có lý do |
 | `save` | false | lưu lại để mở trong app (trả `recordId`) |
+
+**Lọc đúng chủ đề** (dùng chung cho Tìm theo chủ đề, Insight, Tìm video TikTok và API này). Một video được giữ khi:
+
+1. caption hoặc hashtag có từ khoá sau khi bỏ chữ chỉ nước và chữ chỉ năm/độ mới ("di trú mỹ 2026" → "di trú"), viết liền (`#suthatditru`) hoặc đủ từng chữ trong caption ("bảo lãnh **diện** vợ chồng"); hoặc
+2. video có ít nhất 2 hashtag của chủ đề. App tự học các hashtag này từ những video khớp bước 1 trong cùng lượt tìm (với "di trú mỹ": `#dinhcumy #thexanhmy #visamy #uscis`…), không dùng AI;
+3. và video không nói về thủ tục nước khác (Canada, "sang Úc", `#dinhcuduc`…). Chủ đề không ghi nước thì coi là nước Mỹ.
+
+Đo trên 145 video TikTok thật đã gắn nhãn bằng tay (`test/fixtures/tiktok-on-topic.json`): luật cũ (cụm từ khoá viết liền) giữ được 54–75% video đúng chủ đề; luật này giữ 95–98% và chỉ lọt 1 video lạc đề. Ở **Tìm theo chủ đề**, từ khoá TikTok gợi ý mà quá nửa video lạc đề (vd "Di Trú Mỹ - Vogue" kéo ra clip JISOO) bị đánh dấu **rác** và ẩn cột.
 
 **Thứ tự xếp hạng** (`sort=score`), từ nặng tới nhẹ:
 

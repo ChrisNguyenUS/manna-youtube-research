@@ -26,7 +26,9 @@ const toRow = (v, scrapedAt) => ({
   trendingScore: v.trendingScore,
   engagementScore: v.engagementScore,
   freshnessScore: v.freshnessScore,
+  // Name kept from the old actor; it now means "on topic" by core/tiktok/on-topic.js (keyword, or the topic's hashtags).
   keywordInCaption: v.onTopic,
+  onTopicVia: v.onTopicVia ?? null,
   searchQueries: v.queries,
   authorUsername: v.author,
   authorName: v.authorName ?? '',
@@ -61,6 +63,7 @@ export function makeTikTokScrape({ tiktokSearch, now }) {
         scrapedAt,
         counts: { ...search.counts, kept: ranked.length, returned: videos.length },
         videos,
+        offTopicVideos: search.offTopicVideos ?? [],
       };
     };
     const p = turn.then(run, run);

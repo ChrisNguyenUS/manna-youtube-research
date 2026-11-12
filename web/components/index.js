@@ -8,4 +8,5 @@ export * from './score-card.js';
 export * from './tiktok-video-card.js';
 export * from './comment-groups.js';
 export * from './tiktok-filters.js';
+export * from './tiktok-off-topic.js';
 export { median } from '../lib.js';
