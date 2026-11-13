@@ -39,18 +39,25 @@ const CFG = {
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
 const setHash = (h) => window.history.replaceState(null, '', h);
 
-/** Ticked videos survive a trip to the comments screen and back (per result, until "Bỏ chọn"). */
-const selKey = (id) => `ytr:tt-topic-sel:${id}`;
+/**
+ * Ticked videos: video id → the keyword columns it was ticked in. A video found under several keywords is one
+ * video for the comment scraper, but its box is ticked only in the column where you ticked it.
+ * Survives a trip to the comments screen and back (per result, until "Bỏ chọn").
+ * @typedef {Map<string, Set<number>>} Selection
+ */
+const selKey = (id) => `ytr:tt-topic-sel:v2:${id}`;
+/** @returns {Selection} */
 const loadSel = (id) => {
   try {
-    return new Set(JSON.parse(sessionStorage.getItem(selKey(id)) || '[]'));
+    return new Map(JSON.parse(sessionStorage.getItem(selKey(id)) || '[]').map(([v, cols]) => [v, new Set(cols)]));
   } catch {
-    return new Set();
+    return new Map();
   }
 };
-const saveSel = (id, set) => {
+/** @param {Selection} sel */
+const saveSel = (id, sel) => {
   try {
-    sessionStorage.setItem(selKey(id), JSON.stringify([...set]));
+    sessionStorage.setItem(selKey(id), JSON.stringify([...sel].map(([v, cols]) => [v, [...cols]])));
   } catch {
     /* private mode */
   }
@@ -65,7 +72,8 @@ export async function mount(root, params) {
   /** @type {any} */
   let current = null; // record on screen
   let showJunk = false; // columns of keywords that mostly brought unrelated videos stay hidden until asked
-  let selected = new Set();
+  /** @type {Selection} */
+  let selected = new Map();
   let exploreKw = 'all';
   let exploreQ = '';
   /** @type {string|null} */
@@ -440,21 +448,43 @@ export async function mount(root, params) {
   }
 
   // ---------------- selection ----------------
-  /** The videos currently on screen (current tab, filters and "show N"), each once. */
-  const displayedIds = () => [...new Set([...resBox.querySelectorAll('[data-rbody] [data-sel]')].map((el) => /** @type {HTMLElement} */ (el).dataset.sel))];
+  /** The keyword column a checkbox sits in, or null (all-videos tab, detail panel). */
+  const colOf = (el) => {
+    const c = /** @type {HTMLElement} */ (el.closest('.tt-col'));
+    return c ? Number(c.dataset.col) : null;
+  };
+  /** Where a video ticked outside the columns shows as ticked in them: its first keyword column. */
+  const firstCol = (id) => Math.max(0, current?.data.columns.findIndex((c) => c.videos.some((v) => v.id === id)) ?? 0);
+  /** @param {string} id @param {number|null} col @param {boolean} on */
+  function tick(id, col, on) {
+    if (col == null) {
+      if (!on) selected.delete(id);
+      else if (!selected.has(id)) selected.set(id, new Set([firstCol(id)]));
+      return;
+    }
+    const cols = selected.get(id) ?? new Set();
+    on ? cols.add(col) : cols.delete(col);
+    cols.size ? selected.set(id, cols) : selected.delete(id);
+  }
+  /** Ticked as shown: in a column only if ticked there; elsewhere if ticked anywhere. */
+  const isOn = (el) => {
+    const id = el.dataset.sel;
+    const col = colOf(el);
+    return col == null ? selected.has(id) : Boolean(selected.get(id)?.has(col));
+  };
+  const displayedBoxes = () => [...resBox.querySelectorAll('[data-rbody] [data-sel]')];
 
-  /** Every checkbox of a video (it can sit in several keyword columns) follows the one set of ticked ids. */
   function syncSel() {
     for (const el of resBox.querySelectorAll('[data-sel]')) {
-      const on = selected.has(/** @type {HTMLElement} */ (el).dataset.sel);
+      const on = isOn(el);
       /** @type {HTMLInputElement} */ (el).checked = on;
       el.closest('[data-vid]')?.classList.toggle('on', on);
     }
     for (const el of resBox.querySelectorAll('[data-selcol]')) {
-      const ids = [...el.closest('.tt-col').querySelectorAll('[data-sel]')].map((x) => /** @type {HTMLElement} */ (x).dataset.sel);
-      const n = ids.filter((id) => selected.has(id)).length;
-      /** @type {HTMLInputElement} */ (el).checked = n > 0 && n === ids.length;
-      /** @type {HTMLInputElement} */ (el).indeterminate = n > 0 && n < ids.length;
+      const boxes = [...el.closest('.tt-col').querySelectorAll('[data-sel]')];
+      const n = boxes.filter(isOn).length;
+      /** @type {HTMLInputElement} */ (el).checked = n > 0 && n === boxes.length;
+      /** @type {HTMLInputElement} */ (el).indeterminate = n > 0 && n < boxes.length;
     }
     if (current) saveSel(current.id, selected);
     renderSelbar();
@@ -466,27 +496,28 @@ export async function mount(root, params) {
     const n = selected.size;
     bar.hidden = !n;
     if (!n) return;
-    const shownIds = displayedIds();
-    const rest = shownIds.filter((id) => !selected.has(id)).length;
+    const boxes = displayedBoxes();
+    const rest = boxes.some((el) => !isOn(el));
     const max = store('tt-comments-form', { max: 300 }).max;
-    bar.innerHTML = `<span class="tt-selcount">${icon('check')} <b>${n}</b> video đã chọn</span>
-      ${rest ? `<button type="button" class="btn sm ghost" data-selall>Chọn tất cả đang hiển thị (${shownIds.length})</button>` : ''}
+    bar.innerHTML = `<span class="tt-selcount">${icon('check')}<b>${n}</b> video đã chọn</span>
+      <span class="tt-selsep"></span>
+      ${rest ? `<button type="button" class="btn sm ghost" data-selall>Chọn tất cả đang hiển thị</button>` : ''}
       <button type="button" class="btn sm ghost" data-selnone>Bỏ chọn</button>
-      <span class="spacer"></span>
-      <label class="tt-pill"><span class="muted">Tối đa</span><select data-cmmax>${[100, 300].map((v) => `<option value="${v}" ${v === Number(max) ? 'selected' : ''}>${v} comment/video</option>`).join('')}</select></label>
-      <button type="button" class="btn primary" data-cm>${icon('message')} Lấy comment (${n})</button>`;
+      <label class="tt-pill"><select data-cmmax title="Số comment tối đa đọc ở mỗi video">${[100, 300].map((v) => `<option value="${v}" ${v === Number(max) ? 'selected' : ''}>Tối đa ${v} cmt/video</option>`).join('')}</select></label>
+      <button type="button" class="btn primary sm" data-cm>${icon('message')} Lấy comment (${n})</button>`;
   }
 
   shown.on(resBox, 'change', '[data-sel]', (e, el) => {
-    el.checked ? selected.add(el.dataset.sel) : selected.delete(el.dataset.sel);
+    tick(el.dataset.sel, colOf(el), el.checked);
     syncSel();
   });
   shown.on(resBox, 'change', '[data-selcol]', (e, el) => {
-    for (const x of el.closest('.tt-col').querySelectorAll('[data-sel]')) el.checked ? selected.add(x.dataset.sel) : selected.delete(x.dataset.sel);
+    const col = colOf(el);
+    for (const x of el.closest('.tt-col').querySelectorAll('[data-sel]')) tick(x.dataset.sel, col, el.checked);
     syncSel();
   });
   shown.on(resBox, 'click', '[data-selall]', () => {
-    for (const id of displayedIds()) selected.add(id);
+    for (const el of displayedBoxes()) if (!isOn(el)) tick(/** @type {HTMLElement} */ (el).dataset.sel, colOf(el), true);
     syncSel();
   });
   shown.on(resBox, 'click', '[data-selnone]', () => {
@@ -498,7 +529,7 @@ export async function mount(root, params) {
   shown.on(resBox, 'click', '[data-cm]', () => {
     if (!current || !selected.size) return;
     const urls = new Map(current.data.columns.flatMap((c) => c.videos.map((v) => [v.id, v.url])));
-    const list = [...selected].map((id) => urls.get(id)).filter(Boolean);
+    const list = [...selected.keys()].map((id) => urls.get(id)).filter(Boolean);
     if (!list.length) return toast('Không tìm thấy link của video đã chọn', 'error');
     saveSel(current.id, selected);
     window.__go('/tiktok/comments', { videos: list.join('\n'), run: '1' });
@@ -605,7 +636,7 @@ export async function mount(root, params) {
     else if (e.key === 'ArrowDown' || e.key === 'j') (e.preventDefault(), stepDrawer(1));
     else if (e.key === 'ArrowUp' || e.key === 'k') (e.preventDefault(), stepDrawer(-1));
     else if (e.key === 'x') {
-      selected.has(openId) ? selected.delete(openId) : selected.add(openId);
+      tick(openId, null, !selected.has(openId));
       syncSel();
     }
   };

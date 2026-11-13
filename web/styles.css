@@ -400,16 +400,16 @@ table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .tt-gbody { padding: 10px 12px 12px; display: grid; gap: 4px; }
 .tt-table tr.on td { background: var(--accent-soft); }
 .tt-trow { display: flex; gap: 10px; align-items: flex-start; max-width: 340px; }
-/* selection toolbar: stays at the bottom while scrolling the result */
-.tt-selbar { position: sticky; bottom: 12px; z-index: 15; margin-top: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--text); color: #fff; border-radius: var(--radius); padding: 8px 10px 8px 16px; box-shadow: 0 10px 30px rgba(28, 25, 23, 0.25); }
-.tt-selcount { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; }
-.tt-selcount svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2.4; }
-.tt-selbar .btn.ghost { color: #fff; }
-.tt-selbar .btn.ghost:hover { background: rgba(255, 255, 255, 0.12); }
-.tt-selbar .tt-pill { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.25); color: #fff; }
-.tt-selbar .tt-pill .muted { color: rgba(255, 255, 255, 0.7); }
-.tt-selbar .tt-pill select { color: #fff; }
-.tt-selbar .tt-pill option { color: var(--text); }
+/* selection toolbar: a compact floating pill, centred at the bottom while scrolling the result */
+.tt-selbar { position: sticky; bottom: 16px; z-index: 15; width: fit-content; max-width: calc(100% - 32px); margin: 14px auto 0; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); border-radius: 14px; padding: 6px 6px 6px 14px; box-shadow: 0 12px 32px rgba(28, 25, 23, 0.16), 0 2px 6px rgba(28, 25, 23, 0.06); animation: tt-bar-in 0.16s ease-out; }
+@keyframes tt-bar-in { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .tt-selbar { animation: none; } }
+.tt-selcount { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; white-space: nowrap; }
+.tt-selcount svg { width: 18px; height: 18px; padding: 3px; border-radius: 999px; background: var(--accent); stroke: #fff; fill: none; stroke-width: 3; }
+.tt-selsep { width: 1px; height: 20px; background: var(--line); margin: 0 6px; }
+.tt-selbar .btn.ghost { color: var(--text-2); }
+.tt-selbar .tt-pill { margin: 0 4px; }
+.tt-selbar .tt-pill select { padding-left: 2px; }
 @media (max-width: 980px) { .tt-setup { grid-template-columns: 1fr; } .tt-side { position: static; } }
 @media (max-width: 700px) { .tt-kpis { grid-template-columns: 1fr 1fr; } .tt-kpi { padding: 10px 12px; } .tt-kpi-ic { display: none; } .tt-col { flex-basis: 270px; } .tt-searchmini input { width: 130px; } .tt-cfg-row .tt-pill { width: 160px; } }
 .tt-gain { display: inline-block; font-size: 11px; font-weight: 600; border-radius: 4px; padding: 0 5px; background: var(--surface-2); color: var(--text-2); }
@@ -459,7 +459,7 @@ table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .tt-dr-cm:first-of-type { border-top: none; }
 @media (max-width: 700px) { .tt-dr-top { grid-template-columns: 110px 1fr; } .tt-dr-stats { grid-template-columns: 1fr 1fr; } }
 /* keep "Lấy comment" visible next to the open panel */
-[data-res]:has(.tt-drawer:not([hidden])) .tt-selbar { margin-right: min(440px, 100vw); }
+[data-res]:has(.tt-drawer:not([hidden])) .tt-selbar { margin-right: calc(min(440px, 100vw) + 16px); }
 @media (max-width: 900px) { [data-res]:has(.tt-drawer:not([hidden])) .tt-selbar { margin-right: 0; } .tt-drawer { bottom: 0; } }
 /* horizontal scrollbar of the keyword columns: on top, always visible, sticky while scrolling down */
 .tt-colnav { position: sticky; top: -26px; z-index: 6; background: var(--surface); padding-bottom: 6px; }
