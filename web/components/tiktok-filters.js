@@ -30,6 +30,7 @@ export function tiktokCriteria(p) {
   if (p.keywords && p.topic) parts.push(`${String(p.keywords).split(/[,\n]/).filter((x) => x.trim()).length} từ khoá`);
   if (p.sort && p.sort !== 'score') parts.push({ plays: 'xếp theo view', trending: 'xếp theo view/ngày', fresh: 'mới nhất trước' }[p.sort] || '');
   if (p.keepOffTopic) parts.push('giữ cả video lạc đề');
+  if (p.keepPrevious === false) parts.push('không giữ video lần trước');
   if (p.topComments === 0) parts.push('không lấy comment');
   return parts.filter(Boolean).join(' · ');
 }

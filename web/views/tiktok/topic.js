@@ -8,7 +8,7 @@ import { scope } from '../../dom.js';
 import { tiktokCriteria } from '../../components/index.js';
 
 const FORM = {
-  topic: '', minPlays: 100000, maxAgeDays: 0, sort: 'score', maxKeywords: 10, perKeyword: 10, topComments: 3, keepOffTopic: 0,
+  topic: '', minPlays: 100000, maxAgeDays: 0, sort: 'score', maxKeywords: 10, perKeyword: 10, topComments: 3, keepOffTopic: 0, keepPrevious: 1,
   // How the result is shown (never sent to the server).
   tab: 'compare', layout: 'grid', show: 10, vsort: 'rank', cmShow: 1,
 };
@@ -33,6 +33,7 @@ const CFG = {
   perKeyword: ['Video/từ khoá', 'play', [[5, '5 video'], [10, '10 video'], [20, '20 video'], [30, '30 video']]],
   topComments: ['Top comment', 'message', [[3, '3 comment nhiều tym'], [0, 'Không lấy (nhanh hơn)']]],
   keepOffTopic: ['Video lạc đề', 'layers', [[0, 'Bỏ, chỉ giữ đúng chủ đề'], [1, 'Giữ hết']]],
+  keepPrevious: ['Video lần trước', 'clock', [[1, 'Giữ nếu lần này thiếu'], [0, 'Không giữ']]],
   maxKeywords: ['Tự chọn sẵn', 'check', [[5, '5 từ khoá đầu'], [10, '10 từ khoá đầu'], [15, '15 từ khoá đầu'], [20, '20 từ khoá đầu']]],
 };
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
@@ -169,8 +170,8 @@ export async function mount(root, params) {
       <div class="card-pad">
         <div class="tt-selkws">${n ? picked.map((k) => `<span class="tt-selkw">${esc(k.keyword)}<button type="button" data-unpick="${kws.indexOf(k)}" title="Bỏ từ khoá này">${icon('x')}</button></span>`).join('') : '<span class="small muted">Chưa chọn từ khoá nào.</span>'}</div>
         <div class="tt-cfg-title">${icon('settings')} Cấu hình quét</div>
-        ${['maxAgeDays', 'minPlays', 'sort', 'perKeyword', 'topComments', 'keepOffTopic', 'maxKeywords'].map(cfgSelect).join('')}
-        <div class="small muted" style="margin-top:6px"><span data-tip="Đúng chủ đề = caption/hashtag có từ khoá (bỏ chữ “mỹ”, năm), hoặc có ≥ 2 hashtag của chủ đề; bỏ video về nước khác">Video lạc đề là gì?</span></div>
+        ${['maxAgeDays', 'minPlays', 'sort', 'perKeyword', 'topComments', 'keepOffTopic', 'keepPrevious', 'maxKeywords'].map(cfgSelect).join('')}
+        <div class="small muted" style="margin-top:6px"><span data-tip="Đúng chủ đề = caption/hashtag có từ khoá (bỏ chữ “mỹ”, năm), hoặc có ≥ 2 hashtag của chủ đề; bỏ video về nước khác">Video lạc đề là gì?</span> · <span data-tip="Mỗi lần tìm, TikTok trả về một bộ video hơi khác. Khi quét lại chủ đề cũ, video lần trước có mà lần này TikTok không trả về vẫn được giữ (nhãn “Lần trước”, view tính đến lần quét đó), tối đa 30 ngày.">Video lần trước là gì?</span></div>
         <button class="btn primary lg tt-scan" data-scan ${n ? '' : 'disabled'}>${icon('play')} Quét ${n} từ khoá</button>
         <div class="small muted" style="text-align:center;margin-top:6px">${n ? `Dự kiến khoảng ${minutes} phút` : 'Chọn ít nhất một từ khoá'}</div>
       </div>`;
@@ -232,7 +233,7 @@ export async function mount(root, params) {
     current = null;
     progBox.innerHTML = progressCard(`Đang quét chủ đề: ${topic}`);
     let lastDone = -1;
-    const body = { topic, keywords: keywords.join('\n'), perKeyword: o.perKeyword, sort: o.sort, minPlays: o.minPlays || 0, maxAgeDays: o.maxAgeDays || 0, topComments: o.topComments ? 3 : 0, keepOffTopic: Boolean(o.keepOffTopic) };
+    const body = { topic, keywords: keywords.join('\n'), perKeyword: o.perKeyword, sort: o.sort, minPlays: o.minPlays || 0, maxAgeDays: o.maxAgeDays || 0, topComments: o.topComments ? 3 : 0, keepOffTopic: Boolean(o.keepOffTopic), keepPrevious: o.keepPrevious !== 0 && o.keepPrevious !== false };
     try {
       const res = await runJob('tiktok_topic', body, async (p) => {
         updateProgress(progBox, p);
@@ -317,7 +318,7 @@ export async function mount(root, params) {
         </div>` : ''}</div>
       <div class="tt-kpis">
         ${kpi('layers', cols.length, 'Từ khoá', junk.length && !showJunk ? `ẩn ${junk.length} từ khoá rác` : '')}
-        ${kpi('play', all.length, 'Video', p.keepOffTopic ? 'đã gộp video trùng' : `đã gộp video trùng · bỏ ${offTopic} lạc đề`)}
+        ${kpi('play', all.length, 'Video', [p.keepOffTopic ? 'đã gộp video trùng' : `đã gộp video trùng · bỏ ${offTopic} lạc đề`, all.some((v) => v.carried) ? `${all.filter((v) => v.carried).length} giữ từ lần trước` : ''].filter(Boolean).join(' · '))}
         ${kpi('users', new Set(all.map((v) => v.author)).size, 'Kênh (creator)')}
         ${kpi('eye', fmt(sum('plays')), 'Tổng lượt xem', `${fresh30} video đăng ≤ 30 ngày`)}
         ${kpi('heart', fmt(sum('likes')), 'Tổng lượt tim')}
@@ -360,7 +361,7 @@ export async function mount(root, params) {
     }
   }
 
-  const gainBadge = (v) => (v.gain != null ? `<span class="tt-gain ${v.gain > 0 ? 'up' : ''}" title="Tăng ${fmt(v.gainPerDay)} view/ngày từ lần quét trước">+${fmt(v.gain)} view</span>` : v.isNew ? '<span class="tt-gain new" title="Lần quét trước chưa có video này">Mới</span>' : '');
+  const gainBadge = (v) => (v.carried ? `<span class="tt-gain old" title="Lần quét này TikTok không trả về video này. Giữ từ lần quét ${esc(String(v.lastSeenAt).slice(0, 10))}, view tính đến hôm đó.">Lần trước</span>` : v.gain != null ? `<span class="tt-gain ${v.gain > 0 ? 'up' : ''}" title="Tăng ${fmt(v.gainPerDay)} view/ngày từ lần quét trước">+${fmt(v.gain)} view</span>` : v.isNew ? '<span class="tt-gain new" title="Lần quét trước chưa có video này">Mới</span>' : '');
   const commentsHtml = (list, n = 3) => (list?.length && n ? `<div class="tt-cm">${list.slice(0, n).map((c) => `<div class="tt-cm-row" title="${esc(c.text)}"><span class="tt-cm-likes">♥ ${fmt(c.likes)}</span> “${esc(c.text)}”</div>`).join('')}</div>` : '');
   const cover = (v) => (v.cover ? `<img loading="lazy" src="${esc(v.cover)}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : '');
   const cb = (v) => `<input type="checkbox" class="tt-cb" data-sel="${esc(v.id)}" aria-label="Chọn video để lấy comment">`;
@@ -532,7 +533,7 @@ export async function mount(root, params) {
   /** Same topic, same keywords and filters as that scan. @param {any} rec */
   function rescan(rec) {
     const p = rec.data.params;
-    scan(rec.data.columns.map((c) => c.keyword), { topic: rec.data.topic, perKeyword: p.perKeyword, sort: p.sort, minPlays: p.minPlays, maxAgeDays: p.maxAgeDays, topComments: p.topComments, keepOffTopic: p.keepOffTopic ? 1 : 0 });
+    scan(rec.data.columns.map((c) => c.keyword), { topic: rec.data.topic, perKeyword: p.perKeyword, sort: p.sort, minPlays: p.minPlays, maxAgeDays: p.maxAgeDays, topComments: p.topComments, keepOffTopic: p.keepOffTopic ? 1 : 0, keepPrevious: p.keepPrevious === false ? 0 : 1 });
   }
 
   /** Back to setup with this scan's topic, keywords and settings, to add or drop keywords. @param {any} rec */
@@ -543,7 +544,7 @@ export async function mount(root, params) {
     for (const c of d.columns) if (!kws.some((k) => fold(k.keyword) === fold(c.keyword))) kws.push({ keyword: c.keyword, intent: c.intent || 'related', selected: true, sources: ['manual'] });
     kwTopic = d.topic;
     topicInput.value = d.topic;
-    Object.assign(st, { topic: d.topic, perKeyword: d.params.perKeyword, sort: d.params.sort, minPlays: d.params.minPlays, maxAgeDays: d.params.maxAgeDays, topComments: d.params.topComments, keepOffTopic: d.params.keepOffTopic ? 1 : 0 });
+    Object.assign(st, { topic: d.topic, perKeyword: d.params.perKeyword, sort: d.params.sort, minPlays: d.params.minPlays, maxAgeDays: d.params.maxAgeDays, topComments: d.params.topComments, keepOffTopic: d.params.keepOffTopic ? 1 : 0, keepPrevious: d.params.keepPrevious === false ? 0 : 1 });
     persist('tt-topic-form', st);
     intentFilter = 'all';
     renderKeywords();

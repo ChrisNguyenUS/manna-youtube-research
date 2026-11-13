@@ -92,3 +92,50 @@ test('video search lists what the on-topic rule dropped, with the reason', async
   const r = await testApp().features.tiktokSearch({ keywords: 'thi quốc tịch mỹ' }, () => {});
   assert.ok(r.offTopicVideos.some((v) => v.caption === 'Đi thi chỉ để biết giải nhì' && v.reason === 'không khớp chủ đề'));
 });
+
+/** A topic scan wired to the given fake TikTok and clock, sharing the app's record store. */
+async function scanWith(a, tiktok, now) {
+  const { makeTikTokTopicScan } = await import('../../src/features/tiktok/topic.js');
+  const records = { add: (k, t, o) => a.store.records.add('local', k, t, o), update: (id, d) => a.store.records.update('local', id, d), latestByRef: (k, ref) => a.store.records.latestByRef('local', k, ref) };
+  return async (params) => a.store.records.get('local', (await makeTikTokTopicScan({ tiktok, records, now: () => now })(params, () => {})).id).data;
+}
+
+test('each keyword reads 60 search results before filtering, so big videos ranked past 30 are not missed', async () => {
+  const tt = createFakeTikTok();
+  const maxes = [];
+  const orig = tt.searchVideos;
+  tt.searchVideos = async (q, o) => (maxes.push(o.max), orig(q, o));
+  await testApp(undefined, tt).features.tiktokTopicScan({ topic: 'thi quốc tịch mỹ', keywords: 'thi quốc tịch mỹ', perKeyword: 10 }, () => {});
+  assert.deepEqual(maxes, [60]);
+});
+
+test('a rescan keeps last scan videos TikTok did not return this time, for up to 30 days', async () => {
+  const a = testApp();
+  const DAY = 86_400_000;
+  const t0 = Date.parse('2026-11-01T00:00:00Z');
+  const params = { topic: 'thi quốc tịch mỹ', keywords: 'thi quốc tịch mỹ', perKeyword: 30 };
+  const d1 = await (await scanWith(a, createFakeTikTok(), t0))(params);
+  const gone = d1.columns[0].videos[0];
+  const without = createFakeTikTok({ videos: FAKE_VIDEOS.filter((v) => v.id !== gone.id) });
+
+  const d2 = await (await scanWith(a, without, t0 + DAY))(params);
+  const kept = d2.columns[0].videos.find((v) => v.id === gone.id);
+  assert.ok(kept, 'the video TikTok left out is still in the column');
+  assert.equal(kept.carried, true);
+  assert.equal(kept.lastSeenAt, d1.scannedAt);
+  assert.equal(kept.plays, gone.plays, 'views as of the scan that found it');
+  assert.equal(kept.gain, undefined);
+  assert.deepEqual(kept.topComments, gone.topComments, 'comments from last time, no new request');
+  assert.equal(d2.columns[0].carried, 1);
+  assert.equal(d2.summary.carried, 1);
+  assert.ok(d2.columns[0].videos.filter((v) => !v.carried).every((v) => v.gain != null || v.isNew));
+
+  // Still missing a month after it was last found: dropped.
+  const d3 = await (await scanWith(a, without, t0 + 31 * DAY))(params);
+  assert.ok(!d3.columns[0].videos.some((v) => v.id === gone.id));
+
+  // The user can turn it off.
+  const d4 = await (await scanWith(a, without, t0 + 2 * DAY))({ ...params, keepPrevious: false });
+  assert.ok(!d4.columns[0].videos.some((v) => v.carried));
+  assert.equal(d4.params.keepPrevious, false);
+});
