@@ -1,6 +1,6 @@
 import { scope } from '../dom.js';
 import { records } from '../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, fmt, full, mult, ago, emptyState, thumb, ytVideo, ytChannel, dur, ageText, bindTips, isSaved, toggleSave } from '../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, fmt, full, mult, ago, emptyState, thumb, ytVideo, ytChannel, dur, ageText, bindTips, isSaved, toggleSave, setUrl } from '../lib.js';
 import { viewsChart, hbars, patternList, phraseChips } from '../components/index.js';
 
 export async function mount(root, params) {
@@ -35,6 +35,7 @@ export async function mount(root, params) {
 
   async function show(id) {
     const rec = await records.get(id);
+    setUrl('/channel', { id: rec.id }); // a reload or a copied link opens this result again
     const { info, stats, videos, shorts, durations, phrases, patterns, dayOfWeek, titleShape } = rec.data;
     const standouts = videos.filter((v) => v.standout).sort((a, b) => b.views - a.views);
     out.innerHTML = `

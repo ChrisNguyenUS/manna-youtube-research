@@ -1,6 +1,6 @@
 import { scope } from '../dom.js';
 import { records } from '../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, bindTips } from '../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, bindTips, setUrl } from '../lib.js';
 import { scoreCard, bindScoreCards } from '../components/index.js';
 import { REGIONS } from './videos.js';
 
@@ -45,6 +45,7 @@ export async function mount(root, params) {
 
   async function show(id) {
     const rec = await records.get(id);
+    setUrl('/ideas', { id: rec.id }); // a reload or a copied link opens this result again
     const results = rec.data.results;
     if (results.length && !results[0].stats && !results[0].error) {
       out.innerHTML = `<div class="callout">Lần kiểm tra này làm bằng bản cũ (chưa có điểm). Bấm <b>Chấm điểm</b> để chạy lại.</div>`;

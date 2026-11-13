@@ -1,5 +1,5 @@
 import { records } from '../../http/client.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips } from '../../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl } from '../../lib.js';
 import { tiktokVideoCard, tiktokVideoFilters, offTopicDetails, tiktokCriteria } from '../../components/index.js';
 import { scope } from '../../dom.js';
 
@@ -44,6 +44,7 @@ export async function mount(root, params) {
 
   async function show(id) {
     const rec = await records.get(id);
+    setUrl('/tiktok/search', { id: rec.id }); // a reload or a copied link opens this result again
     const d = rec.data;
     const selected = new Set();
     const c = d.counts;

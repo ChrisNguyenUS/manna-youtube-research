@@ -1,5 +1,5 @@
 import { records, tiktokInsight, jobs } from '../../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips } from '../../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl } from '../../lib.js';
 import { commentGroups, bindCommentGroups, tiktokFilterSelects, offTopicDetails, tiktokCriteria, insightContext, insightOverview, topicExplorer, commentBrowser, videoGallery } from '../../components/index.js';
 import { scope } from '../../dom.js';
 
@@ -7,6 +7,7 @@ const FORM = { keywords: '', top: 10, commentsPerVideo: 300, replies: true, keep
 
 export async function mount(root, params) {
   const st = store('tt-insight-form', FORM);
+  if (params.q) st.keywords = params.q; // sent from the dashboard's topic box
   // Presets only set the two scale controls; any value can still be changed by hand afterwards.
   const PRESETS = [
     ['quick', 'bolt', 'Nghiên cứu nhanh', 'Kiểm tra nhanh một chủ đề.', 5, 100],
@@ -239,6 +240,7 @@ export async function mount(root, params) {
 
   async function show(id) {
     const rec = await records.get(id);
+    setUrl('/tiktok/insight', { id: rec.id }); // a reload or a copied link opens this result again
     const d = rec.data;
     const g = d.insight.groupCounts;
     Object.assign(cfg, { mode: 'summary', status: 'done', params: rec.params, at: rec.created_at });

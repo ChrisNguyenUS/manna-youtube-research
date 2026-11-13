@@ -75,6 +75,7 @@ const P = {
   bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
   filter: '<path d="M3 5h18l-7 8v6l-4 2v-8z"/>',
+  chevron: '<path d="m9 6 6 6-6 6"/>',
 };
 export const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${P[name] || ''}</svg>`;
 
@@ -163,6 +164,12 @@ export function updateProgress(root, p) {
   el.querySelector('[data-step]').textContent = `${p.step}${p.total ? ` · ${p.done}/${p.total}` : ''}`;
   const pct = p.total ? Math.min(100, Math.max(4, Math.round((p.done / p.total) * 100))) : 10;
   el.querySelector('.bar i').style.width = pct + '%';
+}
+
+/** Put the result on screen into the address bar (no reload, no new history entry), so a refresh or a copied link opens it again. */
+export function setUrl(path, params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  window.history.replaceState(null, '', '#' + path + (qs ? '?' + qs : ''));
 }
 
 export function toast(msg, kind = '') {

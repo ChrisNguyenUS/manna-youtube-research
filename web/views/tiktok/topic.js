@@ -761,5 +761,11 @@ export async function mount(root, params) {
   renderKeywords();
   historyList();
   if (params.id) show(params.id).catch((e) => toast(e.message, 'error'));
+  else if (params.q) {
+    // Sent from the dashboard's topic box: ask TikTok for keywords at once, once (a reload must not ask again).
+    topicInput.value = params.q;
+    setHash('#/tiktok/topic');
+    if (params.run) findKeywords();
+  }
   return () => (shown.off(), colsObserver?.disconnect());
 }
