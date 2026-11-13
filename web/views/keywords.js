@@ -8,7 +8,7 @@ import { REGIONS } from './videos.js';
 export async function mount(root, params) {
   const st = store('kw-form', { seed: '', gl: '' });
   root.innerHTML = `
-    <div class="page-head"><div><h1>${icon('key')} Từ khoá người xem gõ</h1>
+    <div class="page-head"><div><h1>${icon('key')} Gợi ý từ khoá</h1>
       <p>Gợi ý tìm kiếm của YouTube cho một từ khoá gốc (thêm a, b, c… phía sau): thứ người xem thật sự gõ. Chọn từ khoá để tìm video, tìm kênh, hoặc kiểm tra như ý tưởng.</p></div></div>
     <div class="card card-pad"><div class="input-row">
       <input class="input" data-seed placeholder="VD: kể chuyện" value="${esc(params.seed || st.seed)}">

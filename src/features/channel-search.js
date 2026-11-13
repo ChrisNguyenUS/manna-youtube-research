@@ -14,7 +14,7 @@ export function makeChannelSearch(deps) {
     const s = settings();
     const keywords = splitList(params.keywords);
     if (!keywords.length) throw new Error('Nhập ít nhất một từ khoá');
-    const source = params.source || 'both';
+    const from = params.source || 'both'; // not `source`: that name is the YouTube adapter above
     const per = Math.min(Number(params.perKeyword) || 40, 200);
     const gl = params.gl || s.gl;
     const regions = regionsFor(gl, s.globalRegions);
@@ -23,12 +23,12 @@ export function makeChannelSearch(deps) {
     const found = new Map(); // id -> { base, hits: [video] }
     for (const [i, kw] of keywords.entries()) {
       const label = `Tìm kênh "${kw}" (${i + 1}/${keywords.length})`;
-      if (source !== 'videos') {
+      if (from !== 'videos') {
         const list = await source.searchChannels(kw, { ...{ max: perRegion }, regions }, (n) => progress({ step: label, done: n, total: perRegion * regions.length }));
         for (const c of list) if (!found.has(c.id)) found.set(c.id, { base: c, hits: [], queries: new Set([kw]) });
         else found.get(c.id).queries.add(kw);
       }
-      if (source !== 'channels') {
+      if (from !== 'channels') {
         const vids = await source.searchVideos(kw, { ...{ sort: 'popularity', upload: params.upload || 'year', max: perRegion }, regions: regions }, (n) => progress({ step: `Tìm video "${kw}" để gom kênh`, done: n, total: perRegion * regions.length }));
         for (const v of vids) {
           if (!v.channelId) continue;
@@ -61,7 +61,7 @@ export function makeChannelSearch(deps) {
     );
     const ok = channels.filter((c) => c && !c.error);
     ok.sort((a, b) => (b.views30d ?? 0) - (a.views30d ?? 0));
-    const result = { channels: ok, keywords, source, regions, failed: channels.length - ok.length };
+    const result = { channels: ok, keywords, source: from, regions, failed: channels.length - ok.length };
     const id = records.add('channel_search', keywords.join(', '), { params, data: result });
     return { id, ...result };
   };

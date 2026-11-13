@@ -5,6 +5,7 @@
  * @property {string} title
  * @property {string|null} channelId
  * @property {string} channelTitle
+ * @property {string|null} [channelHandle] "@handle" of the channel, when the search result carries it
  * @property {number|null} views
  * @property {number|null} durationSec
  * @property {string|null} published   YouTube's relative text, e.g. "3 months ago"
