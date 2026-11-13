@@ -1,6 +1,6 @@
-import { records } from '../../http/client.js';
+import { records, tiktokInsight } from '../../http/client.js';
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState } from '../../lib.js';
-import { tiktokVideoCard, commentGroups, bindCommentGroups, quotes, tiktokVideoFilters, offTopicDetails, tiktokCriteria } from '../../components/index.js';
+import { tiktokVideoCard, commentGroups, bindCommentGroups, tiktokVideoFilters, offTopicDetails, tiktokCriteria, topicExplorer } from '../../components/index.js';
 import { scope } from '../../dom.js';
 
 const FORM = { keywords: '', top: 10, commentsPerVideo: 300, replies: true, keepOffTopic: false, minPlays: 0, minLikes: 0, maxAgeDays: 0, minEngagement: 0 };
@@ -55,8 +55,8 @@ export async function mount(root, params) {
         <div class="kpi"><div class="label">Câu hỏi</div><div class="value">${g.questions}</div></div>
         <div class="kpi"><div class="label">Lo sợ</div><div class="value">${g.fears}</div></div>
         <div class="kpi"><div class="label">${d.insight.themes ? 'Cân nhắc mua' : 'Muốn mua'}</div><div class="value">${g.buying}</div></div></div>
-      ${d.insight.themes ? `<div class="card" style="margin-top:14px"><div class="card-head"><h3>Khách đang hỏi gì</h3><span class="sub">Gom theo nhóm, xếp theo số câu hỏi + tim + trả lời</span></div>
-        <div class="tt-themes">${d.insight.themes.map((t) => `<div class="tt-theme"><div class="row between"><b>${esc(t.label)}</b><span class="small muted">${t.count} câu hỏi · ♥ ${fmt(t.likes)} · ↩ ${fmt(t.replies)}</span></div>${quotes(t.examples)}</div>`).join('') || emptyState('Chưa có câu hỏi')}</div></div>` : ''}
+      <div class="card" style="margin-top:14px"><div class="card-head"><h3>${icon('layers')} Khám phá chủ đề</h3><span class="sub">Bấm một chủ đề để đọc từng comment gốc của nó · bấm comment để xem đủ câu, video và creator · không lưu tên người bình luận</span></div>
+        <div data-explorer><div class="card-pad muted">Đang gom comment theo chủ đề…</div></div></div>
       <div class="card" style="margin-top:14px"><div class="card-head"><h3>Khách đang nói gì</h3><span class="sub">Trích nguyên văn, không có tên người viết</span></div>
         ${commentGroups(d.insight, { extraTabs: [['top', 'Comment nổi bật', d.insight.topByAttention]] })}</div>
       ${d.insight.voiceLines ? `<div class="card" style="margin-top:14px"><div class="card-head"><h3>Câu chữ thật của khách</h3><span class="sub">Câu ngắn nguyên văn được nhiều người phản ứng: nguyên liệu cho hook</span></div>
@@ -66,6 +66,12 @@ export async function mount(root, params) {
       <div class="card" style="margin-top:14px"><div class="card-head"><h3>Video hot</h3></div><div class="vgrid">${d.videos.map((v) => tiktokVideoCard(v)).join('') || emptyState('Không có')}</div></div>`;
     shown.off();
     shown.add(bindCommentGroups(out));
+    const ex = /** @type {HTMLElement} */ (out.querySelector('[data-explorer]'));
+    try {
+      shown.add(topicExplorer(ex, rec, await tiktokInsight.topics(id)));
+    } catch (e) {
+      ex.innerHTML = `<div class="card-pad"><div class="callout">Không gom được chủ đề: ${esc(e.message)}</div></div>`;
+    }
   }
 
   async function history() {

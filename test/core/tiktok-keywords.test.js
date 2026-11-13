@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { expandKeywords, intentOf, foldWords, topHashtags } from '../../src/core/tiktok/keywords.js';
-import { customerVoice, classifyVoice } from '../../src/core/analysis/customer-voice.js';
+import { customerVoice, classifyVoice, voiceTopics } from '../../src/core/analysis/customer-voice.js';
 import { toXlsx } from '../../src/core/report/xlsx.js';
 
 // What TikTok returned for "bảo lãnh vợ chồng" on 2026-11-12 (trimmed).
@@ -96,4 +96,26 @@ test('xlsx: a zip with workbook, styles and one sheet per tab; captions are neve
   assert.ok(text.includes('x &amp; &lt;y&gt;'));
   assert.ok(!text.includes('<f>'));
   assert.ok(text.includes('name="Từ khoá"'));
+});
+
+test('topic explorer groups: same groups and counts as the report, each with the ids of real comments', () => {
+  const comments = [
+    { id: 'a', text: 'Hồ sơ bảo lãnh vợ mất bao lâu vậy ạ?', likes: 40, replies: 5 },
+    { id: 'b', text: 'Chi phí hết bao nhiêu tiền vậy anh?', likes: 12, replies: 1 },
+    { id: 'c', text: 'Em sợ bị từ chối quá', likes: 3, replies: 0 },
+    { id: 'd', text: 'Bên em hỗ trợ, để lại số điện thoại nhé', likes: 0, replies: 0 },
+    { id: 'e', text: 'Phỏng vấn hỏi gì vậy mọi người?', likes: 7, replies: 2 },
+    { id: 'f', text: 'hay quá', likes: 1, replies: 0 },
+  ];
+  const v = customerVoice(comments);
+  const g = voiceTopics(comments);
+  const questions = g.topics.filter((t) => t.kind === 'question');
+  assert.deepEqual(questions.map((t) => [t.key, t.count]), v.themes.map((t) => [t.key, t.count]), 'aggregation unchanged');
+  for (const t of g.topics) {
+    assert.equal(t.ids.length, t.count);
+    assert.ok(t.ids.every((id) => comments.some((c) => c.id === id)), 'only real comment ids');
+  }
+  assert.ok(!g.topics.some((t) => t.ids.includes('d')), 'sellers left out, as in the report');
+  assert.deepEqual(g.topics.find((t) => t.key === 'fear').ids, ['c']);
+  assert.deepEqual(g.topics.find((t) => t.key === 'time').ids, ['a']);
 });

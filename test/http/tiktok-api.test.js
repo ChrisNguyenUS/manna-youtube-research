@@ -52,6 +52,25 @@ test('insight export: markdown and csv', async () => {
   s.close();
 });
 
+test('insight topics: every group of a saved report with the ids of its stored comments', async () => {
+  const s = await boot();
+  try {
+    const { id } = await (await post(`${s.base}/api/v1/jobs/tiktok_insight`, { keywords: 'thi quốc tịch mỹ', top: 5 })).json();
+    const j = await waitJob(s.base, id);
+    const rec = await (await fetch(`${s.base}/api/v1/records/${j.result.id}`)).json();
+    const g = await (await fetch(`${s.base}/api/v1/tiktok/insight/${j.result.id}/topics`)).json();
+    const stored = new Set(rec.data.comments.map((c) => c.id));
+    assert.ok(g.topics.length > 0);
+    for (const t of g.topics) assert.ok(t.ids.every((x) => stored.has(x)));
+    const themes = Object.fromEntries(rec.data.insight.themes.map((t) => [t.key, t.count]));
+    for (const t of g.topics.filter((x) => x.kind === 'question')) assert.equal(t.count, themes[t.key], `${t.key} count as in the report`);
+    assert.ok(!('ids' in rec.data.insight.themes[0]), 'the stored report is unchanged');
+    assert.equal((await fetch(`${s.base}/api/v1/tiktok/insight/999999/topics`)).status, 404);
+  } finally {
+    s.close();
+  }
+});
+
 test('app.close closes the TikTok browser', async () => {
   const tiktok = createFakeTikTok();
   const app = testApp(undefined, tiktok);

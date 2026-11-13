@@ -62,6 +62,8 @@ export function customerVoice(comments, { limit = 50, examples = 3, lines = 15 }
         key, label: THEME_LABELS[key], count: list.length,
         likes: list.reduce((s, c) => s + (c.likes ?? 0), 0), replies: list.reduce((s, c) => s + (c.replies ?? 0), 0),
         examples: list.slice(0, examples),
+        // Every comment of the theme, most attention first: what the topic explorer lists.
+        ids: list.map((c) => c.id),
       };
     })
     .filter((t) => t.count > 0)
@@ -90,5 +92,25 @@ export function customerVoice(comments, { limit = 50, examples = 3, lines = 15 }
     buying: buying.slice(0, limit),
     voiceLines,
     counts: { questions: questions.length, fears: fears.length, buying: buying.length },
+    fearIds: fears.map((c) => c.id),
+    buyingIds: buying.map((c) => c.id),
+  };
+}
+
+/**
+ * The groups of customerVoice() with the ids of the comments in each, for browsing them one by one.
+ * Same rule, same counts: question themes first, then fears and "about to pay".
+ * @param {{id: string, text: string, likes: number, replies?: number}[]} comments
+ */
+export function voiceTopics(comments) {
+  const v = customerVoice(comments);
+  return {
+    total: v.total,
+    questions: v.counts.questions,
+    topics: [
+      ...v.themes.map((t) => ({ key: t.key, kind: 'question', label: t.label, count: t.count, ids: t.ids })),
+      { key: 'fear', kind: 'feeling', label: 'Lo sợ, rào cản', count: v.fearIds.length, ids: v.fearIds },
+      { key: 'buying', kind: 'feeling', label: 'Cân nhắc thuê dịch vụ', count: v.buyingIds.length, ids: v.buyingIds },
+    ].filter((t) => t.count > 0),
   };
 }

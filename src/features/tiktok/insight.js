@@ -1,7 +1,7 @@
 // Use case: customer insight from comments of the hottest on-topic TikTok videos (spec §4.2).
 import { noop } from '../shared.js';
 import { hasWords } from '../../core/analysis/text.js';
-import { customerVoice } from '../../core/analysis/customer-voice.js';
+import { customerVoice, voiceTopics } from '../../core/analysis/customer-voice.js';
 import { rankVideos } from '../../core/tiktok/rank.js';
 import { rethrowIfCancelled } from '../../core/cancel.js';
 import { withAttention } from './comments.js';
@@ -38,7 +38,8 @@ export function makeTikTokInsight({ tiktok, records, now, tiktokSearch }) {
     const insight = {
       version: 2,
       questions: voice.questions,
-      themes: voice.themes,
+      // Ids are not stored: the topic explorer works them out from the stored comments (old reports too).
+      themes: voice.themes.map(({ ids, ...t }) => t),
       fears: voice.fears,
       buying: voice.buying,
       voiceLines: voice.voiceLines,
@@ -48,5 +49,19 @@ export function makeTikTokInsight({ tiktok, records, now, tiktokSearch }) {
     const data = { keywords: search.keywords, counts: { ...search.counts, kept: search.videos.length, commentsRead: scored.length }, videos, comments: scored, insight, failedVideos, offTopicVideos: search.offTopicVideos ?? [] };
     const id = records.add('tiktok_insight', search.keywords.join(', '), { params, data });
     return { id, ...data };
+  };
+}
+
+/**
+ * Topic explorer of a saved insight report: its groups (same rule as the report) with the ids of their comments.
+ * Works on any report, old ones included, since every read comment is stored with it.
+ * @param {{records: any}} deps
+ */
+export function makeTikTokInsightTopics({ records }) {
+  /** @param {number} id */
+  return function tiktokInsightTopics(id) {
+    const rec = records.get(id);
+    if (!rec || rec.kind !== 'tiktok_insight') throw Object.assign(new Error('Không thấy báo cáo insight'), { code: 'not_found' });
+    return voiceTopics(rec.data.comments ?? []);
   };
 }
