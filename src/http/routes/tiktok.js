@@ -43,6 +43,8 @@ export const tiktokRoutes = [
       return runWithSignal(signal ?? new AbortController().signal, null, () => app.features.tiktokTopicKeywords(v.value));
     },
   },
+  // Topic explorer of an insight report: each group with the ids of its comments (no new scraping).
+  { method: 'GET', path: '/api/v1/tiktok/insight/:id/topics', handler: ({ app, params }) => app.features.tiktokInsightTopics(Number(params.id)) },
   { method: 'POST', path: '/api/v1/tiktok/videos', handler: ({ app, body, signal }) => scrape(app, body, signal) },
   {
     method: 'GET', path: '/api/v1/tiktok/videos',

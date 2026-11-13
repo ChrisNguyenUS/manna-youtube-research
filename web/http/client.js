@@ -63,5 +63,10 @@ export const tiktokTopic = {
   /** @param {string} topic @param {number} [limit] */
   keywords: (topic, limit) => api('/tiktok/topic/keywords', { method: 'POST', body: { topic, limit } }),
 };
+/** Insight report: its comment groups with the ids of their comments, for the topic explorer. */
+export const tiktokInsight = {
+  /** @param {number|string} id */
+  topics: (id) => api(`/tiktok/insight/${id}/topics`),
+};
 /** @param {string[]} ids */
 export const compareChannels = (ids) => api('/compare', { method: 'POST', body: { ids } });

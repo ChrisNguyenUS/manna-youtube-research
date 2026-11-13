@@ -16,7 +16,7 @@ import { makeKeywordIdeas } from './features/keyword-ideas.js';
 import { makeScoreOneKeyword, makeKeywordScores } from './features/keyword-score.js';
 import { makeTikTokSearch } from './features/tiktok/search.js';
 import { makeTikTokComments } from './features/tiktok/comments.js';
-import { makeTikTokInsight } from './features/tiktok/insight.js';
+import { makeTikTokInsight, makeTikTokInsightTopics } from './features/tiktok/insight.js';
 import { makeTikTokScrape } from './features/tiktok/scrape.js';
 import { makeTikTokTopicKeywords, makeTikTokTopicScan } from './features/tiktok/topic.js';
 
@@ -52,6 +52,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok } = {})
     tiktokSearch,
     tiktokComments: makeTikTokComments({ tiktok, records: base.records, now: base.now }),
     tiktokInsight: makeTikTokInsight({ tiktok, records: base.records, now: base.now, tiktokSearch }),
+    tiktokInsightTopics: makeTikTokInsightTopics({ records: base.records }),
     tiktokScrape: makeTikTokScrape({ tiktokSearch, now: base.now }),
     tiktokTopicKeywords: makeTikTokTopicKeywords({ tiktok }),
     tiktokTopicScan: makeTikTokTopicScan({ tiktok, records: base.records, now: base.now }),
