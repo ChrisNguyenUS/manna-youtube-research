@@ -1,6 +1,7 @@
 import { scope } from '../dom.js';
 import { records } from '../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, setUrl, resumeJob } from '../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, setUrl, resumeJob, saveMany } from '../lib.js';
+import { savedKeyword } from '../saved-items.js';
 import { REGIONS } from './videos.js';
 
 export async function mount(root, params) {
@@ -37,7 +38,7 @@ export async function mount(root, params) {
     setUrl('/keywords', { id: rec.id }); // a reload or a copied link opens this result again
     const sel = new Set();
     out.innerHTML = `<div class="card"><div class="card-head"><h3>${rec.data.list.length} gợi ý cho "${esc(rec.data.seed)}"</h3>
-      <div class="row"><button class="btn sm" data-act="videos" disabled>${icon('search')} Tìm video</button><button class="btn sm" data-act="channels" disabled>${icon('users')} Tìm kênh</button><button class="btn sm" data-act="ideas" disabled>${icon('bulb')} Chấm điểm</button><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div></div>
+      <div class="row"><button class="btn sm" data-act="videos" disabled>${icon('search')} Tìm video</button><button class="btn sm" data-act="channels" disabled>${icon('users')} Tìm kênh</button><button class="btn sm" data-act="save" disabled title="Giữ các từ khoá đã tích trong Đã lưu">${icon('bookmark')} Lưu</button><button class="btn sm" data-act="ideas" disabled>${icon('bulb')} Chấm điểm</button><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div></div>
       <table class="t"><thead><tr><th style="width:30px"></th><th>Từ khoá</th><th class="r" data-tip="Số lần xuất hiện qua các lần gõ thử">Xuất hiện</th><th></th></tr></thead><tbody>
       ${rec.data.list.map((k, i) => `<tr><td><input type="checkbox" data-k="${i}"></td><td><b>${esc(k.keyword)}</b></td><td class="r num">${k.hits}</td>
         <td class="actions"><a class="btn sm" href="#/videos?q=${encodeURIComponent(k.keyword)}&run=1">${icon('search')} Video</a></td></tr>`).join('')}</tbody></table></div>`;
@@ -50,13 +51,14 @@ export async function mount(root, params) {
     });
     btns.forEach((b) => b.addEventListener('click', () => {
       const list = [...sel];
-      if (b.dataset.act === 'ideas') window.__go('/ideas', { ideas: list.join('\n'), run: 1 });
+      if (b.dataset.act === 'save') saveMany('keyword', list.map((k) => savedKeyword(k, 'youtube', rec.data.seed)), 'từ khoá');
+      else if (b.dataset.act === 'ideas') window.__go('/ideas', { ideas: list.join('\n'), run: 1 });
       else window.__go('/' + b.dataset.act, { q: list.join(', ') });
     }));
   }
   async function history() {
-    const list = await records.list('keywords', 20);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Đã lấy</h3></div>${list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/keywords?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span></div>`).join('') : emptyState('Chưa có')}`;
+    const list = await records.list('keywords', 5);
+    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Đã lấy</h3><a class="btn sm" href="#/history?kind=keywords">Xem tất cả</a></div>${list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/keywords?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span></div>`).join('') : emptyState('Chưa có')}`;
   }
   history();
   if (params.id) show(params.id);

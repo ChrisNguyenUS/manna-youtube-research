@@ -38,6 +38,8 @@ export function recordsRepo(db, now = Date.now) {
         : all('SELECT id, kind, title, ref, params, created_at FROM records WHERE workspace_id = ? ORDER BY created_at DESC LIMIT ?', ws, limit);
       return rows.map((r) => ({ ...r, params: r.params != null ? JSON.parse(r.params) : null }));
     },
+    /** Every result of the workspace without its params and data (newest first): small enough to search and page in memory. @param {string} ws */
+    index: (ws) => all('SELECT id, kind, title, ref, created_at FROM records WHERE workspace_id = ? ORDER BY created_at DESC, id DESC', ws),
     remove: (ws, id) => void db.prepare('DELETE FROM records WHERE workspace_id = ? AND id = ?').run(ws, id),
     /** Undo a cancelled job: delete what it wrote. @param {number} jobId */
     removeByJob: (jobId) => void db.prepare('DELETE FROM records WHERE job_id = ?').run(jobId),

@@ -198,8 +198,8 @@ export async function mount(root, params) {
   }
 
   async function history() {
-    const list = await records.list('research', 30);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>${icon('doc')} Báo cáo đã lập</h3></div>${
+    const list = await records.list('research', 5);
+    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>${icon('doc')} Báo cáo đã lập</h3><a class="btn sm" href="#/history?kind=research">Xem tất cả</a></div>${
       list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/research?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa có báo cáo nào')
     }`;
     root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));

@@ -28,6 +28,8 @@ export const records = {
   /** @param {string|null} kind @param {number} [limit] */
   list: (kind, limit) => api(`/records${q({ kind, limit })}`),
   get: (id) => api(`/records/${id}`),
+  /** History page. @param {{q?: string, kinds?: string[], limit?: number, offset?: number}} o @returns {Promise<{total: number, items: any[], counts: Record<string, number>}>} */
+  search: ({ q: text, kinds = [], limit, offset } = {}) => api(`/records/search${q({ q: text, kinds: kinds.join(','), limit, offset })}`),
   remove: (id) => api(`/records/${id}`, { method: 'DELETE' }),
   /** Link for downloads: export.md / export.csv (+ query like {what: 'comments'}). */
   exportUrl: (id, ext, query = {}) => `${BASE}/records/${id}/export.${ext}${q(query)}`,
@@ -37,6 +39,8 @@ export const saved = {
   /** @param {string} [kind] */
   list: (kind) => api(`/saved${q({ kind })}`),
   keys: () => api('/saved/keys'),
+  /** Markdown of the saved items (one kind, or all). @param {string} [kind] @param {boolean} [inline] */
+  exportUrl: (kind, inline = false) => `${BASE}/saved/export.md${q({ kind, inline: inline ? 1 : '' })}`,
   /** @param {{kind: string, ref: string, title?: string, data?: any, note?: string}} item */
   put: (item) => api('/saved', { method: 'POST', body: item }),
   /** @param {{kind: string, ref: string, note: string}} item */

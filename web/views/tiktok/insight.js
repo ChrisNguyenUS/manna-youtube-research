@@ -325,8 +325,8 @@ export async function mount(root, params) {
   }
 
   async function history() {
-    const list = await records.list('tiktok_insight', 30);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>${icon('clock')} Báo cáo đã lập</h3><span class="sub">Bấm tên để mở lại</span></div>${list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/tiktok/insight?id=${r.id}">${esc(r.title)}</a>${tiktokCriteria(r.params) ? `<span class="small muted">${esc(tiktokCriteria(r.params))}</span>` : ''}<span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa có báo cáo nào')}`;
+    const list = await records.list('tiktok_insight', 5);
+    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>${icon('clock')} Báo cáo đã lập</h3><a class="btn sm" href="#/history?kind=tiktok_insight">Xem tất cả</a></div>${list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/tiktok/insight?id=${r.id}">${esc(r.title)}</a>${tiktokCriteria(r.params) ? `<span class="small muted">${esc(tiktokCriteria(r.params))}</span>` : ''}<span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa có báo cáo nào')}`;
     root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));
   }
   history();

@@ -56,8 +56,8 @@ export async function mount(root, params) {
       <div class="score-grid">${results.map((r) => scoreCard(r)).join('')}</div>`;
   }
   async function history() {
-    const list = await records.list('idea_check', 20);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Đã chấm</h3></div>${
+    const list = await records.list('idea_check', 5);
+    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Đã chấm</h3><a class="btn sm" href="#/history?kind=idea_check">Xem tất cả</a></div>${
       list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/ideas?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa chấm từ khoá nào')
     }`;
     root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));

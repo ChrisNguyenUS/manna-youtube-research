@@ -10,6 +10,7 @@ import * as comments from './views/comments.js';
 import * as ideas from './views/ideas.js';
 import * as keywords from './views/keywords.js';
 import * as saved from './views/saved.js';
+import * as history from './views/history.js';
 import * as settings from './views/settings.js';
 import * as ttSearch from './views/tiktok/search.js';
 import * as ttInsight from './views/tiktok/insight.js';
@@ -47,6 +48,7 @@ const GROUPS = [
   {
     key: 'library', title: 'Lưu trữ',
     items: [
+      ['/history', 'clock', 'Lịch sử', history],
       ['/saved', 'bookmark', 'Đã lưu', saved],
       ['/settings', 'settings', 'Cài đặt', settings],
     ],
