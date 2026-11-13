@@ -1,6 +1,6 @@
 import { scope } from '../dom.js';
 import { records } from '../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, fmt, full, mult, ago, emptyState, thumb, ytVideo, ytChannel, dur, ageText, bindTips, isSaved, toggleSave, setUrl } from '../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, fmt, full, mult, ago, emptyState, thumb, ytVideo, ytChannel, dur, ageText, bindTips, isSaved, toggleSave, setUrl, resumeJob } from '../lib.js';
 import { viewsChart, hbars, patternList, phraseChips } from '../components/index.js';
 
 export async function mount(root, params) {
@@ -114,7 +114,7 @@ export async function mount(root, params) {
   else if (params.input) {
     input.value = params.input;
     run(params.input);
-  }
+  } else resumeJob('channel_analysis', out, (j) => `Đang phân tích ${j.title}`, async (res) => (await show(res.id), list()));
   return () => {
     shown.off();
     listed.off();

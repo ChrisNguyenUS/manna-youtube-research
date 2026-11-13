@@ -1,6 +1,6 @@
 import { scope } from '../dom.js';
 import { records } from '../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, bindTips, setUrl } from '../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, bindTips, setUrl, resumeJob } from '../lib.js';
 import { scoreCard, bindScoreCards } from '../components/index.js';
 import { REGIONS } from './videos.js';
 
@@ -65,6 +65,7 @@ export async function mount(root, params) {
   history();
   if (params.id) show(params.id);
   else if (params.ideas && params.run) run();
+  else resumeJob('idea_check', out, () => 'Đang chấm điểm', async (res) => (await show(res.id), history()));
   return () => {
     view.off();
   };

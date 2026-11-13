@@ -1,5 +1,5 @@
 import { records } from '../../http/client.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState } from '../../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, resumeJob } from '../../lib.js';
 import { commentGroups, bindCommentGroups } from '../../components/index.js';
 import { scope } from '../../dom.js';
 
@@ -67,6 +67,7 @@ export async function mount(root, params) {
   }
   history();
   if (params.id) show(params.id);
+  else if (!params.videos) resumeJob('tiktok_comments', out, () => 'Đang lấy comment TikTok', (res) => (history(), showMany(res?.jobs || [], res?.skipped || [])));
   // Sent from "Tìm theo chủ đề" with the ticked videos: start at once, once (a reload or Back/Forward must not run it again).
   if (params.run && params.videos) {
     window.history.replaceState(null, '', '#/tiktok/comments');

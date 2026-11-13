@@ -1,5 +1,5 @@
 import { records } from '../http/client.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, setUrl } from '../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, setUrl, resumeJob } from '../lib.js';
 import { mountVideoResults } from '../components/index.js';
 
 const DEFAULT = { keywords: '', upload: 'year', sort: 'popularity', dur: '', minDur: '', maxDur: '', perKeyword: 60, gl: '', exactTop: 30, cc: false };
@@ -132,4 +132,5 @@ export async function mount(root, params) {
   history();
   if (params.id) show(params.id);
   else if (params.q && params.run) run();
+  else resumeJob('video_search', out, (j) => `Đang tìm: ${j.title}`, async (res) => (await show(res.id), history()));
 }

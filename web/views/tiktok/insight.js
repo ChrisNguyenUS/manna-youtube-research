@@ -1,5 +1,5 @@
 import { records, tiktokInsight, jobs } from '../../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl } from '../../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl, activeJob, watchJob } from '../../lib.js';
 import { commentGroups, bindCommentGroups, tiktokFilterSelects, offTopicDetails, tiktokCriteria, insightContext, insightOverview, topicExplorer, commentBrowser, videoGallery } from '../../components/index.js';
 import { scope } from '../../dom.js';
 
@@ -215,13 +215,21 @@ export async function mount(root, params) {
       kwInput.focus();
       return toast('Nhập chủ đề nghiên cứu', 'error');
     }
-    Object.assign(cfg, { mode: 'summary', status: 'running', params: { ...st }, at: undefined });
+    await follow(st, (onProgress) => runJob('tiktok_insight', st, onProgress));
+  }
+
+  /**
+   * Show a report being made, then the report. Also used when coming back to this screen while one is still running.
+   * @param {Record<string, any>} p its settings @param {(onProgress: (p: any) => void) => Promise<any>} job
+   */
+  async function follow(p, job) {
+    Object.assign(cfg, { mode: 'summary', status: 'running', params: { ...p }, at: undefined });
     renderCfg();
     tabOff();
-    out.innerHTML = progressCard(`Đang lập báo cáo: ${st.keywords}`);
+    out.innerHTML = progressCard(`Đang lập báo cáo: ${p.keywords}`);
     root.closest('.main')?.scrollTo({ top: 0, behavior: 'smooth' });
     try {
-      const res = await runJob('tiktok_insight', st, (p) => updateProgress(out, p));
+      const res = await job((pr) => updateProgress(out, pr));
       history();
       await show(res.id);
     } catch (e) {
@@ -323,5 +331,6 @@ export async function mount(root, params) {
   }
   history();
   if (params.id) show(params.id);
+  else if (!params.q) activeJob('tiktok_insight').then((live) => live && follow(live.params, (onProgress) => watchJob(live.id, onProgress)));
   return () => (shown.off(), tabOff());
 }
