@@ -40,7 +40,7 @@ export function createHttpServer(app, { publicDir = path.join(ROOT, 'web') } = {
     res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
   }
 
-  function serveStatic(res, pathname) {
+  function serveStatic(req, res, pathname) {
     let rel;
     try {
       rel = decodeURIComponent(pathname);
@@ -49,7 +49,16 @@ export function createHttpServer(app, { publicDir = path.join(ROOT, 'web') } = {
     }
     let file = path.resolve(root, '.' + (rel === '/' ? '/index.html' : rel));
     if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(root, 'index.html');
-    send(res, 200, fs.readFileSync(file), MIME[path.extname(file)] || 'application/octet-stream');
+    // Always ask, rarely download: the browser revalidates each file and gets 304 unless it changed on disk,
+    // so an updated app is picked up on the next reload without a stale-cache step.
+    const st = fs.statSync(file);
+    const etag = `"${st.size.toString(36)}-${Math.round(st.mtimeMs).toString(36)}"`;
+    const headers = { etag, 'cache-control': 'no-cache' };
+    if (req.headers['if-none-match'] === etag) {
+      res.writeHead(304, headers);
+      return res.end();
+    }
+    send(res, 200, fs.readFileSync(file), MIME[path.extname(file)] || 'application/octet-stream', headers);
   }
 
   return http.createServer(async (req, res) => {
@@ -60,7 +69,7 @@ export function createHttpServer(app, { publicDir = path.join(ROOT, 'web') } = {
       if (!res.writableFinished) ac.abort();
     });
     try {
-      if (!url.pathname.startsWith('/api/')) return serveStatic(res, url.pathname);
+      if (!url.pathname.startsWith('/api/')) return serveStatic(req, res, url.pathname);
       const { route, params, pathMatched } = router.match(req.method || 'GET', url.pathname);
       if (!route) throw httpError('not_found', pathMatched ? 'Sai phương thức' : 'Không có API này');
       const body = ['POST', 'PATCH', 'DELETE'].includes(req.method || '') ? await readBody(req) : {};

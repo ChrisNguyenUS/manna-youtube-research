@@ -1,4 +1,5 @@
 import { records, tiktokInsight, jobs } from '../../http/client.js';
+import { historyList } from '../../components/history-list.js';
 import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl, activeJob, watchJob } from '../../lib.js';
 import { commentGroups, bindCommentGroups, tiktokFilterSelects, offTopicDetails, tiktokCriteria, insightContext, insightOverview, topicExplorer, commentBrowser, videoGallery } from '../../components/index.js';
 import { scope } from '../../dom.js';
@@ -324,11 +325,7 @@ export async function mount(root, params) {
     } else if (tab === 'videos') tabOffFn = videoGallery(body, ctx, { video: o.video, onAllComments: (video) => go('comments', { video }) });
   }
 
-  async function history() {
-    const list = await records.list('tiktok_insight', 5);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>${icon('clock')} Báo cáo đã lập</h3><a class="btn sm" href="#/history?kind=tiktok_insight">Xem tất cả</a></div>${list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/tiktok/insight?id=${r.id}">${esc(r.title)}</a>${tiktokCriteria(r.params) ? `<span class="small muted">${esc(tiktokCriteria(r.params))}</span>` : ''}<span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa có báo cáo nào')}`;
-    root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));
-  }
+  const history = historyList(root.querySelector('[data-history]'), { kind: 'tiktok_insight', path: '/tiktok/insight', title: `${icon('clock')} Báo cáo đã lập`, empty: 'Chưa có báo cáo nào', extra: (r) => tiktokCriteria(r.params) });
   history();
   if (params.id) show(params.id);
   else if (!params.q) activeJob('tiktok_insight').then((live) => live && follow(live.params, (onProgress) => watchJob(live.id, onProgress)));

@@ -1,4 +1,5 @@
 import { scope } from '../dom.js';
+import { historyList } from '../components/history-list.js';
 import { records } from '../http/client.js';
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, full, ago, emptyState, thumb, ytVideo, ytChannel, isSaved, toggleSave, bindTips, ageText, setUrl, resumeJob } from '../lib.js';
 import { REGIONS } from './videos.js';
@@ -190,13 +191,7 @@ export async function mount(root, params) {
     </div>`;
   }
 
-  async function history() {
-    const list = await records.list('channel_search', 5);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Lần tìm trước</h3><a class="btn sm" href="#/history?kind=channel_search">Xem tất cả</a></div>${
-      list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/channels?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}">${icon('trash')}</button></div>`).join('') : emptyState('Chưa tìm lần nào')
-    }`;
-    root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));
-  }
+  const history = historyList(root.querySelector('[data-history]'), { kind: 'channel_search', path: '/channels', title: 'Lần tìm trước', empty: 'Chưa tìm lần nào' });
   history();
   if (params.id) show(params.id);
   else resumeJob('channel_search', out, (j) => `Đang tìm kênh: ${j.title}`, async (res) => (await show(res.id), history()));

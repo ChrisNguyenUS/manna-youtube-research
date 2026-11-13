@@ -1,56 +1,40 @@
 import { status as statusApi } from './http/client.js';
 import { icon, refreshJobs, loadSaved, loadMetrics, esc, toast, store, persist, leaveView } from './lib.js';
-import * as dashboard from './views/dashboard.js';
-import * as videos from './views/videos.js';
-import * as channels from './views/channels.js';
-import * as research from './views/research.js';
-import * as channel from './views/channel.js';
-import * as compare from './views/compare.js';
-import * as comments from './views/comments.js';
-import * as ideas from './views/ideas.js';
-import * as keywords from './views/keywords.js';
-import * as saved from './views/saved.js';
-import * as history from './views/history.js';
-import * as settings from './views/settings.js';
-import * as ttSearch from './views/tiktok/search.js';
-import * as ttInsight from './views/tiktok/insight.js';
-import * as ttComments from './views/tiktok/comments.js';
-import * as ttTopic from './views/tiktok/topic.js';
 
-const HOME = ['/', 'home', 'Tổng quan', dashboard];
+const HOME = ['/', 'home', 'Tổng quan', () => import('./views/dashboard.js')];
 // Grouped by platform. `more` holds the tools the main screens already cover; they sit behind "Công cụ khác".
 const GROUPS = [
   {
     key: 'tiktok', title: 'TikTok',
     items: [
-      ['/tiktok/topic', 'compass', 'Tìm theo chủ đề', ttTopic],
-      ['/tiktok/insight', 'message', 'Insight khách hàng', ttInsight],
+      ['/tiktok/topic', 'compass', 'Tìm theo chủ đề', () => import('./views/tiktok/topic.js')],
+      ['/tiktok/insight', 'message', 'Insight khách hàng', () => import('./views/tiktok/insight.js')],
     ],
     more: [
-      ['/tiktok/search', 'search', 'Tìm video', ttSearch],
-      ['/tiktok/comments', 'message', 'Comment', ttComments],
+      ['/tiktok/search', 'search', 'Tìm video', () => import('./views/tiktok/search.js')],
+      ['/tiktok/comments', 'message', 'Comment', () => import('./views/tiktok/comments.js')],
     ],
   },
   {
     key: 'youtube', title: 'YouTube',
     items: [
-      ['/videos', 'search', 'Tìm video', videos],
-      ['/channels', 'users', 'Tìm kênh', channels],
-      ['/research', 'compass', 'Nghiên cứu chủ đề', research],
-      ['/keywords', 'key', 'Từ khoá người xem gõ', keywords],
-      ['/ideas', 'bulb', 'Chấm điểm từ khoá', ideas],
-      ['/channel', 'bars', 'Phân tích kênh', channel],
-      ['/compare', 'columns', 'So sánh kênh', compare],
-      ['/comments', 'message', 'Comment', comments],
+      ['/videos', 'search', 'Tìm video', () => import('./views/videos.js')],
+      ['/channels', 'users', 'Tìm kênh', () => import('./views/channels.js')],
+      ['/research', 'compass', 'Nghiên cứu chủ đề', () => import('./views/research.js')],
+      ['/keywords', 'key', 'Từ khoá người xem gõ', () => import('./views/keywords.js')],
+      ['/ideas', 'bulb', 'Chấm điểm từ khoá', () => import('./views/ideas.js')],
+      ['/channel', 'bars', 'Phân tích kênh', () => import('./views/channel.js')],
+      ['/compare', 'columns', 'So sánh kênh', () => import('./views/compare.js')],
+      ['/comments', 'message', 'Comment', () => import('./views/comments.js')],
     ],
     more: [],
   },
   {
     key: 'library', title: 'Lưu trữ',
     items: [
-      ['/history', 'clock', 'Lịch sử', history],
-      ['/saved', 'bookmark', 'Đã lưu', saved],
-      ['/settings', 'settings', 'Cài đặt', settings],
+      ['/history', 'clock', 'Lịch sử', () => import('./views/history.js')],
+      ['/saved', 'bookmark', 'Đã lưu', () => import('./views/saved.js')],
+      ['/settings', 'settings', 'Cài đặt', () => import('./views/settings.js')],
     ],
     more: [],
   },
@@ -93,6 +77,7 @@ document.getElementById('nav').addEventListener('click', (e) => {
 });
 
 let unmount = null;
+let routeSeq = 0;
 async function route() {
   const { path, params } = parseHash();
   const entry = ROUTES.find((n) => n[0] === path) || HOME;
@@ -103,11 +88,17 @@ async function route() {
   unmount = null;
   main.scrollTop = 0;
   main.innerHTML = '<div class="page"></div>';
+  const page = main.firstChild;
+  const mine = ++routeSeq;
   try {
-    const off = await entry[3].mount(main.firstChild, params);
+    // A screen's code is fetched the first time it is opened (the browser keeps it afterwards).
+    const view = await entry[3]();
+    if (mine !== routeSeq) return; // another screen was opened while this one was loading
+    const off = await view.mount(page, params);
+    if (mine !== routeSeq) return void (typeof off === 'function' && off());
     unmount = typeof off === 'function' ? off : null;
   } catch (e) {
-    main.firstChild.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
+    if (mine === routeSeq) page.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
   }
 }
 
@@ -135,4 +126,6 @@ await Promise.all([loadSaved(), loadMetrics()]);
 route();
 refreshJobs();
 status();
-setInterval(status, 4000);
+// The status bar only matters while the window is looked at: no polling in a hidden tab, a fresh read when it comes back.
+setInterval(() => document.hidden || status(), 5000);
+document.addEventListener('visibilitychange', () => document.hidden || (status(), refreshJobs()));

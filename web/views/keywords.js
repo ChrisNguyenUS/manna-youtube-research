@@ -1,4 +1,5 @@
 import { scope } from '../dom.js';
+import { historyList } from '../components/history-list.js';
 import { records } from '../http/client.js';
 import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, setUrl, resumeJob, saveMany } from '../lib.js';
 import { savedKeyword } from '../saved-items.js';
@@ -56,10 +57,7 @@ export async function mount(root, params) {
       else window.__go('/' + b.dataset.act, { q: list.join(', ') });
     }));
   }
-  async function history() {
-    const list = await records.list('keywords', 5);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Đã lấy</h3><a class="btn sm" href="#/history?kind=keywords">Xem tất cả</a></div>${list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/keywords?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span></div>`).join('') : emptyState('Chưa có')}`;
-  }
+  const history = historyList(root.querySelector('[data-history]'), { kind: 'keywords', path: '/keywords', title: 'Đã lấy', empty: 'Chưa có' });
   history();
   if (params.id) show(params.id);
   else resumeJob('keywords', out, () => 'Đang lấy gợi ý', async (res) => (await show(res.id), history()));
