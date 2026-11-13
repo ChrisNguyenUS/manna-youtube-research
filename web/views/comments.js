@@ -1,5 +1,5 @@
 import { records } from '../http/client.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ytVideo, thumb } from '../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ytVideo, thumb, setUrl } from '../lib.js';
 
 const FORM = { videos: '', max: 100, sort: 'top', replies: false };
 
@@ -42,6 +42,7 @@ export async function mount(root, params) {
 
   async function show(id) {
     const rec = await records.get(id);
+    setUrl('/comments', { id: rec.id }); // a reload or a copied link opens this result again
     const d = rec.data;
     const i = d.insights;
     let tab = 'questions';

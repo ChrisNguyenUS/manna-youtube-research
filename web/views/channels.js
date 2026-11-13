@@ -1,6 +1,6 @@
 import { scope } from '../dom.js';
 import { records } from '../http/client.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, full, ago, emptyState, thumb, ytVideo, ytChannel, isSaved, toggleSave, bindTips, ageText } from '../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, full, ago, emptyState, thumb, ytVideo, ytChannel, isSaved, toggleSave, bindTips, ageText, setUrl } from '../lib.js';
 import { REGIONS } from './videos.js';
 
 const FORM = { keywords: '', source: 'both', perKeyword: 40, gl: '', upload: 'year' };
@@ -103,6 +103,7 @@ export async function mount(root, params) {
 
   async function show(id) {
     const rec = await records.get(id);
+    setUrl('/channels', { id: rec.id }); // a reload or a copied link opens this result again
     const all = rec.data.channels;
     const countries = [...new Set(all.map((c) => c.country || '?'))].sort((a, b) => all.filter((c) => (c.country || '?') === b).length - all.filter((c) => (c.country || '?') === a).length);
     out.innerHTML = `

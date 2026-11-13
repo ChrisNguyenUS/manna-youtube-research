@@ -1,5 +1,5 @@
 import { records } from '../http/client.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState } from '../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, setUrl } from '../lib.js';
 import { mountVideoResults } from '../components/index.js';
 
 const DEFAULT = { keywords: '', upload: 'year', sort: 'popularity', dur: '', minDur: '', maxDur: '', perKeyword: 60, gl: '', exactTop: 30, cc: false };
@@ -93,6 +93,7 @@ export async function mount(root, params) {
 
   async function show(id) {
     const rec = await records.get(id);
+    setUrl('/videos', { id: rec.id }); // a reload or a copied link opens this result again
     const d = rec.data;
     const s = d.summary;
     out.innerHTML = `

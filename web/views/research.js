@@ -1,6 +1,6 @@
 import { scope } from '../dom.js';
 import { records } from '../http/client.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, mult, ago, emptyState, thumb, ytVideo, dur, ageText, bindTips } from '../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, mult, ago, emptyState, thumb, ytVideo, dur, ageText, bindTips, setUrl } from '../lib.js';
 import { mountVideoResults, hbars, patternList, phraseChips, oscoreBadge, outlierTip } from '../components/index.js';
 import { DUR_CHIPS, UPLOAD_CHIPS, REGIONS, durToSeconds } from './videos.js';
 
@@ -13,6 +13,7 @@ const DIRS = [
 
 export async function mount(root, params) {
   const st = store('research-form', FORM);
+  if (params.q) st.topic = params.q; // sent from the dashboard's topic box
   root.innerHTML = `
     <div class="page-head"><div><h1>${icon('compass')} Nghiên cứu chủ đề</h1>
       <p>Trả lời 4 câu: video nào đang thắng nhờ nội dung (không nhờ kênh to) · tiêu đề viết theo mẫu nào · khán giả hỏi gì, than gì · khoảng trống nào chưa ai làm tốt.</p></div></div>
@@ -76,6 +77,7 @@ export async function mount(root, params) {
 
   async function show(id, tab = 'overview') {
     const rec = await records.get(id);
+    setUrl('/research', { id: rec.id }); // a reload or a copied link opens this result again
     const d = rec.data;
     const byId = new Map(d.videos.map((v) => [v.id, v]));
     const s = d.summary;
