@@ -67,5 +67,10 @@ export async function mount(root, params) {
   }
   history();
   if (params.id) show(params.id);
+  // Sent from "Tìm theo chủ đề" with the ticked videos: start at once, once (a reload or Back/Forward must not run it again).
+  if (params.run && params.videos) {
+    window.history.replaceState(null, '', '#/tiktok/comments');
+    form.querySelector('[data-run]').click();
+  }
   return () => shown.off();
 }
