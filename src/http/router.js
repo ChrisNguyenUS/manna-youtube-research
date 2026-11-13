@@ -2,7 +2,7 @@
 // Handlers return a JSON-able value or raw(...) for files; they throw httpError(...) for failures.
 
 const STATUS = {
-  invalid_input: 400, not_found: 404, license_required: 402, rate_limited: 429, internal: 500,
+  invalid_input: 400, not_found: 404, forbidden: 403, unavailable: 503, license_required: 402, rate_limited: 429, internal: 500,
   // TikTok cannot answer right now (Chromium not installed, search blocked or behind a login wall).
   tiktok_setup_required: 503, tiktok_blocked: 503, tiktok_login_required: 503,
   // Sign-in window closed before signing in / nobody signed in before the time limit.

@@ -1,4 +1,4 @@
-import { status as statusApi } from './http/client.js';
+import { status as statusApi, shutdown, jobs as jobsApi } from './http/client.js';
 import { icon, refreshJobs, loadSaved, loadMetrics, esc, toast, store, persist, leaveView } from './lib.js';
 
 /**
@@ -130,7 +130,9 @@ export function go(path, params = {}) {
 }
 window.__go = go;
 
+let stopped = false;
 async function status() {
+  if (stopped) return;
   try {
     const s = await statusApi.get();
     document.getElementById('statusbar').innerHTML = `<span><span class="dot"></span>YouTube: <b>${s.failures ? 'có lỗi' : 'ổn'}</b></span>
@@ -142,7 +144,41 @@ async function status() {
   }
 }
 
-window.addEventListener('hashchange', route);
+// ---------- "Tắt app" in the status bar: first click asks (and says what would be interrupted), second click stops ----------
+const power = /** @type {HTMLButtonElement} */ (document.getElementById('power'));
+let armTimer = 0;
+function drawPower(text = 'Tắt app', armed = false) {
+  power.innerHTML = `${icon('power')}<span>${esc(text)}</span>`;
+  power.classList.toggle('armed', armed);
+}
+drawPower();
+power.addEventListener('click', async () => {
+  if (!power.classList.contains('armed')) {
+    const running = (await jobsApi.list().catch(() => [])).filter((j) => j.status === 'running' || j.status === 'queued').length;
+    drawPower(running ? `Tắt hẳn? ${running} việc đang chạy sẽ dừng` : 'Bấm lần nữa để tắt', true);
+    clearTimeout(armTimer);
+    armTimer = window.setTimeout(drawPower, 5000); // not confirmed: back to normal
+    return;
+  }
+  clearTimeout(armTimer);
+  power.disabled = true;
+  try {
+    await shutdown();
+  } catch (e) {
+    power.disabled = false;
+    drawPower();
+    return toast(e.message, 'error');
+  }
+  stopped = true;
+  unmount?.();
+  leaveView();
+  document.getElementById('main').innerHTML = `<div class="stopped"><h1>Đã tắt Content Research</h1>
+    <p>Server và các việc đang chạy đã dừng. Dữ liệu vẫn nằm trên máy.</p><p>Muốn dùng lại: bấm icon <b>Content Research</b>, hoặc chạy <code>npm start</code>. Cửa sổ này có thể đóng.</p></div>`;
+  document.getElementById('statusbar').innerHTML = '<span>Đã tắt</span>';
+  power.hidden = true;
+});
+
+window.addEventListener('hashchange', () => stopped || route());
 window.addEventListener('unhandledrejection', (e) => toast(e.reason?.message || String(e.reason), 'error'));
 await Promise.all([loadSaved(), loadMetrics()]);
 route();
@@ -150,4 +186,4 @@ refreshJobs();
 status();
 // The status bar only matters while the window is looked at: no polling in a hidden tab, a fresh read when it comes back.
 setInterval(() => document.hidden || status(), 5000);
-document.addEventListener('visibilitychange', () => document.hidden || (status(), refreshJobs()));
+document.addEventListener('visibilitychange', () => document.hidden || stopped || (status(), refreshJobs()));

@@ -93,3 +93,26 @@ test('status, metrics, settings and saved round-trip', async () => {
   assert.deepEqual(await (await fetch(`${s.base}/api/v1/saved/keys`)).json(), ['channel:UC1']);
   s.close();
 });
+
+test('shutdown: only a same-origin JSON request stops the app', async () => {
+  const s = await boot();
+  let stops = 0;
+  const url = `${s.base}/api/v1/shutdown`;
+  const json = { 'content-type': 'application/json' };
+
+  assert.equal((await fetch(url, { method: 'POST', headers: json, body: '{}' })).status, 503, 'nothing owns the process in tests until a handler is set');
+  s.app.shutdown = () => void stops++;
+
+  // What another website can send without a preflight: a form or plain-text POST, with its own Origin.
+  assert.equal((await fetch(url, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: '{}' })).status, 403);
+  assert.equal((await fetch(url, { method: 'POST', headers: { ...json, origin: 'https://evil.example' }, body: '{}' })).status, 403);
+  assert.equal((await fetch(url)).status, 404, 'GET never stops anything');
+  await new Promise((r) => setTimeout(r, 250));
+  assert.equal(stops, 0);
+
+  const ok = await fetch(url, { method: 'POST', headers: { ...json, origin: s.base }, body: '{}' });
+  assert.equal(ok.status, 200);
+  await new Promise((r) => setTimeout(r, 250));
+  assert.equal(stops, 1);
+  s.close();
+});

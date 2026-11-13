@@ -20,5 +20,6 @@ const shutdown = async () => {
   await app.close().catch(() => {}); // close Chromium before exiting
   srv.close(() => process.exit(0));
 };
+app.shutdown = shutdown; // the "Tắt app" button (POST /api/v1/shutdown) ends the process the same way as Stop Content Research
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
