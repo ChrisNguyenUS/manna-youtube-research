@@ -1,5 +1,5 @@
 import { status as statusApi } from './http/client.js';
-import { icon, refreshJobs, loadSaved, loadMetrics, esc, toast, store, persist } from './lib.js';
+import { icon, refreshJobs, loadSaved, loadMetrics, esc, toast, store, persist, leaveView } from './lib.js';
 import * as dashboard from './views/dashboard.js';
 import * as videos from './views/videos.js';
 import * as channels from './views/channels.js';
@@ -97,6 +97,7 @@ async function route() {
   renderNav(entry[0]);
   const main = document.getElementById('main');
   unmount?.(); // let the previous view remove its listeners
+  leaveView(); // its job watchers stop; the jobs themselves keep running
   unmount = null;
   main.scrollTop = 0;
   main.innerHTML = '<div class="page"></div>';

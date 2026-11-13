@@ -1,6 +1,6 @@
 import { scope } from '../dom.js';
 import { records } from '../http/client.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, mult, ago, emptyState, thumb, ytVideo, dur, ageText, bindTips, setUrl } from '../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, mult, ago, emptyState, thumb, ytVideo, dur, ageText, bindTips, setUrl, resumeJob } from '../lib.js';
 import { mountVideoResults, hbars, patternList, phraseChips, oscoreBadge, outlierTip } from '../components/index.js';
 import { DUR_CHIPS, UPLOAD_CHIPS, REGIONS, durToSeconds } from './videos.js';
 
@@ -206,6 +206,7 @@ export async function mount(root, params) {
   }
   history();
   if (params.id) show(params.id);
+  else resumeJob('research', out, (j) => `Đang nghiên cứu: ${j.title}`, async (res) => (history(), await show(res.id)));
   return () => {
     shown.off();
   };

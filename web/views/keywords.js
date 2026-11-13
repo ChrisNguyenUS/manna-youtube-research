@@ -1,6 +1,6 @@
 import { scope } from '../dom.js';
 import { records } from '../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, setUrl } from '../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, setUrl, resumeJob } from '../lib.js';
 import { REGIONS } from './videos.js';
 
 export async function mount(root, params) {
@@ -60,6 +60,7 @@ export async function mount(root, params) {
   }
   history();
   if (params.id) show(params.id);
+  else resumeJob('keywords', out, () => 'Đang lấy gợi ý', async (res) => (await show(res.id), history()));
   return () => {
     shown.off();
   };

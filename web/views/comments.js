@@ -1,5 +1,5 @@
 import { records } from '../http/client.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ytVideo, thumb, setUrl } from '../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ytVideo, thumb, setUrl, resumeJob } from '../lib.js';
 
 const FORM = { videos: '', max: 100, sort: 'top', replies: false };
 
@@ -88,4 +88,10 @@ export async function mount(root, params) {
   }
   history();
   if (params.id) show(params.id);
+  else if (!params.videos) resumeJob('comments', out, () => 'Đang lấy comment', async () => {
+    history();
+    const recs = await records.list('comments', 1);
+    out.innerHTML = '';
+    if (recs[0]) show(recs[0].id);
+  });
 }

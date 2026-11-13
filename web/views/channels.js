@@ -1,6 +1,6 @@
 import { scope } from '../dom.js';
 import { records } from '../http/client.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, full, ago, emptyState, thumb, ytVideo, ytChannel, isSaved, toggleSave, bindTips, ageText, setUrl } from '../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, full, ago, emptyState, thumb, ytVideo, ytChannel, isSaved, toggleSave, bindTips, ageText, setUrl, resumeJob } from '../lib.js';
 import { REGIONS } from './videos.js';
 
 const FORM = { keywords: '', source: 'both', perKeyword: 40, gl: '', upload: 'year' };
@@ -199,6 +199,7 @@ export async function mount(root, params) {
   }
   history();
   if (params.id) show(params.id);
+  else resumeJob('channel_search', out, (j) => `Đang tìm kênh: ${j.title}`, async (res) => (await show(res.id), history()));
   return () => {
     shown.off();
   };

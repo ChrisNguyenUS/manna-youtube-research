@@ -3,7 +3,7 @@
 // 2. Result: KPIs, "So sánh theo từ khoá" (one column per keyword) and "Tất cả video" (grid or list).
 //    Videos are ticked by hand on either tab; only the ticked ones go to the existing comment scraper.
 import { records, tiktokTopic } from '../../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ageText, bindTips } from '../../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ageText, bindTips, activeJob, watchJob } from '../../lib.js';
 import { scope } from '../../dom.js';
 import { tiktokCriteria } from '../../components/index.js';
 
@@ -241,14 +241,23 @@ export async function mount(root, params) {
     if (!keywords.length) return toast('Chọn ít nhất một từ khoá', 'error');
     st.topic = topic;
     persist('tt-topic-form', st);
+    const body = { topic, keywords: keywords.join('\n'), perKeyword: o.perKeyword, sort: o.sort, minPlays: o.minPlays || 0, maxAgeDays: o.maxAgeDays || 0, topComments: o.topComments ? 3 : 0, keepOffTopic: Boolean(o.keepOffTopic), keepPrevious: o.keepPrevious !== 0 && o.keepPrevious !== false };
+    await follow(topic, (onProgress) => runJob('tiktok_topic', body, onProgress));
+  }
+
+  /**
+   * Show a scan in progress (each keyword's column as soon as it is saved), then the result.
+   * Also used when coming back to this screen while a scan is still running.
+   * @param {string} topic @param {(onProgress: (p: any) => void) => Promise<any>} job
+   */
+  async function follow(topic, job) {
     mode('result');
     resBox.innerHTML = '';
     current = null;
     progBox.innerHTML = progressCard(`Đang quét chủ đề: ${topic}`);
     let lastDone = -1;
-    const body = { topic, keywords: keywords.join('\n'), perKeyword: o.perKeyword, sort: o.sort, minPlays: o.minPlays || 0, maxAgeDays: o.maxAgeDays || 0, topComments: o.topComments ? 3 : 0, keepOffTopic: Boolean(o.keepOffTopic), keepPrevious: o.keepPrevious !== 0 && o.keepPrevious !== false };
     try {
-      const res = await runJob('tiktok_topic', body, async (p) => {
+      const res = await job(async (p) => {
         updateProgress(progBox, p);
         // Each finished keyword is saved right away: show its column without waiting for the rest.
         if (p?.recordId && p.done !== lastDone && p.done > 0) {
@@ -766,6 +775,6 @@ export async function mount(root, params) {
     topicInput.value = params.q;
     setHash('#/tiktok/topic');
     if (params.run) findKeywords();
-  }
+  } else activeJob('tiktok_topic').then((live) => live && follow(live.params.topic, (onProgress) => watchJob(live.id, onProgress)));
   return () => (shown.off(), colsObserver?.disconnect());
 }

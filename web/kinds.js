@@ -27,3 +27,16 @@ export const kindInfo = (kind) => KINDS[kind] || null;
 
 /** Link that opens a saved result on its own screen. @param {{id: number|string, kind: string}} r */
 export const recordHref = (r) => (KINDS[r.kind] ? `#${KINDS[r.kind].path}?id=${r.id}` : '#/');
+
+/**
+ * Where a job leads: its result once it succeeded, otherwise the screen that runs it (which shows the progress).
+ * @param {{kind: string, status: string, params?: any, result?: any}} j
+ */
+export function jobHref(j) {
+  const k = KINDS[j.kind];
+  if (!k) return '#/';
+  if (j.kind === 'research_comments' && j.params?.recordId) return `#${k.path}?id=${j.params.recordId}`;
+  // A multi-link comment job keeps its results inline: open the first video's.
+  const id = j.status === 'succeeded' ? j.result?.id ?? j.result?.jobs?.[0]?.id : null;
+  return id ? `#${k.path}?id=${id}` : `#${k.path}`;
+}

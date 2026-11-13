@@ -1,5 +1,5 @@
 import { records } from '../../http/client.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl } from '../../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl, resumeJob } from '../../lib.js';
 import { tiktokVideoCard, tiktokVideoFilters, offTopicDetails, tiktokCriteria } from '../../components/index.js';
 import { scope } from '../../dom.js';
 
@@ -91,5 +91,6 @@ export async function mount(root, params) {
   }
   history();
   if (params.id) show(params.id);
+  else resumeJob('tiktok_search', out, (j) => `Đang tìm TikTok: ${j.title}`, async (res) => (await show(res.id), history()));
   return () => shown.off();
 }

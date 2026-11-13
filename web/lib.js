@@ -1,4 +1,5 @@
 import { jobs, saved as savedApi, metrics } from './http/client.js';
+import { jobHref } from './kinds.js';
 // Shared helpers for all views.
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -82,9 +83,25 @@ export const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${P[n
 // ---------- api ----------
 
 // ---------- background jobs (shown in the sidebar) ----------
-const watchers = new Map();
+// A job belongs to the server, not to the screen that started it. A screen only *follows* a job while it is open:
+// leaving it stops the following (never the job), coming back picks the job up again (activeJob + watchJob),
+// and a job that ends with no screen following it is announced with a toast that links to its result.
+const STOPPED = { failed: 'Lỗi', cancelled: 'Đã huỷ', interrupted: 'Bị gián đoạn (app đã tắt giữa chừng)' };
+const STATE = { queued: 'Chờ', running: 'Đang chạy', succeeded: 'Xong', failed: 'Lỗi', cancelled: 'Đã huỷ', interrupted: 'Bị gián đoạn' };
+const ACTIVE = ['queued', 'running'];
+const RETRY = ['failed', 'interrupted'];
+
+let viewGen = 0;
+/** Called by the router on every screen change: watchers of the screen that just closed stop. */
+export function leaveView() {
+  viewGen++;
+}
+/** job id → the screen (generation) following it */
+const following = new Map();
+const isFollowed = (id) => following.get(Number(id)) === viewGen;
+
 let JOB_INDEX = new Map();
-// Sidebar buttons: cancel a running job, or re-run one interrupted by an app restart.
+// Sidebar buttons: cancel a running job, or run a failed/interrupted one again.
 document.addEventListener('click', async (e) => {
   const c = e.target.closest?.('[data-job-cancel]');
   if (c) {
@@ -96,16 +113,30 @@ document.addEventListener('click', async (e) => {
   if (j) {
     await jobs.start(j.kind, j.params);
     toast('Đã chạy lại tác vụ');
-    refreshJobs();
+    await refreshJobs();
+    openHash(jobHref({ ...j, status: 'running' })); // its screen picks the new job up and shows the progress
   }
 });
-export async function runJob(kind, body, onProgress) {
-  const { id } = await jobs.start(kind, body);
-  refreshJobs();
+/** Go to a hash; when it is already the current one, mount the screen again. @param {string} hash */
+function openHash(hash) {
+  if (location.hash === hash) window.dispatchEvent(new HashChangeEvent('hashchange'));
+  else location.hash = hash;
+}
+
+/**
+ * Follow a job until it ends: resolves with its result, rejects when it failed or was stopped.
+ * Never settles once the screen that called it has closed.
+ * @param {number|string} id @param {(p: any, job: any) => void} [onProgress]
+ */
+export function watchJob(id, onProgress) {
+  const gen = viewGen;
+  following.set(Number(id), gen);
   return new Promise((resolve, reject) => {
     const tick = async () => {
+      if (gen !== viewGen) return; // the screen closed: the sidebar and the toast take over
       try {
         const j = await jobs.get(id);
+        if (gen !== viewGen) return;
         onProgress?.(j.progress, j);
         if (j.status === 'succeeded') {
           refreshJobs();
@@ -120,19 +151,39 @@ export async function runJob(kind, body, onProgress) {
         reject(e);
       }
     };
-    watchers.set(id, true);
     tick();
   });
 }
 
-const STOPPED = { failed: 'Lỗi', cancelled: 'Đã huỷ', interrupted: 'Bị gián đoạn (app đã tắt giữa chừng)' };
-const STATE = { queued: 'Chờ', running: 'Đang chạy', succeeded: 'Xong', failed: 'Lỗi', cancelled: 'Đã huỷ', interrupted: 'Bị gián đoạn' };
-const ACTIVE = ['queued', 'running'];
+/** Start a job and follow it. */
+export async function runJob(kind, body, onProgress) {
+  const { id } = await jobs.start(kind, body);
+  refreshJobs();
+  return watchJob(id, onProgress);
+}
+
+/** The job of this kind that is queued or running right now (the newest), or null. @param {string} kind */
+export async function activeJob(kind) {
+  const list = await jobs.list().catch(() => []);
+  return list.find((j) => j.kind === kind && ACTIVE.includes(j.status)) || null;
+}
+
+const lastStatus = new Map();
+/** A job ended while no open screen was following it: say so, with a link to the result. */
+function announce(j) {
+  const name = `${LABELS[j.kind] || j.kind}: ${j.title}`;
+  if (j.status === 'succeeded') toast(`Xong · ${name}`, '', { href: jobHref(j), label: 'Xem' });
+  else if (j.status === 'failed') toast(`Lỗi · ${name}. ${j.error || ''}`, 'error', { href: jobHref(j), label: 'Mở' });
+}
 
 let jobsTimer = null;
 export async function refreshJobs() {
   try {
     const list = await jobs.list();
+    for (const j of list) {
+      if (ACTIVE.includes(lastStatus.get(j.id)) && !ACTIVE.includes(j.status) && !isFollowed(j.id)) announce(j);
+      lastStatus.set(j.id, j.status);
+    }
     const box = document.getElementById('jobs');
     box.hidden = !list.length;
     document.getElementById('jobs-list').innerHTML = list
@@ -140,10 +191,11 @@ export async function refreshJobs() {
       .map((j) => {
         const pct = j.progress.total ? Math.min(100, Math.round((j.progress.done / j.progress.total) * 100)) : j.status === 'succeeded' ? 100 : 8;
         const step = j.status === 'failed' ? j.error : ACTIVE.includes(j.status) ? j.progress.step : j.title;
-        return `<div class="job"><span class="job-state ${j.status}">${STATE[j.status] || j.status}</span><div class="job-title">${esc(LABELS[j.kind] || j.kind)}</div>
+        const open = j.status === 'succeeded' ? 'Mở kết quả' : ACTIVE.includes(j.status) ? 'Xem tiến trình' : 'Mở màn này';
+        return `<div class="job"><span class="job-state ${j.status}">${STATE[j.status] || j.status}</span><a class="job-title" href="${esc(jobHref(j))}" title="${open}: ${esc(j.title)}">${esc(LABELS[j.kind] || j.kind)}</a>
           <div class="job-step">${esc(step)}</div>
           ${ACTIVE.includes(j.status) ? `<div class="bar"><i style="width:${pct}%"></i></div><button class="btn sm ghost" data-job-cancel="${j.id}" style="margin-top:4px">Huỷ</button>` : ''}
-          ${j.status === 'interrupted' ? `<button class="btn sm" data-job-retry="${j.id}" style="margin-top:6px">Chạy lại</button>` : ''}</div>`;
+          ${RETRY.includes(j.status) ? `<button class="btn sm" data-job-retry="${j.id}" style="margin-top:6px">Chạy lại</button>` : ''}</div>`;
       })
       .join('');
     clearTimeout(jobsTimer);
@@ -172,13 +224,33 @@ export function setUrl(path, params = {}) {
   window.history.replaceState(null, '', '#' + path + (qs ? '?' + qs : ''));
 }
 
-export function toast(msg, kind = '') {
+/**
+ * Coming back to a screen whose job is still running: put its progress into `out`, then hand the result to done().
+ * @param {string} kind @param {Element} out @param {(job: any) => string} title @param {(result: any) => any} done
+ * @returns {Promise<boolean>} false when no job of this kind is running
+ */
+export async function resumeJob(kind, out, title, done) {
+  const gen = viewGen;
+  const live = await activeJob(kind);
+  if (!live || gen !== viewGen) return false;
+  out.innerHTML = progressCard(title(live));
+  try {
+    await done(await watchJob(live.id, (p) => updateProgress(out, p)));
+  } catch (e) {
+    out.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
+  }
+  return true;
+}
+
+/** @param {string} msg @param {string} [kind] '' | 'error' @param {{href?: string, label?: string}} [action] a link shown next to the message */
+export function toast(msg, kind = '', { href, label = 'Xem' } = {}) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
+  t.innerHTML = `<span>${esc(msg)}</span>${href ? `<a class="toast-act" href="${esc(href)}">${esc(label)}</a>` : ''}`;
   t.className = 'toast ' + kind;
   t.hidden = false;
+  t.onclick = (e) => /** @type {HTMLElement} */ (e.target).closest('a') && (t.hidden = true);
   clearTimeout(t._h);
-  t._h = setTimeout(() => (t.hidden = true), kind === 'error' ? 6000 : 2600);
+  t._h = setTimeout(() => (t.hidden = true), href ? 12000 : kind === 'error' ? 6000 : 2600);
 }
 
 // ---------- tiny persisted state ----------
