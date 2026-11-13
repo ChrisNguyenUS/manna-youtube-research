@@ -214,7 +214,8 @@ table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .cthumb .ov { position: absolute; left: 6px; bottom: 6px; background: rgba(0, 0, 0, 0.78); color: #fff; font-size: 11.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; }
 
 /* ---------- tabs ---------- */
-.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); padding: 0 12px; overflow-x: auto; }
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); padding: 0 12px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
 .tab { border: none; background: none; padding: 11px 12px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
 .tab:hover { color: var(--text); }
 .tab.on { color: var(--accent); border-bottom-color: var(--accent); }

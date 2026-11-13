@@ -3,6 +3,7 @@
 import { records, tiktokTopic } from '../../http/client.js';
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ageText, bindTips } from '../../lib.js';
 import { scope } from '../../dom.js';
+import { tiktokCriteria } from '../../components/index.js';
 
 const FORM = { topic: '', minPlays: 100000, maxAgeDays: 0, sort: 'score', maxKeywords: 10, perKeyword: 10, topComments: 3, keepOffTopic: 0, view: 'columns' };
 const SORT_LABELS = { score: 'Tổng hợp', plays: 'View', trending: 'View/ngày', fresh: 'Mới nhất' };
@@ -255,7 +256,7 @@ export async function mount(root, params) {
       else byRef.set(r.ref, { ...r, count: 1 });
     }
     const el = root.querySelector('[data-history]');
-    el.innerHTML = `<div class="card-head"><h3>Chủ đề đã quét</h3><span class="sub">Quét lại để thấy video nào đang tăng view</span></div>${byRef.size ? [...byRef.values()].map((r) => `<div class="list-row"><a class="name" href="#/tiktok/topic?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}${r.count > 1 ? ` · ${r.count} lần quét` : ''}</span><button class="btn sm" data-re="${r.id}">${icon('refresh')} Quét lại</button><button class="icon-btn" data-del="${r.id}" title="Xoá lần quét này">${icon('trash')}</button></div>`).join('') : emptyState('Chưa quét chủ đề nào')}`;
+    el.innerHTML = `<div class="card-head"><h3>Chủ đề đã quét</h3><span class="sub">Quét lại để thấy video nào đang tăng view</span></div>${byRef.size ? [...byRef.values()].map((r) => `<div class="list-row"><a class="name" href="#/tiktok/topic?id=${r.id}">${esc(r.title)}</a>${tiktokCriteria(r.params) ? `<span class="small muted">${esc(tiktokCriteria(r.params))}</span>` : ''}<span class="when">${ago(r.created_at)}${r.count > 1 ? ` · ${r.count} lần quét` : ''}</span><button class="btn sm" data-re="${r.id}">${icon('refresh')} Quét lại</button><button class="icon-btn" data-del="${r.id}" title="Xoá lần quét này">${icon('trash')}</button></div>`).join('') : emptyState('Chưa quét chủ đề nào')}`;
     el.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.getAttribute('data-del')), history())));
     el.querySelectorAll('[data-re]').forEach((b) => b.addEventListener('click', async () => rescan(await records.get(b.getAttribute('data-re')))));
   }

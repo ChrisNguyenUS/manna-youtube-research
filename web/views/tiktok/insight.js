@@ -1,6 +1,6 @@
 import { records } from '../../http/client.js';
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState } from '../../lib.js';
-import { tiktokVideoCard, commentGroups, bindCommentGroups, quotes, tiktokVideoFilters, offTopicDetails } from '../../components/index.js';
+import { tiktokVideoCard, commentGroups, bindCommentGroups, quotes, tiktokVideoFilters, offTopicDetails, tiktokCriteria } from '../../components/index.js';
 import { scope } from '../../dom.js';
 
 const FORM = { keywords: '', top: 10, commentsPerVideo: 300, replies: true, keepOffTopic: false, minPlays: 0, minLikes: 0, maxAgeDays: 0, minEngagement: 0 };
@@ -70,7 +70,7 @@ export async function mount(root, params) {
 
   async function history() {
     const list = await records.list('tiktok_insight', 30);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Báo cáo đã lập</h3></div>${list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/tiktok/insight?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa có báo cáo nào')}`;
+    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Báo cáo đã lập</h3></div>${list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/tiktok/insight?id=${r.id}">${esc(r.title)}</a>${tiktokCriteria(r.params) ? `<span class="small muted">${esc(tiktokCriteria(r.params))}</span>` : ''}<span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa có báo cáo nào')}`;
     root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));
   }
   history();

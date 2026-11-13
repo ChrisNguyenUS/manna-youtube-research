@@ -1,7 +1,12 @@
 // Tabs of customer-voice groups (questions, fears, complaints, buying, requests, top, all) with verbatim quotes.
 import { esc, emptyState } from '../lib.js';
 
-const quote = (c) => `<blockquote class="quote">${esc(c.text)}<div class="m">${c.likes} like · ${c.replies ?? 0} trả lời${c.attentionPerDay != null ? ` · ${c.attentionPerDay}/ngày` : ''}${c.parentText ? ` · trả lời: “${esc(c.parentText.slice(0, 100))}”` : ''}${c.videoId ? ` · <a href="https://www.tiktok.com/video/${encodeURIComponent(c.videoId)}" target="_blank" rel="noopener">xem video</a>` : ''}</div></blockquote>`;
+/** "03/26" from an ISO date (TikTok comments); '' when unknown. */
+const monthYear = (iso) => {
+  const d = iso ? new Date(iso) : null;
+  return d && !Number.isNaN(d.getTime()) ? `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}` : '';
+};
+const quote = (c) => `<blockquote class="quote">${esc(c.text)}<div class="m">${monthYear(c.createdAt) ? `<span title="Tháng/năm comment">${monthYear(c.createdAt)}</span> · ` : ''}${c.likes} like · ${c.replies ?? 0} trả lời${c.parentText ? ` · trả lời: “${esc(c.parentText.slice(0, 100))}”` : ''}${c.videoId ? ` · <a href="https://www.tiktok.com/video/${encodeURIComponent(c.videoId)}" target="_blank" rel="noopener">xem video</a>` : ''}</div></blockquote>`;
 export const quotes = (list) => (list?.length ? list.map(quote).join('') : emptyState('Không có'));
 
 /** @param {any} insight @param {{counts?: Record<string, number>, extraTabs?: [string, string, any[]][]}} [o] */
