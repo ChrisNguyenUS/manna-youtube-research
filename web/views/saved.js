@@ -27,7 +27,7 @@ const KINDS = {
     actions: (s) => `<a class="btn sm" href="#/tiktok/comments?videos=${q(s.data.url)}">${icon('message')} Comment</a>`,
   },
   keyword: {
-    label: 'Từ khoá', empty: 'Tích từ khoá ở Tìm theo chủ đề (TikTok) hoặc Từ khoá người xem gõ (YouTube) rồi bấm Lưu.',
+    label: 'Từ khoá', empty: 'Tích từ khoá ở Tìm theo chủ đề (TikTok) hoặc Gợi ý từ khoá (YouTube) rồi bấm Lưu.',
     text: (s) => `${s.data.keyword} ${s.data.topic}`,
     main: (s) => `<div class="sv-text"><b>${esc(s.data.keyword)}</b><div class="sv-meta"><span class="badge plain">${s.data.platform === 'tiktok' ? 'TikTok' : 'YouTube'}</span>${s.data.topic ? `<span>Chủ đề: ${esc(s.data.topic)}</span>` : ''}</div></div>`,
     actions: (s) => (s.data.platform === 'tiktok'

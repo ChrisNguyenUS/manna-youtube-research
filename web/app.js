@@ -1,45 +1,69 @@
 import { status as statusApi } from './http/client.js';
 import { icon, refreshJobs, loadSaved, loadMetrics, esc, toast, store, persist, leaveView } from './lib.js';
 
-const HOME = ['/', 'home', 'Tổng quan', () => import('./views/dashboard.js')];
-// Grouped by platform. `more` holds the tools the main screens already cover; they sit behind "Công cụ khác".
+/**
+ * The sidebar. One entry per job to be done; screens that work on the same thing share an entry and show as tabs
+ * above the page (Tìm kênh · Phân tích · So sánh under "Kênh"). A tab is [path, tab label, loader of its screen].
+ * @typedef {[string, string, () => Promise<any>]} Tab
+ * @typedef {{icon: string, label: string, tabs: Tab[]}} Item
+ */
+/** @type {Item} */
+const HOME = { icon: 'home', label: 'Tổng quan', tabs: [['/', 'Tổng quan', () => import('./views/dashboard.js')]] };
+/** @type {{key: string, title: string, items: Item[]}[]} */
 const GROUPS = [
   {
     key: 'tiktok', title: 'TikTok',
     items: [
-      ['/tiktok/topic', 'compass', 'Tìm theo chủ đề', () => import('./views/tiktok/topic.js')],
-      ['/tiktok/insight', 'message', 'Insight khách hàng', () => import('./views/tiktok/insight.js')],
-    ],
-    more: [
-      ['/tiktok/search', 'search', 'Tìm video', () => import('./views/tiktok/search.js')],
-      ['/tiktok/comments', 'message', 'Comment', () => import('./views/tiktok/comments.js')],
+      { icon: 'compass', label: 'Tìm theo chủ đề', tabs: [['/tiktok/topic', 'Tìm theo chủ đề', () => import('./views/tiktok/topic.js')]] },
+      { icon: 'message', label: 'Insight khách hàng', tabs: [['/tiktok/insight', 'Insight khách hàng', () => import('./views/tiktok/insight.js')]] },
+      {
+        icon: 'play', label: 'Video & comment',
+        tabs: [
+          ['/tiktok/search', 'Tìm video', () => import('./views/tiktok/search.js')],
+          ['/tiktok/comments', 'Lấy comment', () => import('./views/tiktok/comments.js')],
+        ],
+      },
     ],
   },
   {
     key: 'youtube', title: 'YouTube',
     items: [
-      ['/videos', 'search', 'Tìm video', () => import('./views/videos.js')],
-      ['/channels', 'users', 'Tìm kênh', () => import('./views/channels.js')],
-      ['/research', 'compass', 'Nghiên cứu chủ đề', () => import('./views/research.js')],
-      ['/keywords', 'key', 'Từ khoá người xem gõ', () => import('./views/keywords.js')],
-      ['/ideas', 'bulb', 'Chấm điểm từ khoá', () => import('./views/ideas.js')],
-      ['/channel', 'bars', 'Phân tích kênh', () => import('./views/channel.js')],
-      ['/compare', 'columns', 'So sánh kênh', () => import('./views/compare.js')],
-      ['/comments', 'message', 'Comment', () => import('./views/comments.js')],
+      { icon: 'compass', label: 'Nghiên cứu chủ đề', tabs: [['/research', 'Nghiên cứu chủ đề', () => import('./views/research.js')]] },
+      {
+        icon: 'play', label: 'Video & comment',
+        tabs: [
+          ['/videos', 'Tìm video', () => import('./views/videos.js')],
+          ['/comments', 'Lấy comment', () => import('./views/comments.js')],
+        ],
+      },
+      {
+        icon: 'users', label: 'Kênh',
+        tabs: [
+          ['/channels', 'Tìm kênh', () => import('./views/channels.js')],
+          ['/channel', 'Phân tích kênh', () => import('./views/channel.js')],
+          ['/compare', 'So sánh kênh', () => import('./views/compare.js')],
+        ],
+      },
+      {
+        icon: 'key', label: 'Từ khoá',
+        tabs: [
+          ['/keywords', 'Gợi ý từ khoá', () => import('./views/keywords.js')],
+          ['/ideas', 'Chấm điểm từ khoá', () => import('./views/ideas.js')],
+        ],
+      },
     ],
-    more: [],
   },
   {
     key: 'library', title: 'Lưu trữ',
     items: [
-      ['/history', 'clock', 'Lịch sử', () => import('./views/history.js')],
-      ['/saved', 'bookmark', 'Đã lưu', () => import('./views/saved.js')],
-      ['/settings', 'settings', 'Cài đặt', () => import('./views/settings.js')],
+      { icon: 'clock', label: 'Lịch sử', tabs: [['/history', 'Lịch sử', () => import('./views/history.js')]] },
+      { icon: 'bookmark', label: 'Đã lưu', tabs: [['/saved', 'Đã lưu', () => import('./views/saved.js')]] },
+      { icon: 'settings', label: 'Cài đặt', tabs: [['/settings', 'Cài đặt', () => import('./views/settings.js')]] },
     ],
-    more: [],
   },
 ];
-const ROUTES = [HOME, ...GROUPS.flatMap((g) => [...g.items, ...g.more])];
+const ITEMS = [HOME, ...GROUPS.flatMap((g) => g.items)];
+const has = (item, path) => item.tabs.some((t) => t[0] === path);
 
 function parseHash() {
   const h = location.hash.replace(/^#/, '') || '/';
@@ -47,8 +71,8 @@ function parseHash() {
   return { path, params: Object.fromEntries(new URLSearchParams(qs || '')) };
 }
 
-const NAV_STATE = { collapsed: {}, more: {} };
-const navItem = (n, path) => `<a class="nav-item ${n[0] === path ? 'active' : ''}" href="#${n[0]}" ${n[0] === path ? 'aria-current="page"' : ''}>${icon(n[1])}<span>${esc(n[2])}</span></a>`;
+const NAV_STATE = { collapsed: {} };
+const navItem = (it, path) => `<a class="nav-item ${has(it, path) ? 'active' : ''}" href="#${it.tabs[0][0]}" ${has(it, path) ? 'aria-current="page"' : ''}>${icon(it.icon)}<span>${esc(it.label)}</span></a>`;
 let navPath = '/';
 function renderNav(path = navPath) {
   navPath = path;
@@ -56,22 +80,17 @@ function renderNav(path = navPath) {
   document.getElementById('nav').innerHTML =
     navItem(HOME, path) +
     GROUPS.map((g) => {
-      // The group (and its extra tools) holding the open screen is always shown, whatever was folded before.
-      const inMore = g.more.some((n) => n[0] === path);
-      const open = !st.collapsed[g.key] || inMore || g.items.some((n) => n[0] === path);
-      const moreOpen = !!st.more[g.key] || inMore;
+      // The group holding the open screen is always shown, whatever was folded before.
+      const open = !st.collapsed[g.key] || g.items.some((it) => has(it, path));
       return `<button type="button" class="nav-group" data-nav-group="${g.key}" aria-expanded="${open}"><span>${esc(g.title)}</span>${icon('chevron')}</button>
-        ${open ? `<div class="nav-list">${g.items.map((n) => navItem(n, path)).join('')}
-          ${g.more.length ? `<button type="button" class="nav-item nav-more" data-nav-more="${g.key}" aria-expanded="${moreOpen}">${icon('chevron')}<span>Công cụ khác</span></button>${moreOpen ? `<div class="nav-sub">${g.more.map((n) => navItem(n, path)).join('')}</div>` : ''}` : ''}</div>` : ''}`;
+        ${open ? `<div class="nav-list">${g.items.map((it) => navItem(it, path)).join('')}</div>` : ''}`;
     }).join('');
 }
 document.getElementById('nav').addEventListener('click', (e) => {
-  const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-nav-group],[data-nav-more]'));
+  const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-nav-group]'));
   if (!b) return;
   const st = store('nav', NAV_STATE);
-  const open = b.getAttribute('aria-expanded') === 'true';
-  if (b.dataset.navGroup) st.collapsed = { ...st.collapsed, [b.dataset.navGroup]: open };
-  else st.more = { ...st.more, [String(b.dataset.navMore)]: !open };
+  st.collapsed = { ...st.collapsed, [String(b.dataset.navGroup)]: b.getAttribute('aria-expanded') === 'true' };
   persist('nav', st);
   renderNav();
 });
@@ -80,19 +99,22 @@ let unmount = null;
 let routeSeq = 0;
 async function route() {
   const { path, params } = parseHash();
-  const entry = ROUTES.find((n) => n[0] === path) || HOME;
-  renderNav(entry[0]);
+  const item = ITEMS.find((it) => has(it, path)) || HOME;
+  const tab = item.tabs.find((t) => t[0] === path) || item.tabs[0];
+  renderNav(tab[0]);
   const main = document.getElementById('main');
   unmount?.(); // let the previous view remove its listeners
   leaveView(); // its job watchers stop; the jobs themselves keep running
   unmount = null;
   main.scrollTop = 0;
-  main.innerHTML = '<div class="page"></div>';
-  const page = main.firstChild;
+  // Screens that share a sidebar entry: their tabs sit above the page and switch between them.
+  const tabs = item.tabs.length > 1 ? `<div class="page-tabs-wrap"><nav class="page-tabs" aria-label="${esc(item.label)}">${item.tabs.map((t) => `<a href="#${t[0]}" class="${t === tab ? 'on' : ''}" ${t === tab ? 'aria-current="page"' : ''}>${esc(t[1])}</a>`).join('')}</nav></div>` : '';
+  main.innerHTML = `${tabs}<div class="page"></div>`;
+  const page = /** @type {HTMLElement} */ (main.querySelector('.page'));
   const mine = ++routeSeq;
   try {
     // A screen's code is fetched the first time it is opened (the browser keeps it afterwards).
-    const view = await entry[3]();
+    const view = await tab[2]();
     if (mine !== routeSeq) return; // another screen was opened while this one was loading
     const off = await view.mount(page, params);
     if (mine !== routeSeq) return void (typeof off === 'function' && off());
