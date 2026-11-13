@@ -461,3 +461,13 @@ table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 /* keep "Lấy comment" visible next to the open panel */
 [data-res]:has(.tt-drawer:not([hidden])) .tt-selbar { margin-right: min(440px, 100vw); }
 @media (max-width: 900px) { [data-res]:has(.tt-drawer:not([hidden])) .tt-selbar { margin-right: 0; } .tt-drawer { bottom: 0; } }
+/* horizontal scrollbar of the keyword columns: on top, always visible, sticky while scrolling down */
+.tt-colnav { position: sticky; top: -26px; z-index: 6; background: var(--surface); padding-bottom: 6px; }
+.tt-topscroll { position: sticky; top: 20px; z-index: 6; overflow-x: auto; overflow-y: hidden; height: 16px; margin: 0; background: var(--surface); scrollbar-width: thin; scrollbar-color: #b9b2ab var(--surface-2); }
+.tt-topscroll > div { height: 1px; }
+.tt-topscroll::-webkit-scrollbar { height: 12px; }
+.tt-topscroll::-webkit-scrollbar-track { background: var(--surface-2); border-radius: 999px; }
+.tt-topscroll::-webkit-scrollbar-thumb { background: #b9b2ab; border-radius: 999px; border: 2px solid var(--surface-2); }
+.tt-topscroll::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+.tt-cols { scrollbar-width: none; scroll-snap-type: none; }
+.tt-cols::-webkit-scrollbar { display: none; }

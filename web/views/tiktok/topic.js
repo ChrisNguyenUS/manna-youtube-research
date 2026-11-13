@@ -365,6 +365,7 @@ export async function mount(root, params) {
         ${pill('colw', 'Cột:', [[260, 'Gọn'], [320, 'Vừa'], [420, 'Rộng']], st.colw)}
         ${pill('vsort', 'Sắp xếp:', sortOptions(), viewSort())}`;
       body.innerHTML = compareView(visibleCols(), viewSort());
+      linkTopScroll();
       syncSel();
     }
   }
@@ -382,6 +383,7 @@ export async function mount(root, params) {
     return `<div class="tt-colnav"><button type="button" class="icon-btn" data-scroll="-1" title="Cột trước">${icon('back')}</button>
         <div class="chips">${cols.map((c) => `<button type="button" class="chip" data-jump="${current.data.columns.indexOf(c)}">${current.data.columns.indexOf(c) + 1}. ${esc(c.keyword)}</button>`).join('')}</div>
         <button type="button" class="icon-btn tt-flip" data-scroll="1" title="Cột sau">${icon('back')}</button></div>
+      <div class="tt-topscroll" data-topscroll aria-hidden="true"><div></div></div>
       <div class="tt-cols" style="--tt-colw:${Number(st.colw) || 320}px">${cols.map((c) => {
       const i = current.data.columns.indexOf(c);
       const list = sortVideos(c.videos, vsort).slice(0, limit);
@@ -611,6 +613,32 @@ export async function mount(root, params) {
   shown.add(() => document.removeEventListener('keydown', onKey));
 
   // ---------------- column navigation ----------------
+  // The columns' horizontal scrollbar sits on top (and stays in view while scrolling down): a thin bar
+  // of the same width, kept in step with the columns both ways.
+  /** @type {ResizeObserver|null} */
+  let colsObserver = null;
+  function linkTopScroll() {
+    colsObserver?.disconnect();
+    const bar = /** @type {HTMLElement} */ (resBox.querySelector('[data-topscroll]'));
+    const cols = /** @type {HTMLElement} */ (resBox.querySelector('.tt-cols'));
+    if (!bar || !cols) return;
+    const inner = /** @type {HTMLElement} */ (bar.firstElementChild);
+    const size = () => {
+      inner.style.width = `${cols.scrollWidth}px`;
+      bar.hidden = cols.scrollWidth <= cols.clientWidth + 1;
+    };
+    size();
+    colsObserver = new ResizeObserver(size);
+    colsObserver.observe(cols);
+    // Same width on both, so copying the position only when it differs ends the echo of the other's event.
+    bar.addEventListener('scroll', () => {
+      if (cols.scrollLeft !== bar.scrollLeft) cols.scrollLeft = bar.scrollLeft;
+    });
+    cols.addEventListener('scroll', () => {
+      if (bar.scrollLeft !== cols.scrollLeft) bar.scrollLeft = cols.scrollLeft;
+    });
+  }
+
   function jumpTo(i) {
     const cols = resBox.querySelector('.tt-cols');
     const col = /** @type {HTMLElement} */ (resBox.querySelector(`.tt-col[data-col="${i}"]`));
@@ -702,5 +730,5 @@ export async function mount(root, params) {
   renderKeywords();
   historyList();
   if (params.id) show(params.id).catch((e) => toast(e.message, 'error'));
-  return () => shown.off();
+  return () => (shown.off(), colsObserver?.disconnect());
 }
