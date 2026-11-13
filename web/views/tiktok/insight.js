@@ -1,6 +1,6 @@
 import { records, tiktokInsight, jobs } from '../../http/client.js';
 import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips } from '../../lib.js';
-import { tiktokVideoCard, commentGroups, bindCommentGroups, tiktokFilterSelects, offTopicDetails, tiktokCriteria, topicExplorer } from '../../components/index.js';
+import { commentGroups, bindCommentGroups, tiktokFilterSelects, offTopicDetails, tiktokCriteria, insightContext, insightOverview, topicExplorer, commentBrowser, videoGallery } from '../../components/index.js';
 import { scope } from '../../dom.js';
 
 const FORM = { keywords: '', top: 10, commentsPerVideo: 300, replies: true, keepOffTopic: false, minPlays: 0, minLikes: 0, maxAgeDays: 0, minEngagement: 0 };
@@ -18,6 +18,7 @@ export async function mount(root, params) {
   root.innerHTML = `
     <div class="page-head"><div><h1>${icon('message')} Insight khách hàng (TikTok)</h1>
       <p>Đọc comment của các video TikTok top đúng chủ đề để biết khách đang hỏi gì, sợ gì, ai đang cân nhắc thuê dịch vụ, và câu chữ thật của họ.</p></div></div>
+    <div class="ix-cfgbar card" data-cfgbar hidden></div>
     <div class="ix-form" data-form>
       <section class="card ix-card">${head(1, 'target', 'Chủ đề nghiên cứu', 'Nhập chủ đề cụ thể bạn muốn nghiên cứu trên TikTok.')}
         <div class="tt-searchbox">${icon('search')}<input data-k="keywords" placeholder="Ví dụ: di trú mỹ, phỏng vấn quốc tịch" value="${esc(st.keywords)}" autocomplete="off"><button type="button" class="icon-btn" data-clear title="Xoá">${icon('x')}</button></div>
@@ -149,54 +150,168 @@ export async function mount(root, params) {
   renderAll();
   renderEta();
 
-  async function run() {
+  // ---------- configuration: full form before a run, a one-line summary during and after ----------
+  const FORM_KEYS = Object.keys(FORM);
+  const pick = (p) => Object.fromEntries(FORM_KEYS.filter((k) => p && k in p).map((k) => [k, p[k]]));
+  /** @type {{mode: 'full'|'summary', status: null|'running'|'done'|'failed', params: any, at?: number}} */
+  const cfg = { mode: 'full', status: null, params: null };
+  const cfgBar = /** @type {HTMLElement} */ (root.querySelector('[data-cfgbar]'));
+
+  /** Put values (from a report) back into every control of the form. */
+  function syncForm() {
+    kwInput.value = st.keywords ?? '';
+    for (const el of form.querySelectorAll('[data-filter]')) /** @type {HTMLSelectElement} */ (el).value = String(Number(st[/** @type {HTMLElement} */ (el).dataset.filter]) || 0);
+    for (const el of form.querySelectorAll('input[type=checkbox][data-k]')) /** @type {HTMLInputElement} */ (el).checked = Boolean(st[/** @type {HTMLElement} */ (el).dataset.k]);
+    renderAll();
+    renderEta();
+  }
+
+  function renderCfg() {
+    /** @type {HTMLElement} */ (form).hidden = cfg.mode !== 'full';
+    cfgBar.hidden = !cfg.status;
+    if (!cfg.status) return;
+    const p = cfg.params ?? {};
+    const max = Number(p.top) * Number(p.commentsPerVideo);
+    const filters = tiktokCriteria({ minPlays: p.minPlays, minLikes: p.minLikes, maxAgeDays: p.maxAgeDays, minEngagement: p.minEngagement, keepOffTopic: p.keepOffTopic });
+    const status = { running: '<span class="ix-status run">Đang chạy…</span>', done: `<span class="ix-status ok">${icon('check')} Xong${cfg.at ? ` · ${ago(cfg.at)}` : ''}</span>`, failed: '<span class="ix-status bad">Bị lỗi</span>' }[cfg.status];
+    cfgBar.innerHTML = `<div class="ix-cfgline">${status}
+        <span class="ix-chip accent">Chủ đề: ${esc(p.keywords ?? '')}</span><span class="ix-chip">${p.top} video</span><span class="ix-chip">${p.commentsPerVideo} comment/video</span>
+        ${max ? `<span class="ix-chip">Tối đa ${max.toLocaleString('vi-VN')} comment</span>` : ''}${filters ? `<span class="ix-chip">${esc(filters)}</span>` : ''}${p.replies ? '<span class="ix-chip">có trả lời</span>' : ''}</div>
+      <div class="ix-cfgact">
+        ${cfg.mode === 'full' ? `<button type="button" class="btn sm" data-cfg="collapse">${icon('back')} Thu gọn cấu hình</button>` : `<button type="button" class="btn sm" data-cfg="edit">${icon('edit')} ${cfg.status === 'running' ? 'Xem cấu hình' : 'Chỉnh cấu hình'}</button>`}
+        ${cfg.status !== 'running' ? `<button type="button" class="btn sm primary" data-cfg="again">${icon('refresh')} Chạy lại</button>` : ''}
+      </div>`;
+  }
+  cfgBar.addEventListener('click', (e) => {
+    const b = /** @type {HTMLElement} */ (e.target).closest('[data-cfg]');
+    if (!b) return;
+    const act = b.getAttribute('data-cfg');
+    if (act === 'collapse') cfg.mode = 'summary';
+    else if (act === 'edit') {
+      // The form takes the shown report's settings, ready to change and run.
+      if (cfg.status !== 'running' && cfg.params) {
+        Object.assign(st, pick(cfg.params));
+        save();
+        syncForm();
+      }
+      cfg.mode = 'full';
+    } else if (act === 'again') return void run(cfg.params);
+    renderCfg();
+    if (cfg.mode === 'full') form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  /** @param {any} [again] settings of an earlier report to run once more */
+  async function run(again) {
+    if (again) {
+      Object.assign(st, pick(again));
+      syncForm();
+    }
     st.keywords = kwInput.value.trim();
     persist('tt-insight-form', st);
     if (!st.keywords) {
+      cfg.mode = 'full';
+      renderCfg();
       kwInput.focus();
       return toast('Nhập chủ đề nghiên cứu', 'error');
     }
+    Object.assign(cfg, { mode: 'summary', status: 'running', params: { ...st }, at: undefined });
+    renderCfg();
+    tabOff();
     out.innerHTML = progressCard(`Đang lập báo cáo: ${st.keywords}`);
+    root.closest('.main')?.scrollTo({ top: 0, behavior: 'smooth' });
     try {
       const res = await runJob('tiktok_insight', st, (p) => updateProgress(out, p));
       history();
       await show(res.id);
     } catch (e) {
+      cfg.status = 'failed';
+      renderCfg();
       out.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
     }
   }
+
+  // ---------- the report: header, KPIs, five tabs ----------
+  const TABS = [['overview', 'Tổng quan', 'grid'], ['topics', 'Chủ đề', 'layers'], ['comments', 'Comment', 'message'], ['questions', 'Câu hỏi', 'bulb'], ['videos', 'Video', 'play']];
+  /** @type {import('../../components/insight-workspace.js').InsightCtx|null} */
+  let ctx = null;
+  let tabOffFn = null;
+  const tabOff = () => (tabOffFn?.(), (tabOffFn = null));
 
   async function show(id) {
     const rec = await records.get(id);
     const d = rec.data;
     const g = d.insight.groupCounts;
+    Object.assign(cfg, { mode: 'summary', status: 'done', params: rec.params, at: rec.created_at });
+    renderCfg();
+    tabOff();
+    ctx = null;
+    const kpi = (ic, value, label, tip) => `<div class="tt-kpi"><span class="tt-kpi-ic">${icon(ic)}</span><div><div class="tt-kpi-v">${value}</div><div class="tt-kpi-l">${label} <span class="ix-tip" data-tip="${esc(tip)}">${icon('info')}</span></div></div></div>`;
     out.innerHTML = `
-      <div class="card card-pad"><div class="row between"><div><h2 style="margin:0;font-size:18px">${esc(d.keywords.join(', '))}</h2><div class="muted small">${ago(rec.created_at)} · ${d.counts.found} video tìm được · ${d.counts.offTopic} lạc đề bỏ${d.counts.belowFilters ? ` · ${d.counts.belowFilters} dưới ngưỡng lọc` : ''}${d.failedVideos.length ? ` · ${d.failedVideos.length} video lỗi` : ''}</div></div>
-        <div class="head-actions"><a class="btn sm" href="${records.exportUrl(id, 'md')}">${icon('download')} Markdown</a><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div></div></div>
+      <div class="card ix-rhead"><div><h2>${esc(d.keywords.join(', '))}</h2>
+          <div class="muted small">Lập ${ago(rec.created_at)} · ${d.counts.found} video tìm được · ${d.counts.offTopic} lạc đề bỏ${d.counts.belowFilters ? ` · ${d.counts.belowFilters} dưới ngưỡng lọc` : ''}${d.failedVideos.length ? ` · ${d.failedVideos.length} video lỗi` : ''}</div></div>
+        <div class="head-actions"><a class="btn sm" href="${records.exportUrl(id, 'md')}">${icon('download')} Markdown</a><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div></div>
       ${offTopicDetails(d.offTopicVideos, d.offTopicVideos ? d.counts.offTopic : 0)}
-      <div class="kpis" style="margin-top:14px">
-        <div class="kpi"><div class="label">Video đọc comment</div><div class="value">${d.videos.length}</div></div>
-        <div class="kpi"><div class="label">Comment đã đọc</div><div class="value">${fmt(d.counts.commentsRead)}</div></div>
-        <div class="kpi"><div class="label">Câu hỏi</div><div class="value">${g.questions}</div></div>
-        <div class="kpi"><div class="label">Lo sợ</div><div class="value">${g.fears}</div></div>
-        <div class="kpi"><div class="label">${d.insight.themes ? 'Cân nhắc mua' : 'Muốn mua'}</div><div class="value">${g.buying}</div></div></div>
-      <div class="card" style="margin-top:14px"><div class="card-head"><h3>${icon('layers')} Khám phá chủ đề</h3><span class="sub">Bấm một chủ đề để đọc từng comment gốc của nó · bấm comment để xem đủ câu, video và creator · không lưu tên người bình luận</span></div>
-        <div data-explorer><div class="card-pad muted">Đang gom comment theo chủ đề…</div></div></div>
-      <div class="card" style="margin-top:14px"><div class="card-head"><h3>Khách đang nói gì</h3><span class="sub">Trích nguyên văn, không có tên người viết</span></div>
-        ${commentGroups(d.insight, { extraTabs: [['top', 'Comment nổi bật', d.insight.topByAttention]] })}</div>
-      ${d.insight.voiceLines ? `<div class="card" style="margin-top:14px"><div class="card-head"><h3>Câu chữ thật của khách</h3><span class="sub">Câu ngắn nguyên văn được nhiều người phản ứng: nguyên liệu cho hook</span></div>
-        <div class="card-pad">${d.insight.voiceLines.map((v) => `<div class="tt-voice">“${esc(v.text)}” <span class="small muted">♥ ${fmt(v.likes)} · ↩ ${fmt(v.replies)}</span></div>`).join('') || '<span class="muted">Chưa đủ comment</span>'}</div></div>`
-        : `<div class="card" style="margin-top:14px"><div class="card-head"><h3>Câu chữ thật</h3><span class="sub">Cụm từ lặp lại ≥ 3 lần: nguyên liệu cho hook</span></div>
-        <div class="card-pad"><div class="chips">${(d.insight.phrases || []).map((p) => `<span class="tag">${esc(p.phrase)} · <b>${p.count}</b></span>`).join('') || '<span class="muted">Chưa đủ comment</span>'}</div></div></div>`}
-      <div class="card" style="margin-top:14px"><div class="card-head"><h3>Video hot</h3></div><div class="vgrid">${d.videos.map((v) => tiktokVideoCard(v)).join('') || emptyState('Không có')}</div></div>`;
+      <div class="tt-kpis ix-kpis">
+        ${kpi('play', d.videos.length, 'Video đọc comment', 'Video top đúng chủ đề, qua bộ lọc, đã được đọc comment.')}
+        ${kpi('message', fmt(d.counts.commentsRead), 'Comment đã đọc', 'Comment có chữ (bỏ comment chỉ có emoji), gồm cả trả lời nếu đã bật lấy trả lời.')}
+        ${kpi('bulb', g.questions, 'Câu hỏi', 'Comment có dấu hỏi hoặc từ để hỏi. Không tính comment của người bán dịch vụ.')}
+        ${kpi('heart', g.fears, 'Lo sợ', 'Comment nhắc tới nỗi sợ, rào cản: bị từ chối, chờ lâu, lừa đảo, tốn tiền…')}
+        ${kpi('target', g.buying, d.insight.themes ? 'Cân nhắc mua' : 'Muốn mua', 'Comment hỏi giá, xin liên hệ, hoặc phân vân tự làm hay thuê dịch vụ.')}
+      </div>
+      <div class="card ix-work">
+        <div class="tt-tabs ix-tabs" role="tablist">${TABS.map(([k, l, ic]) => `<button type="button" role="tab" class="tab" data-tab="${k}">${icon(ic)} ${l} <span class="ix-tcount" data-tcount="${k}"></span></button>`).join('')}</div>
+        <div data-tabbody><div class="card-pad muted">Đang gom comment theo chủ đề…</div></div>
+      </div>
+      ${d.insight.themes ? '' : `<div class="card" style="margin-top:14px"><div class="card-head"><h3>Khách đang nói gì</h3><span class="sub">Báo cáo kiểu cũ: nhóm phàn nàn, muốn xem thêm…</span></div>${commentGroups(d.insight, { extraTabs: [['top', 'Comment nổi bật', d.insight.topByAttention]] })}</div>`}`;
     shown.off();
-    shown.add(bindCommentGroups(out));
-    const ex = /** @type {HTMLElement} */ (out.querySelector('[data-explorer]'));
+    shown.add(bindTips(form));
+    shown.add(bindTips(out));
+    shown.add(bindTips(cfgBar));
+    if (!d.insight.themes) shown.add(bindCommentGroups(out));
     try {
-      shown.add(topicExplorer(ex, rec, await tiktokInsight.topics(id)));
+      ctx = insightContext(rec, await tiktokInsight.topics(id));
     } catch (e) {
-      ex.innerHTML = `<div class="card-pad"><div class="callout">Không gom được chủ đề: ${esc(e.message)}</div></div>`;
+      out.querySelector('[data-tabbody]').innerHTML = `<div class="card-pad"><div class="callout">Không gom được chủ đề: ${esc(e.message)}</div></div>`;
+      return;
     }
+    const counts = { topics: ctx.topics.length, comments: fmt(ctx.all.length), questions: ctx.questions.length, videos: ctx.videos.size };
+    for (const [k, n] of Object.entries(counts)) out.querySelector(`[data-tcount="${k}"]`).textContent = String(n);
+    out.querySelector('.ix-tabs').addEventListener('click', (e) => {
+      const b = /** @type {HTMLElement} */ (e.target).closest('[data-tab]');
+      if (b) openTab(b.getAttribute('data-tab'));
+    });
+    openTab('overview');
+  }
+
+  /** @param {string} tab @param {Record<string, any>} [o] where to land in it (topic, video, search) */
+  function openTab(tab, o = {}) {
+    if (!ctx) return;
+    tabOff();
+    out.querySelectorAll('[data-tab]').forEach((b) => {
+      const on = b.getAttribute('data-tab') === tab;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-selected', String(on));
+    });
+    const body = /** @type {HTMLElement} */ (out.querySelector('[data-tabbody]'));
+    const go = (t, x) => {
+      openTab(t, x);
+      out.querySelector('.ix-work')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    if (tab === 'overview') tabOffFn = insightOverview(body, ctx, { go });
+    else if (tab === 'topics') tabOffFn = topicExplorer(body, ctx, { topic: o.topic });
+    else if (tab === 'comments') {
+      tabOffFn = commentBrowser(body, ctx, {
+        base: ctx.all, initial: { video: o.video ?? '', q: o.q ?? '', open: o.open ?? null, topic: o.topic ?? '' },
+        head: '<div class="ix-tabintro small muted">Mọi comment đã đọc. Lọc theo nhóm, từ khoá, video; bấm một comment để đọc đủ câu, video, creator và các trả lời. Không lưu tên người bình luận.</div>',
+        placeholder: `Tìm trong ${ctx.all.length} comment…`,
+      }).off;
+    } else if (tab === 'questions') {
+      tabOffFn = commentBrowser(body, ctx, {
+        base: ctx.questions, topicChoices: ctx.topics.filter((t) => t.kind === 'question'), initial: { topic: o.topic ?? '' },
+        head: '<div class="ix-tabintro small muted">Comment là câu hỏi (có dấu hỏi hoặc từ để hỏi), không tính người bán dịch vụ, gom theo nhóm của báo cáo. Bấm một câu hỏi để xem video và các trả lời đã đọc.</div>',
+        placeholder: `Tìm trong ${ctx.questions.length} câu hỏi…`,
+      }).off;
+    } else if (tab === 'videos') tabOffFn = videoGallery(body, ctx, { video: o.video, onAllComments: (video) => go('comments', { video }) });
   }
 
   async function history() {
@@ -206,5 +321,5 @@ export async function mount(root, params) {
   }
   history();
   if (params.id) show(params.id);
-  return () => shown.off();
+  return () => (shown.off(), tabOff());
 }

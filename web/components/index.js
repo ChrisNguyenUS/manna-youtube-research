@@ -9,5 +9,5 @@ export * from './tiktok-video-card.js';
 export * from './comment-groups.js';
 export * from './tiktok-filters.js';
 export * from './tiktok-off-topic.js';
-export * from './topic-explorer.js';
+export * from './insight-workspace.js';
 export { median } from '../lib.js';
