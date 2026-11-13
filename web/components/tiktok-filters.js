@@ -1,5 +1,5 @@
 // Video thresholds for TikTok search/insight: views, likes, posted within, engagement (tap again to clear).
-import { chips, fmt } from '../lib.js';
+import { chips, fmt, icon } from '../lib.js';
 
 const GROUPS = [
   ['minPlays', 'View tối thiểu', [10_000, 100_000, 1_000_000].map((v) => ({ v, label: fmt(v) + '+' }))],
@@ -7,6 +7,25 @@ const GROUPS = [
   ['maxAgeDays', 'Đăng trong', [7, 30, 90, 365].map((v) => ({ v, label: v === 365 ? '1 năm' : `${v} ngày` }))],
   ['minEngagement', 'Tương tác ≥', [3, 5, 10].map((v) => ({ v, label: `${v}%` }))],
 ];
+
+// Same thresholds as dropdowns, for the insight setup: label, icon, what "off" says, and a one-line explanation.
+const SELECTS = {
+  minPlays: ['Lượt xem tối thiểu', 'eye', 'Không lọc', 'Bỏ video ít view hơn mức này.'],
+  minLikes: ['Lượt tim tối thiểu', 'heart', 'Không lọc', 'Bỏ video ít tim hơn mức này.'],
+  maxAgeDays: ['Thời gian đăng', 'calendar', 'Mọi lúc', 'Chỉ giữ video đăng trong khoảng này.'],
+  minEngagement: ['Tỉ lệ tương tác tối thiểu', 'bars', 'Không lọc', 'Tương tác = (tim + comment + share + lưu) ÷ view.'],
+};
+
+/** The four video thresholds as labelled dropdowns (values exactly as the chips above). @param {Record<string, any>} st */
+export function tiktokFilterSelects(st) {
+  return `<div class="ix-filters">${GROUPS.map(([k, , opts]) => {
+    const [label, ic, off, help] = SELECTS[k];
+    const cur = Number(st[k]) || 0;
+    return `<label class="ix-filter"><span class="ix-flabel">${label} <span class="ix-tip" data-tip="${help}">${icon('info')}</span></span>
+      <span class="tt-pill">${icon(ic)}<select data-filter="${k}"><option value="0" ${cur ? '' : 'selected'}>${off}</option>${opts.map((o) => `<option value="${o.v}" ${cur === o.v ? 'selected' : ''}>${o.label}</option>`).join('')}</select></span>
+      <span class="ix-help">${help}</span></label>`;
+  }).join('')}</div>`;
+}
 
 /** @param {Record<string, any>} st */
 export function tiktokVideoFilters(st) {
