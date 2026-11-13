@@ -1,4 +1,4 @@
-import { jobs, saved as savedApi, metrics } from './http/client.js';
+import { jobs, saved as savedApi, metrics, tiktokLogin } from './http/client.js';
 import { jobHref } from './kinds.js';
 // Shared helpers for all views.
 
@@ -145,7 +145,8 @@ export function watchJob(id, onProgress) {
         }
         if (j.status in STOPPED) {
           refreshJobs();
-          return reject(new Error(j.error || STOPPED[j.status]));
+          // code: why it failed (e.g. tiktok_login_required); jobId: so the error box can offer to run it again
+          return reject(Object.assign(new Error(j.error || STOPPED[j.status]), { code: j.errorCode, jobId: RETRY.includes(j.status) ? j.id : undefined }));
         }
         setTimeout(tick, 700);
       } catch (e) {
@@ -208,6 +209,38 @@ export async function refreshJobs() {
 }
 const LABELS = { tiktok_topic: 'Tìm theo chủ đề TikTok', tiktok_search: 'Tìm video TikTok', tiktok_insight: 'Insight TikTok', tiktok_comments: 'Comment TikTok', video_search: 'Tìm video', channel_search: 'Tìm kênh', channel_analysis: 'Phân tích kênh', research: 'Nghiên cứu chủ đề', research_comments: 'Đọc comment', comments: 'Lấy comment', idea_check: 'Chấm điểm từ khoá', keyword_score: 'Chấm điểm từ khoá liên quan', keywords: 'Từ khoá' };
 
+/**
+ * An error and the ways out of it: sign in to TikTok when that is what is missing, run the job again when there was one.
+ * Both buttons work wherever this is shown (handled once, below and in the sidebar's job buttons).
+ * @param {any} e
+ */
+export function errorCallout(e) {
+  const login = e?.code === 'tiktok_login_required';
+  const acts = `${login ? `<button type="button" class="btn sm primary" data-tt-login>${icon('key')} Đăng nhập TikTok</button>` : ''}${e?.jobId ? `<button type="button" class="btn sm" data-job-retry="${esc(e.jobId)}">${icon('refresh')} Chạy lại</button>` : ''}`;
+  // The stored message tells where to sign in; with the button right here that part is noise.
+  const msg = login ? String(e.message).replace(/Đăng nhập một lần:.*?login:tiktok\.\s*/, '') : e?.message;
+  return `<div class="callout err-box"><div>Lỗi: ${esc(msg)}${login ? ' Đăng nhập xong thì bấm Chạy lại.' : ''}</div>${acts ? `<div class="row">${acts}</div>` : ''}</div>`;
+}
+
+// "Đăng nhập TikTok" anywhere in the app: opens the sign-in window on this computer and waits for it.
+document.addEventListener('click', async (e) => {
+  const b = /** @type {HTMLButtonElement|null} */ (e.target.closest?.('[data-tt-login]'));
+  if (!b || b.disabled) return;
+  const before = b.innerHTML;
+  b.disabled = true;
+  b.textContent = 'Đang chờ bạn đăng nhập trong cửa sổ Chromium…';
+  try {
+    await tiktokLogin.start();
+    b.innerHTML = `${icon('check')} Đã đăng nhập TikTok`;
+    toast('Đã đăng nhập TikTok');
+    window.dispatchEvent(new CustomEvent('tiktok-login')); // reminders on the open screen go away
+  } catch (err) {
+    b.disabled = false;
+    b.innerHTML = before;
+    toast(err.message, 'error');
+  }
+});
+
 export function progressCard(title) {
   return `<div class="card progress-card" data-progress><b>${esc(title)}</b><div class="muted small" data-step>Bắt đầu…</div><div class="bar"><i style="width:4%"></i></div></div>`;
 }
@@ -238,7 +271,7 @@ export async function resumeJob(kind, out, title, done) {
   try {
     await done(await watchJob(live.id, (p) => updateProgress(out, p)));
   } catch (e) {
-    out.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
+    out.innerHTML = errorCallout(e);
   }
   return true;
 }

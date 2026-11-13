@@ -3,9 +3,10 @@
 // 2. Result: KPIs, "So sánh theo từ khoá" (one column per keyword) and "Tất cả video" (grid or list).
 //    Videos are ticked by hand on either tab; only the ticked ones go to the existing comment scraper.
 import { records, tiktokTopic } from '../../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ageText, bindTips, activeJob, watchJob, isSaved, toggleSave, saveMany } from '../../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ageText, bindTips, activeJob, watchJob, isSaved, toggleSave, saveMany, errorCallout } from '../../lib.js';
 import { savedTikTokVideo, savedKeyword } from '../../saved-items.js';
 import { scope } from '../../dom.js';
+import { tiktokLoginNotice } from '../../components/tiktok-login.js';
 import { tiktokCriteria } from '../../components/index.js';
 
 const FORM = {
@@ -86,6 +87,7 @@ export async function mount(root, params) {
       <div class="page-head"><div><h1>${icon('compass')} Tìm theo chủ đề (TikTok)</h1>
         <p>Nhập chủ đề, chọn từ khoá mà chính TikTok gợi ý, rồi quét video top của từng từ khoá kèm 3 comment nhiều tym nhất. Quét lại chủ đề cũ để thấy video nào đang tăng view.</p></div>
         <button class="btn" data-goto-history>${icon('clock')} Chủ đề đã quét</button></div>
+      <div data-ttlogin></div>
       <div class="card card-pad tt-search">
         <div class="tt-searchbox">${icon('search')}<input data-k="topic" placeholder="Ví dụ: di trú mỹ, bảo lãnh vợ chồng" value="${esc(st.topic)}" autocomplete="off"><button type="button" class="icon-btn" data-clear title="Xoá">${icon('x')}</button></div>
         <button class="btn primary lg" data-find>${icon('layers')} Tìm từ khoá</button>
@@ -105,6 +107,7 @@ export async function mount(root, params) {
   const resBox = root.querySelector('[data-res]');
   const progBox = root.querySelector('[data-prog]');
   const topicInput = /** @type {HTMLInputElement} */ (root.querySelector('[data-k="topic"]'));
+  shown.add(tiktokLoginNotice(root.querySelector('[data-ttlogin]')));
 
   function mode(m) {
     setupEl.hidden = m !== 'setup';
@@ -137,7 +140,7 @@ export async function mount(root, params) {
       intentFilter = 'all';
       renderKeywords();
     } catch (e) {
-      kwPanel.innerHTML = `<div class="card-head"><h3>Từ khoá gợi ý</h3></div><div class="card-pad"><div class="callout">Lỗi: ${esc(e.message)}</div></div>`;
+      kwPanel.innerHTML = `<div class="card-head"><h3>Từ khoá gợi ý</h3></div><div class="card-pad">${errorCallout(e)}</div>`;
     }
   }
 
@@ -274,7 +277,7 @@ export async function mount(root, params) {
       historyList();
     } catch (e) {
       const prog = progBox.querySelector('[data-progress]');
-      if (prog) prog.outerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
+      if (prog) prog.outerHTML = errorCallout(e);
     }
   }
 

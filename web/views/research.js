@@ -1,7 +1,7 @@
 import { scope } from '../dom.js';
 import { historyList } from '../components/history-list.js';
 import { records } from '../http/client.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, mult, ago, emptyState, thumb, ytVideo, dur, ageText, bindTips, setUrl, resumeJob } from '../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, mult, ago, emptyState, thumb, ytVideo, dur, ageText, bindTips, setUrl, resumeJob, errorCallout } from '../lib.js';
 import { mountVideoResults, hbars, patternList, phraseChips, oscoreBadge, outlierTip } from '../components/index.js';
 import { DUR_CHIPS, UPLOAD_CHIPS, REGIONS, durToSeconds } from './videos.js';
 
@@ -72,7 +72,7 @@ export async function mount(root, params) {
       history();
       await show(res.id);
     } catch (e) {
-      out.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
+      out.innerHTML = errorCallout(e);
     }
   }
 
@@ -151,7 +151,7 @@ export async function mount(root, params) {
             await runJob('research_comments', { recordId: id, top: 5, max: 50 }, (p) => updateProgress(body, p));
             show(id, 'comments');
           } catch (e) {
-            body.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
+            body.innerHTML = errorCallout(e);
           }
         });
         return;

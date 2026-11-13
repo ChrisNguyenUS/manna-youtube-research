@@ -1,7 +1,7 @@
 import { scope } from '../dom.js';
 import { historyList } from '../components/history-list.js';
 import { records } from '../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, bindTips, setUrl, resumeJob } from '../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, bindTips, setUrl, resumeJob, errorCallout } from '../lib.js';
 import { scoreCard, bindScoreCards } from '../components/index.js';
 import { REGIONS } from './videos.js';
 
@@ -39,7 +39,7 @@ export async function mount(root, params) {
       show(res.id);
       history();
     } catch (e) {
-      out.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
+      out.innerHTML = errorCallout(e);
     }
   }
   root.querySelector('[data-run]').addEventListener('click', run);

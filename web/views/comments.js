@@ -1,6 +1,6 @@
 import { records } from '../http/client.js';
 import { historyList } from '../components/history-list.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ytVideo, thumb, setUrl, resumeJob } from '../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ytVideo, thumb, setUrl, resumeJob, errorCallout } from '../lib.js';
 
 const FORM = { videos: '', max: 100, sort: 'top', replies: false };
 
@@ -37,7 +37,7 @@ export async function mount(root, params) {
       out.innerHTML = '';
       if (recs[0]) show(recs[0].id);
     } catch (e) {
-      out.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
+      out.innerHTML = errorCallout(e);
     }
   }
 
