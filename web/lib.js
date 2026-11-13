@@ -77,6 +77,7 @@ const P = {
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
   filter: '<path d="M3 5h18l-7 8v6l-4 2v-8z"/>',
   chevron: '<path d="m9 6 6 6-6 6"/>',
+  power: '<path d="M12 3v9"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/>',
 };
 export const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${P[name] || ''}</svg>`;
 

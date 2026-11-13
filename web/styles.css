@@ -80,6 +80,15 @@ button.nav-group:focus-visible { outline: 2px solid var(--accent-line); outline-
 .statusbar b { color: var(--text-2); font-weight: 600; }
 .statusbar .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); display: inline-block; margin-right: 6px; }
 .statusbar .right { margin-left: auto; }
+.sb-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 18px; overflow: hidden; white-space: nowrap; }
+.sb-power { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: 5px; background: var(--surface); color: var(--text-2); font: 600 11.5px var(--font, inherit); cursor: pointer; }
+.sb-power svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; }
+.sb-power:hover { color: var(--bad); border-color: var(--bad); }
+.sb-power.armed { background: var(--bad); border-color: var(--bad); color: #fff; }
+.sb-power:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.stopped { max-width: 520px; margin: 14vh auto 0; text-align: center; }
+.stopped h1 { font-size: 22px; margin: 0 0 8px; }
+.stopped p { color: var(--text-2); margin: 0 0 6px; }
 
 /* ---------- cards & panels ---------- */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }

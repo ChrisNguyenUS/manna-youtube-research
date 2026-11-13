@@ -56,6 +56,8 @@ export const settings = {
 
 export const metrics = { load: () => api('/metrics') };
 export const status = { get: () => api('/status') };
+/** Stop the whole app (server, running jobs, the hidden TikTok browser). The window stays open but stops working. */
+export const shutdown = () => api('/shutdown', { method: 'POST', body: { confirm: true } });
 /** TikTok sign-in: start() opens a window on this computer and resolves once the user has signed in there. */
 export const tiktokLogin = {
   get: () => api('/tiktok/login'),

@@ -73,7 +73,7 @@ export function createHttpServer(app, { publicDir = path.join(ROOT, 'web') } = {
       const { route, params, pathMatched } = router.match(req.method || 'GET', url.pathname);
       if (!route) throw httpError('not_found', pathMatched ? 'Sai phương thức' : 'Không có API này');
       const body = ['POST', 'PATCH', 'DELETE'].includes(req.method || '') ? await readBody(req) : {};
-      const out = await route.handler({ app, ws: app.ws, params, query: url.searchParams, body, signal: ac.signal });
+      const out = await route.handler({ app, ws: app.ws, params, query: url.searchParams, body, signal: ac.signal, headers: req.headers });
       if (out?.__raw) return send(res, 200, out.body, out.type, out.headers);
       send(res, 200, out ?? { ok: true });
     } catch (e) {

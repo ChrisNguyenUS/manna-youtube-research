@@ -78,5 +78,9 @@ export function createApp({ config = loadConfig(), source, store, tiktok } = {})
   handlers.tiktok_comments = (p, ctx) => features.tiktokComments(p, ctx.progress);
   handlers.tiktok_topic = (p, ctx) => features.tiktokTopicScan(p, ctx.progress);
   const runner = createRunner({ jobsRepo: store.jobs, handlers, onCancelled: (job) => store.records.removeByJob(job.id) });
-  return { config, store, source, tiktok, features, runner, ws, settings, close: () => tiktok.close() };
+  return {
+    config, store, source, tiktok, features, runner, ws, settings, close: () => tiktok.close(),
+    /** Set by the entry point (src/main.js): stops jobs, closes Chromium and exits. Null when nothing owns the process (tests, CLI). */
+    shutdown: /** @type {null | (() => void)} */ (null),
+  };
 }
