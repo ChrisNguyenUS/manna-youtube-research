@@ -1,6 +1,7 @@
 import { records } from '../../http/client.js';
+import { tiktokLoginNotice } from '../../components/tiktok-login.js';
 import { historyList } from '../../components/history-list.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl, resumeJob, toggleSave } from '../../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl, resumeJob, toggleSave, errorCallout } from '../../lib.js';
 import { tiktokVideoCard, tiktokVideoFilters, offTopicDetails, tiktokCriteria } from '../../components/index.js';
 import { scope } from '../../dom.js';
 import { savedTikTokVideo } from '../../saved-items.js';
@@ -16,6 +17,7 @@ export async function mount(root, params) {
   root.innerHTML = `
     <div class="page-head"><div><h1>${icon('search')} Tìm video TikTok</h1>
       <p>Video hot theo từ khoá, chỉ giữ video đúng chủ đề (có từ khoá, hoặc có hashtag của chủ đề; bỏ video về nước khác). Từ khoá nên có chữ tiếng Việt và ghi rõ nước (vd "thi quốc tịch mỹ").</p></div></div>
+    <div data-ttlogin></div>
     <div class="card card-pad">
       <div class="field"><label>Từ khoá (cách nhau bằng dấu phẩy)</label><input class="input" data-k="keywords" placeholder="VD: phỏng vấn quốc tịch, thi quốc tịch mỹ" value="${esc(st.keywords)}"></div>
       <div class="row" style="margin-top:12px"><span class="small muted">Video mỗi từ khoá</span>${chips('perKeyword', [30, 60, 120, 200].map((v) => ({ v, label: String(v) })), st.perKeyword)}
@@ -26,6 +28,7 @@ export async function mount(root, params) {
     <div data-out style="margin-top:14px"></div><div class="card" data-history style="margin-top:14px"></div>`;
   const out = root.querySelector('[data-out]');
   const shown = scope();
+  shown.add(tiktokLoginNotice(root.querySelector('[data-ttlogin]')));
   bindChips(root.querySelector('.card'), (n, v) => ((st[n] = Number(v)), persist('tt-search-form', st)));
   root.querySelector('[data-k="keepOffTopic"]').addEventListener('change', (e) => ((st.keepOffTopic = e.target.checked), persist('tt-search-form', st)));
   root.querySelector('[data-run]').addEventListener('click', run);
@@ -40,7 +43,7 @@ export async function mount(root, params) {
       await show(res.id);
       history();
     } catch (e) {
-      out.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
+      out.innerHTML = errorCallout(e);
     }
   }
 

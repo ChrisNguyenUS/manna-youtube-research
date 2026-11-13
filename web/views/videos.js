@@ -1,6 +1,6 @@
 import { records } from '../http/client.js';
 import { historyList } from '../components/history-list.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, setUrl, resumeJob } from '../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, setUrl, resumeJob, errorCallout } from '../lib.js';
 import { mountVideoResults } from '../components/index.js';
 
 const DEFAULT = { keywords: '', upload: 'year', sort: 'popularity', dur: '', minDur: '', maxDur: '', perKeyword: 60, gl: '', exactTop: 30, cc: false };
@@ -88,7 +88,7 @@ export async function mount(root, params) {
       await show(res.id);
       history();
     } catch (e) {
-      out.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
+      out.innerHTML = errorCallout(e);
     }
   }
 

@@ -1,6 +1,7 @@
 import { records, tiktokInsight, jobs } from '../../http/client.js';
+import { tiktokLoginNotice } from '../../components/tiktok-login.js';
 import { historyList } from '../../components/history-list.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl, activeJob, watchJob } from '../../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl, activeJob, watchJob, errorCallout } from '../../lib.js';
 import { commentGroups, bindCommentGroups, tiktokFilterSelects, offTopicDetails, tiktokCriteria, insightContext, insightOverview, topicExplorer, commentBrowser, videoGallery } from '../../components/index.js';
 import { scope } from '../../dom.js';
 
@@ -20,6 +21,7 @@ export async function mount(root, params) {
   root.innerHTML = `
     <div class="page-head"><div><h1>${icon('message')} Insight khách hàng (TikTok)</h1>
       <p>Đọc comment của các video TikTok top đúng chủ đề để biết khách đang hỏi gì, sợ gì, ai đang cân nhắc thuê dịch vụ, và câu chữ thật của họ.</p></div></div>
+    <div data-ttlogin></div>
     <div class="ix-cfgbar card" data-cfgbar hidden></div>
     <div class="ix-form" data-form>
       <section class="card ix-card">${head(1, 'target', 'Chủ đề nghiên cứu', 'Nhập chủ đề cụ thể bạn muốn nghiên cứu trên TikTok.')}
@@ -52,6 +54,7 @@ export async function mount(root, params) {
   const form = root.querySelector('[data-form]');
   const out = root.querySelector('[data-out]');
   const shown = scope();
+  shown.add(tiktokLoginNotice(root.querySelector('[data-ttlogin]')));
   const kwInput = /** @type {HTMLInputElement} */ (form.querySelector('[data-k="keywords"]'));
   const save = () => persist('tt-insight-form', st);
   shown.add(bindTips(form));
@@ -236,7 +239,7 @@ export async function mount(root, params) {
     } catch (e) {
       cfg.status = 'failed';
       renderCfg();
-      out.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
+      out.innerHTML = errorCallout(e);
     }
   }
 

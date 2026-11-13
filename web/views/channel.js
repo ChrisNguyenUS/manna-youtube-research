@@ -1,6 +1,6 @@
 import { scope } from '../dom.js';
 import { records } from '../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, fmt, full, mult, ago, emptyState, thumb, ytVideo, ytChannel, dur, ageText, bindTips, isSaved, toggleSave, setUrl, resumeJob } from '../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, fmt, full, mult, ago, emptyState, thumb, ytVideo, ytChannel, dur, ageText, bindTips, isSaved, toggleSave, setUrl, resumeJob, errorCallout } from '../lib.js';
 import { viewsChart, hbars, patternList, phraseChips } from '../components/index.js';
 
 export async function mount(root, params) {
@@ -29,7 +29,7 @@ export async function mount(root, params) {
       await show(res.id);
       list();
     } catch (e) {
-      out.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
+      out.innerHTML = errorCallout(e);
     }
   }
 

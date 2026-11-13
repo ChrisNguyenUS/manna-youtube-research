@@ -1,6 +1,6 @@
 import { records } from '../../http/client.js';
 import { historyList } from '../../components/history-list.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, resumeJob } from '../../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, resumeJob, errorCallout } from '../../lib.js';
 import { commentGroups, bindCommentGroups } from '../../components/index.js';
 import { scope } from '../../dom.js';
 
@@ -32,7 +32,7 @@ export async function mount(root, params) {
       history();
       showMany(res?.jobs || [], res?.skipped || []);
     } catch (e) {
-      out.innerHTML = `<div class="callout">Lỗi: ${esc(e.message)}</div>`;
+      out.innerHTML = errorCallout(e);
     }
   });
 

@@ -261,6 +261,11 @@ table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .quote .m { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
 .callout { border: 1px solid var(--warn-soft); background: var(--warn-soft); color: #7c4a03; border-radius: var(--radius); padding: 10px 14px; font-size: 13px; }
+.tt-login { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+.tt-login > div { flex: 1; min-width: 0; }
+.tt-login .btn { flex: none; }
+.err-box .row { margin-top: 10px; }
+@media (max-width: 900px) { .tt-login { flex-direction: column; align-items: flex-start; } }
 .callout.info { background: var(--blue-soft); border-color: var(--blue-soft); color: #1e3a8a; }
 
 .progress-card { padding: 18px; display: flex; flex-direction: column; gap: 8px; }
