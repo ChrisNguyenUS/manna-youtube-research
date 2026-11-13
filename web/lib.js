@@ -330,8 +330,22 @@ export async function toggleSave(kind, ref, title, data, btn) {
     await savedApi.put({ kind, ref, title, data });
     savedKeys.add(`${kind}:${ref}`);
     btn?.classList.add('on');
-    toast('Đã lưu vào Đã lưu');
+    toast('Đã lưu', '', { href: `#/saved?tab=${kind}`, label: 'Mở Đã lưu' });
   }
+}
+
+/**
+ * Save several items of one kind at once; the ones already saved are left as they are (their notes stay).
+ * @param {string} kind @param {{ref: string, title: string, data: any}[]} items @param {string} what e.g. 'comment'
+ */
+export async function saveMany(kind, items, what) {
+  const fresh = items.filter((it) => !isSaved(kind, it.ref));
+  for (const it of fresh) {
+    await savedApi.put({ kind, ...it });
+    savedKeys.add(`${kind}:${it.ref}`);
+  }
+  toast(fresh.length ? `Đã lưu ${fresh.length} ${what}` : `${items.length} ${what} này đã lưu từ trước`, '', { href: `#/saved?tab=${kind}`, label: 'Mở Đã lưu' });
+  return fresh.length;
 }
 
 export const median = (a) => {

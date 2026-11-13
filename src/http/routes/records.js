@@ -6,6 +6,7 @@ import { toCsv } from '../../core/report/csv.js';
 import { tiktokInsightMarkdown, tiktokCommentsMarkdown, tiktokTopicMarkdown, tiktokTopicSheets } from '../../core/report/tiktok.js';
 import { toXlsx } from '../../core/report/xlsx.js';
 import { classifyComment } from '../../core/analysis/text.js';
+import { foldWords } from '../../core/tiktok/keywords.js';
 
 const groupOf = (c) => ['question', 'fear', 'complaint', 'buying', 'request'].filter((k) => c[k]).join('; ');
 const TIKTOK_COMMENT_COLS = [
@@ -105,6 +106,26 @@ function exportRecord({ app, ws, params, query }) {
 
 export const recordRoutes = [
   { method: 'GET', path: '/api/v1/records', handler: ({ app, ws, query }) => app.store.records.list(ws, query.get('kind'), Number(query.get('limit')) || 50) },
+  {
+    // History page: every result, filtered by kinds (comma separated) and by words of the title (accents and case ignored), paged.
+    method: 'GET', path: '/api/v1/records/search',
+    handler: ({ app, ws, query }) => {
+      const kinds = (query.get('kinds') || '').split(',').filter(Boolean);
+      const words = foldWords(query.get('q') || '').split(' ').filter(Boolean);
+      const limit = Math.min(Math.max(Number(query.get('limit')) || 50, 1), 200);
+      const offset = Math.max(Number(query.get('offset')) || 0, 0);
+      const rows = app.store.records.index(ws);
+      const counts = {};
+      for (const r of rows) counts[r.kind] = (counts[r.kind] || 0) + 1;
+      const hits = rows.filter((r) => {
+        if (kinds.length && !kinds.includes(r.kind)) return false;
+        if (!words.length) return true;
+        const title = ` ${foldWords(r.title)}`;
+        return words.every((w) => title.includes(` ${w}`)); // each word starts a word of the title
+      });
+      return { total: hits.length, items: hits.slice(offset, offset + limit), counts };
+    },
+  },
   {
     method: 'GET', path: '/api/v1/records/:id',
     handler: ({ app, ws, params }) => {

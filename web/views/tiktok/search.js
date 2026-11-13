@@ -1,7 +1,8 @@
 import { records } from '../../http/client.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl, resumeJob } from '../../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl, resumeJob, toggleSave } from '../../lib.js';
 import { tiktokVideoCard, tiktokVideoFilters, offTopicDetails, tiktokCriteria } from '../../components/index.js';
 import { scope } from '../../dom.js';
+import { savedTikTokVideo } from '../../saved-items.js';
 
 const FORM = { keywords: '', perKeyword: 60, keepOffTopic: false, minPlays: 0, minLikes: 0, maxAgeDays: 0, minEngagement: 0 };
 const FILTER = { age: '', minLikes: '', minComments: '', onTopic: true, sort: 'hot' };
@@ -68,6 +69,12 @@ export async function mount(root, params) {
     out.querySelector('[data-sort]').addEventListener('change', (e) => ((f.sort = e.target.value), persist('tt-search-filter', f), render()));
     shown.off();
     shown.add(bindTips(out));
+    shown.on(out, 'click', '[data-ttsave]', (e, el) => {
+      const v = d.videos.find((x) => x.id === el.dataset.ttsave);
+      if (!v) return;
+      const it = savedTikTokVideo(v);
+      toggleSave('tiktok_video', it.ref, it.title, it.data, el);
+    });
     shown.on(out, 'change', '[data-sel]', (e, el) => {
       el.checked ? selected.add(el.dataset.sel) : selected.delete(el.dataset.sel);
       out.querySelector('[data-cm]').disabled = !selected.size;
@@ -85,8 +92,8 @@ export async function mount(root, params) {
   }
 
   async function history() {
-    const list = await records.list('tiktok_search', 15);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Lần tìm trước</h3></div>${list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/tiktok/search?id=${r.id}">${esc(r.title)}</a>${tiktokCriteria(r.params) ? `<span class="small muted">${esc(tiktokCriteria(r.params))}</span>` : ''}<span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa tìm lần nào')}`;
+    const list = await records.list('tiktok_search', 5);
+    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Lần tìm trước</h3><a class="btn sm" href="#/history?kind=tiktok_search">Xem tất cả</a></div>${list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/tiktok/search?id=${r.id}">${esc(r.title)}</a>${tiktokCriteria(r.params) ? `<span class="small muted">${esc(tiktokCriteria(r.params))}</span>` : ''}<span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa tìm lần nào')}`;
     root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));
   }
   history();

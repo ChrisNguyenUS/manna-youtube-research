@@ -3,7 +3,8 @@
 // 2. Result: KPIs, "So sánh theo từ khoá" (one column per keyword) and "Tất cả video" (grid or list).
 //    Videos are ticked by hand on either tab; only the ticked ones go to the existing comment scraper.
 import { records, tiktokTopic } from '../../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ageText, bindTips, activeJob, watchJob } from '../../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ageText, bindTips, activeJob, watchJob, isSaved, toggleSave, saveMany } from '../../lib.js';
+import { savedTikTokVideo, savedKeyword } from '../../saved-items.js';
 import { scope } from '../../dom.js';
 import { tiktokCriteria } from '../../components/index.js';
 
@@ -182,6 +183,7 @@ export async function mount(root, params) {
       <div class="card-head"><h3>${icon('layers')} Từ khoá đã chọn (${n})</h3>${n ? `<button class="btn sm ghost danger" data-kwnone>${icon('trash')} Xoá tất cả</button>` : ''}</div>
       <div class="card-pad">
         <div class="tt-selkws">${n ? picked.map((k) => `<span class="tt-selkw">${esc(k.keyword)}<button type="button" data-unpick="${kws.indexOf(k)}" title="Bỏ từ khoá này">${icon('x')}</button></span>`).join('') : '<span class="small muted">Chưa chọn từ khoá nào.</span>'}</div>
+        ${n ? `<button type="button" class="btn sm ghost" data-kwsave style="margin-top:8px" title="Giữ các từ khoá này trong Đã lưu">${icon('bookmark')} Lưu ${n} từ khoá</button>` : ''}
         <div class="tt-cfg-title">${icon('settings')} Cấu hình quét</div>
         ${['maxAgeDays', 'minPlays', 'sort', 'perKeyword', 'topComments', 'keepOffTopic', 'keepPrevious', 'maxKeywords'].map(cfgSelect).join('')}
         <div class="small muted" style="margin-top:6px"><span data-tip="Đúng chủ đề = caption/hashtag có từ khoá (bỏ chữ “mỹ”, năm), hoặc có ≥ 2 hashtag của chủ đề; bỏ video về nước khác">Video lạc đề là gì?</span> · <span data-tip="Mỗi lần tìm, TikTok trả về một bộ video hơi khác. Khi quét lại chủ đề cũ, video lần trước có mà lần này TikTok không trả về vẫn được giữ (nhãn “Lần trước”, view tính đến lần quét đó), tối đa 30 ngày.">Video lần trước là gì?</span></div>
@@ -197,6 +199,7 @@ export async function mount(root, params) {
     if (k) k.selected = el.checked;
     renderKeywords();
   });
+  shown.on(setupEl, 'click', '[data-kwsave]', () => saveMany('keyword', kws.filter((k) => k.selected).map((k) => savedKeyword(k.keyword, 'tiktok', kwTopic || topicInput.value.trim())), 'từ khoá'));
   shown.on(setupEl, 'click', '[data-unpick]', (e, el) => {
     const k = kws[Number(el.dataset.unpick)];
     if (k) k.selected = false;
@@ -590,6 +593,7 @@ export async function mount(root, params) {
             <div>${gainBadge(v)}</div>
             <label class="tt-dr-sel"><input type="checkbox" class="tt-cb" data-sel="${esc(v.id)}"> Chọn để lấy comment</label>
             <a class="btn sm primary" href="${esc(v.url)}" target="_blank" rel="noopener">${icon('ext')} Mở trên TikTok</a>
+            <button type="button" class="btn sm ${isSaved('tiktok_video', v.id) ? 'on' : ''}" data-dr-save>${icon('bookmark')} ${isSaved('tiktok_video', v.id) ? 'Đã lưu' : 'Lưu video'}</button>
           </div>
         </div>
         <p class="tt-dr-cap">${esc(v.caption || '(không có caption)')}</p>
@@ -628,6 +632,14 @@ export async function mount(root, params) {
     openId === el.dataset.vid ? closeDrawer() : openDrawer(el.dataset.vid);
   });
   shown.on(resBox, 'click', '[data-dr-close]', closeDrawer);
+  shown.on(resBox, 'click', '[data-dr-save]', async () => {
+    const cols = current.data.columns;
+    const v = uniqueVideos(cols).find((x) => x.id === openId);
+    if (!v) return;
+    const it = savedTikTokVideo(v, cols.filter((c) => c.videos.some((x) => x.id === v.id)).map((c) => c.keyword));
+    await toggleSave('tiktok_video', it.ref, it.title, it.data);
+    renderDrawer();
+  });
   shown.on(resBox, 'click', '[data-dr-step]', (e, el) => stepDrawer(Number(el.dataset.drStep)));
   shown.on(resBox, 'click', '[data-dr-col]', (e, el) => {
     if (st.tab !== 'compare') {
@@ -762,7 +774,7 @@ export async function mount(root, params) {
       else byRef.set(r.ref, { ...r, count: 1 });
     }
     const el = root.querySelector('[data-history]');
-    el.innerHTML = `<div class="card-head"><h3>${icon('clock')} Chủ đề đã quét</h3><span class="sub">Quét lại để thấy video nào đang tăng view</span></div>${byRef.size ? [...byRef.values()].map((r) => `<div class="list-row"><a class="name" href="#/tiktok/topic?id=${r.id}">${esc(r.title)}</a>${tiktokCriteria(r.params) ? `<span class="small muted">${esc(tiktokCriteria(r.params))}</span>` : ''}<span class="when">${ago(r.created_at)}${r.count > 1 ? ` · ${r.count} lần quét` : ''}</span><button class="btn sm" data-re="${r.id}">${icon('refresh')} Quét lại</button><button class="icon-btn" data-del="${r.id}" title="Xoá lần quét này">${icon('trash')}</button></div>`).join('') : emptyState('Chưa quét chủ đề nào')}`;
+    el.innerHTML = `<div class="card-head"><h3>${icon('clock')} Chủ đề đã quét</h3><span class="sub">Quét lại để thấy video nào đang tăng view</span><a class="btn sm" href="#/history?kind=tiktok_topic" style="margin-left:auto">Xem tất cả</a></div>${byRef.size ? [...byRef.values()].map((r) => `<div class="list-row"><a class="name" href="#/tiktok/topic?id=${r.id}">${esc(r.title)}</a>${tiktokCriteria(r.params) ? `<span class="small muted">${esc(tiktokCriteria(r.params))}</span>` : ''}<span class="when">${ago(r.created_at)}${r.count > 1 ? ` · ${r.count} lần quét` : ''}</span><button class="btn sm" data-re="${r.id}">${icon('refresh')} Quét lại</button><button class="icon-btn" data-del="${r.id}" title="Xoá lần quét này">${icon('trash')}</button></div>`).join('') : emptyState('Chưa quét chủ đề nào')}`;
     el.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.getAttribute('data-del')), historyList())));
     el.querySelectorAll('[data-re]').forEach((b) => b.addEventListener('click', async () => rescan(await records.get(b.getAttribute('data-re')))));
   }

@@ -2,7 +2,8 @@
 // (groups = /tiktok/insight/:id/topics, the report's own rule and counts), and the views built on it:
 // a comment browser (Comments and Questions tabs), the topic explorer, the video gallery and the overview.
 // Everything shown comes from the comments stored with the report; commenter names are never stored.
-import { esc, icon, fmt, store, persist, emptyState, toast } from '../lib.js';
+import { esc, icon, fmt, store, persist, emptyState, toast, isSaved, toggleSave, saveMany } from '../lib.js';
+import { savedQuote, savedTikTokVideo } from '../saved-items.js';
 
 export const COMMENT_SORTS = {
   attention: ['Được chú ý nhất (tim + trả lời)', (c) => (c.likes ?? 0) + (c.replies ?? 0)],
@@ -91,6 +92,7 @@ function commentRow(ctx, c, { open = false, picked = false } = {}) {
         ${answers.length ? `<div class="tx-answers"><div class="muted small">${answers.length} trả lời đã đọc</div>${answers.slice(0, 5).map((a) => `<div class="tx-answer">↳ ${esc(a.text)} <span class="muted small">♥ ${fmt(a.likes ?? 0)}</span></div>`).join('')}</div>` : ''}
         <div class="row"><a class="btn sm primary" href="${esc(v.url)}" target="_blank" rel="noopener">${icon('ext')} Mở video trên TikTok</a>
           <button type="button" class="btn sm" data-copy-one="${esc(c.id)}">${icon('doc')} Sao chép comment</button>
+          <button type="button" class="btn sm ${isSaved('quote', c.id) ? 'on' : ''}" data-save-one="${esc(c.id)}" title="Giữ câu này trong Đã lưu để dùng khi viết kịch bản, quảng cáo">${icon('bookmark')} ${isSaved('quote', c.id) ? 'Đã lưu' : 'Lưu comment'}</button>
           <a class="btn sm" href="#/tiktok/comments?videos=${encodeURIComponent(v.url)}">${icon('message')} Đọc thêm comment video này</a></div>
       </div>` : ''}
     </div>
@@ -174,6 +176,7 @@ export function commentBrowser(box, ctx, o) {
     box.querySelector('[data-cfoot]').innerHTML = `
       <label class="tx-pickall"><input type="checkbox" class="tt-cb" data-pickall ${allPicked ? 'checked' : ''} ${list.length ? '' : 'disabled'}> Chọn tất cả (${list.length})</label>
       <button type="button" class="btn sm" data-copy ${st.picked.size ? '' : 'disabled'} title="Chép nguyên văn comment đã chọn, kèm số tim">${icon('doc')} Sao chép${st.picked.size ? ` (${st.picked.size})` : ''}</button>
+      <button type="button" class="btn sm" data-save-picked ${st.picked.size ? '' : 'disabled'} title="Giữ các comment đã chọn trong Đã lưu">${icon('bookmark')} Lưu${st.picked.size ? ` (${st.picked.size})` : ''}</button>
       <span class="spacer"></span>
       ${pages > 1 ? `<div class="tx-pager"><button type="button" data-page="${st.page - 1}" ${st.page > 1 ? '' : 'disabled'} aria-label="Trang trước">${icon('back')}</button>
         ${pageNumbers(st.page, pages).map((n) => (n === '…' ? '<span class="muted">…</span>' : `<button type="button" class="${n === st.page ? 'on' : ''}" data-page="${n}">${n}</button>`)).join('')}
@@ -198,6 +201,19 @@ export function commentBrowser(box, ctx, o) {
   });
   L.on('click', '[data-copy]', () => copyText([...st.picked].map((id) => ctx.comments.get(id)).filter(Boolean).map(quoteLine).join('\n'), st.picked.size));
   L.on('click', '[data-copy-one]', (e, el) => copyText(quoteLine(ctx.comments.get(el.dataset.copyOne)), 1));
+  // Saved quotes keep the words, the numbers, the report's groups and the source video; never who wrote them.
+  const quoteOf = (c) => savedQuote(c, { video: ctx.videos.get(c.videoId), topics: ctx.topicsOf(c.id).map((t) => t.label), source: ctx.rec.title, recordId: ctx.rec.id });
+  L.on('click', '[data-save-picked]', async () => {
+    await saveMany('quote', [...st.picked].map((id) => ctx.comments.get(id)).filter(Boolean).map(quoteOf), 'comment');
+    render();
+  });
+  L.on('click', '[data-save-one]', async (e, el) => {
+    const c = ctx.comments.get(el.dataset.saveOne);
+    if (!c) return;
+    const q = quoteOf(c);
+    await toggleSave('quote', q.ref, q.title, q.data);
+    render();
+  });
   // Click a comment to read it whole, with its video, creator and the replies read under it.
   L.on('click', '[data-cid]', (e, el) => {
     if (/** @type {HTMLElement} */ (e.target).closest('a, input, label, button, select')) return;
@@ -322,7 +338,8 @@ export function videoGallery(box, ctx, o) {
           <div class="tt-dr-who"><div><b>@${esc(v.author)}</b>${v.authorName ? `<div class="small muted">${esc(v.authorName)}</div>` : ''}</div>
             <div class="small">Đăng ${fullDate(v.createdAt)}</div>
             <div>${ctx.vKeywords(v).map((k) => `<span class="tx-kw">${esc(k)}</span>`).join(' ')}</div>
-            <a class="btn sm primary" href="${esc(v.url)}" target="_blank" rel="noopener">${icon('ext')} Mở trên TikTok</a></div></div>
+            <a class="btn sm primary" href="${esc(v.url)}" target="_blank" rel="noopener">${icon('ext')} Mở trên TikTok</a>
+            <button type="button" class="btn sm ${isSaved('tiktok_video', v.id) ? 'on' : ''}" data-vsave="${esc(v.id)}">${icon('bookmark')} ${isSaved('tiktok_video', v.id) ? 'Đã lưu' : 'Lưu video'}</button></div></div>
         <p class="tt-dr-cap">${esc(v.caption || '(không caption)')}</p>
         <div class="tt-dr-stats">${stat('Lượt xem', fmt(v.plays))}${stat('Tim', fmt(v.likes))}${stat('Bình luận', fmt(v.comments))}${stat('Chia sẻ', fmt(v.shares))}${stat('Lưu', fmt(v.saves))}${stat('Comment đã đọc', fmt(cm.length))}</div>
         <div class="tt-dr-sec">Comment được chú ý nhất</div>
@@ -338,6 +355,13 @@ export function videoGallery(box, ctx, o) {
   };
   L.on('click', '.ix-vcard', (e, el) => openVideo(el.dataset.vid));
   L.on('click', '[data-vclose]', close);
+  L.on('click', '[data-vsave]', async (e, el) => {
+    const v = ctx.videos.get(el.dataset.vsave);
+    if (!v) return;
+    const it = savedTikTokVideo(v, ctx.vKeywords(v));
+    await toggleSave('tiktok_video', it.ref, it.title, it.data);
+    openVideo(v.id);
+  });
   L.on('click', '[data-vall]', (e, el) => (close(), o.onAllComments(el.dataset.vall)));
   const onKey = (e) => e.key === 'Escape' && !dr.hidden && close();
   document.addEventListener('keydown', onKey);

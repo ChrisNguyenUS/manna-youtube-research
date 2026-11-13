@@ -97,6 +97,7 @@ desktop/                    # (v1.2) Electron main, tray, notify, updater
 web/                        # frontend (đổi tên từ public/)
   http/client.js            # MỌI fetch đi qua đây (không đặt tên web/api/: trùng tiền tố /api/ của server)
   kinds.js                  # mỗi loại báo cáo (kind): tên, màn mở nó, icon, nền tảng; Tổng quan đọc từ đây
+  saved-items.js            # hình dạng một mục "Đã lưu" (video TikTok, câu chữ khách, từ khoá); comment không bao giờ kèm tên người viết
   components/               # video-table.js, video-grid.js, filters.js, score-card.js, charts.js…
   views/                    # một màn một file, export mount(root, params) → trả về unmount()
     tiktok/                 # topic.js, search.js, insight.js, comments.js

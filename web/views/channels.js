@@ -191,8 +191,8 @@ export async function mount(root, params) {
   }
 
   async function history() {
-    const list = await records.list('channel_search', 15);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Lần tìm trước</h3></div>${
+    const list = await records.list('channel_search', 5);
+    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Lần tìm trước</h3><a class="btn sm" href="#/history?kind=channel_search">Xem tất cả</a></div>${
       list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/channels?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}">${icon('trash')}</button></div>`).join('') : emptyState('Chưa tìm lần nào')
     }`;
     root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));

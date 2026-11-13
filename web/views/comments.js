@@ -80,8 +80,8 @@ export async function mount(root, params) {
   const quotes = (list) => (list.length ? list.map((c) => `<blockquote class="quote">${esc(c.text)}<div class="m">${c.likes} like · ${c.replies} trả lời · ${esc(c.published || '')}${c.isReply ? ' · trả lời' : ''}${c.hearted ? ' · ❤ chủ kênh' : ''}</div></blockquote>`).join('') : emptyState('Không có'));
 
   async function history() {
-    const list = await records.list('comments', 40);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Đã lấy</h3></div>${
+    const list = await records.list('comments', 5);
+    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Đã lấy</h3><a class="btn sm" href="#/history?kind=comments">Xem tất cả</a></div>${
       list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/comments?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}">${icon('trash')}</button></div>`).join('') : emptyState('Chưa lấy comment nào')
     }`;
     root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));

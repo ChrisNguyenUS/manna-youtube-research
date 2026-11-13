@@ -116,8 +116,8 @@ export async function mount(root, params) {
   }
 
   async function history() {
-    const list = await records.list('video_search', 15);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Lần tìm trước</h3></div>${
+    const list = await records.list('video_search', 5);
+    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Lần tìm trước</h3><a class="btn sm" href="#/history?kind=video_search">Xem tất cả</a></div>${
       list.length
         ? list.map((r) => `<div class="list-row"><a class="name" href="#/videos?id=${r.id}">${esc(r.title)}</a><span class="muted small">${esc(r.params?.upload || '')}</span><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('')
         : emptyState('Chưa tìm lần nào')
