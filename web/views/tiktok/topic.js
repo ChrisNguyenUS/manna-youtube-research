@@ -10,7 +10,7 @@ import { tiktokCriteria } from '../../components/index.js';
 const FORM = {
   topic: '', minPlays: 100000, maxAgeDays: 0, sort: 'score', maxKeywords: 10, perKeyword: 10, topComments: 3, keepOffTopic: 0, keepPrevious: 1,
   // How the result is shown (never sent to the server).
-  tab: 'compare', layout: 'grid', show: 10, vsort: 'rank', cmShow: 1,
+  tab: 'compare', layout: 'grid', show: 10, vsort: 'rank', cmShow: 1, colw: 320,
 };
 const SORT_LABELS = { score: 'Tổng hợp', plays: 'Lượt xem', trending: 'View/ngày', fresh: 'Mới nhất' };
 const INTENT_ORDER = ['time', 'cost', 'howto', 'interview', 'condition', 'experience', 'related'];
@@ -68,6 +68,8 @@ export async function mount(root, params) {
   let selected = new Set();
   let exploreKw = 'all';
   let exploreQ = '';
+  /** @type {string|null} */
+  let openId = null; // video shown in the side panel
   const shown = scope();
 
   root.innerHTML = `
@@ -98,6 +100,9 @@ export async function mount(root, params) {
   function mode(m) {
     setupEl.hidden = m !== 'setup';
     resultEl.hidden = m !== 'result';
+    // The result uses the whole window width: more keyword columns side by side.
+    root.classList.toggle('tt-wide', m === 'result');
+    if (m !== 'result') closeDrawer();
     root.closest('.main')?.scrollTo({ top: 0 });
   }
 
@@ -335,8 +340,10 @@ export async function mount(root, params) {
         </div>
         <div data-rbody></div>
       </div>
-      <div class="tt-selbar" data-selbar hidden></div>`;
+      <div class="tt-selbar" data-selbar hidden></div>
+      <aside class="tt-drawer" data-drawer hidden aria-label="Chi tiết video"></aside>`;
     renderBody();
+    if (openId) renderDrawer();
   }
 
   const pill = (k, label, options, value) => `<label class="tt-pill"><span class="muted">${label}</span><select data-view-opt="${k}">${options.map(([v, l]) => `<option value="${v}" ${String(v) === String(value) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
@@ -353,8 +360,9 @@ export async function mount(root, params) {
       body.innerHTML = `<div class="tt-kwfilter chips" data-kwfilter></div><div data-explore></div>`;
       renderExplore();
     } else {
-      controls.innerHTML = `${pill('show', 'Hiển thị:', [[5, '5 video/từ khoá'], [10, '10 video/từ khoá'], [0, 'Tất cả video']], st.show)}
+      controls.innerHTML = `${pill('show', 'Hiển thị:', [[5, '5 video/từ khoá'], [10, '10 video/từ khoá'], [20, '20 video/từ khoá'], [0, 'Tất cả video']], st.show)}
         ${pill('cmShow', 'Comment:', [[0, 'Ẩn'], [1, 'Top 1'], [3, 'Top 3']], st.cmShow)}
+        ${pill('colw', 'Cột:', [[260, 'Gọn'], [320, 'Vừa'], [420, 'Rộng']], st.colw)}
         ${pill('vsort', 'Sắp xếp:', sortOptions(), viewSort())}`;
       body.innerHTML = compareView(visibleCols(), viewSort());
       syncSel();
@@ -371,7 +379,10 @@ export async function mount(root, params) {
   function compareView(cols, vsort) {
     if (!cols.length) return `<div class="card-pad">${emptyState('Chưa có cột nào', 'Cột của từng từ khoá hiện ra ngay khi quét xong từ khoá đó.')}</div>`;
     const limit = Number(st.show) || Infinity;
-    return `<div class="tt-cols">${cols.map((c) => {
+    return `<div class="tt-colnav"><button type="button" class="icon-btn" data-scroll="-1" title="Cột trước">${icon('back')}</button>
+        <div class="chips">${cols.map((c) => `<button type="button" class="chip" data-jump="${current.data.columns.indexOf(c)}">${current.data.columns.indexOf(c) + 1}. ${esc(c.keyword)}</button>`).join('')}</div>
+        <button type="button" class="icon-btn tt-flip" data-scroll="1" title="Cột sau">${icon('back')}</button></div>
+      <div class="tt-cols" style="--tt-colw:${Number(st.colw) || 320}px">${cols.map((c) => {
       const i = current.data.columns.indexOf(c);
       const list = sortVideos(c.videos, vsort).slice(0, limit);
       const tot = (k) => c.videos.reduce((a, v) => a + (v[k] || 0), 0);
@@ -489,6 +500,126 @@ export async function mount(root, params) {
     if (!list.length) return toast('Không tìm thấy link của video đã chọn', 'error');
     saveSel(current.id, selected);
     window.__go('/tiktok/comments', { videos: list.join('\n'), run: '1' });
+  });
+
+  // ---------------- video detail panel ----------------
+  // Click a video (row, cover or caption) to see everything about it; ↑/↓ moves through the videos on screen.
+  // Cmd/Ctrl-click still opens it on TikTok.
+  const navIds = () => [...new Set([...resBox.querySelectorAll('[data-rbody] [data-vid]')].map((el) => /** @type {HTMLElement} */ (el).dataset.vid))];
+  const dateText = (iso) => (iso ? new Date(iso).toLocaleDateString('vi-VN') : '–');
+  const pct = (x) => (x == null ? '–' : `${(x * 100).toFixed(1).replace('.', ',')}%`);
+
+  function openDrawer(id) {
+    openId = id;
+    renderDrawer();
+  }
+  function closeDrawer() {
+    openId = null;
+    const dr = /** @type {HTMLElement} */ (resBox.querySelector('[data-drawer]'));
+    if (dr) dr.hidden = true;
+    resBox.querySelectorAll('[data-vid].active').forEach((el) => el.classList.remove('active'));
+  }
+
+  function renderDrawer() {
+    const dr = /** @type {HTMLElement} */ (resBox.querySelector('[data-drawer]'));
+    if (!dr || !current || !openId) return;
+    const all = uniqueVideos(current.data.columns);
+    const v = all.find((x) => x.id === openId);
+    if (!v) return closeDrawer();
+    const ids = navIds();
+    const k = ids.indexOf(v.id);
+    // Where it ranks in each keyword column.
+    const places = current.data.columns.map((c) => [c, c.videos.find((x) => x.id === v.id)]).filter(([, x]) => x);
+    const stat = (label, value, hint = '') => `<div class="tt-dr-stat"><div class="l">${label}</div><div class="v">${value}</div>${hint ? `<div class="h">${hint}</div>` : ''}</div>`;
+    dr.innerHTML = `
+      <div class="tt-dr-head">
+        <button type="button" class="icon-btn" data-dr-step="-1" title="Video trước (↑)" ${k > 0 ? '' : 'disabled'}>${icon('back')}</button>
+        <span class="small muted">${k >= 0 ? `${k + 1} / ${ids.length}` : ''}</span>
+        <button type="button" class="icon-btn tt-flip" data-dr-step="1" title="Video sau (↓)" ${k >= 0 && k < ids.length - 1 ? '' : 'disabled'}>${icon('back')}</button>
+        <span class="spacer"></span><span class="small muted">↑ ↓ chuyển video · X chọn · Esc đóng</span>
+        <button type="button" class="icon-btn" data-dr-close title="Đóng (Esc)">${icon('x')}</button>
+      </div>
+      <div class="tt-dr-body">
+        <div class="tt-dr-top">
+          <a class="tt-dr-cover" href="${esc(v.url)}" target="_blank" rel="noopener">${cover(v)}<span class="tt-gviews">${icon('eye')}${fmt(v.plays)}</span></a>
+          <div class="tt-dr-who">
+            <div><b>@${esc(v.author)}</b>${v.authorName ? `<div class="small muted">${esc(v.authorName)}</div>` : ''}</div>
+            <div class="small">Đăng ${dateText(v.createdAt)} · ${ageText(v.ageDays, true)}</div>
+            <div>${gainBadge(v)}</div>
+            <label class="tt-dr-sel"><input type="checkbox" class="tt-cb" data-sel="${esc(v.id)}"> Chọn để lấy comment</label>
+            <a class="btn sm primary" href="${esc(v.url)}" target="_blank" rel="noopener">${icon('ext')} Mở trên TikTok</a>
+          </div>
+        </div>
+        <p class="tt-dr-cap">${esc(v.caption || '(không có caption)')}</p>
+        ${v.hashtags?.length ? `<div>${v.hashtags.map((h) => `<span class="tag">#${esc(h)}</span>`).join('')}</div>` : ''}
+        <div class="tt-dr-stats">
+          ${stat('Lượt xem', fmt(v.plays), v.carried ? `tính đến ${dateText(v.lastSeenAt)}` : '')}
+          ${stat('View/ngày', fmt(v.playsPerDay))}
+          ${stat('Tăng từ lần trước', v.gain != null ? `+${fmt(v.gain)}` : v.isNew ? 'Mới' : '–', v.gainPerDay != null ? `${fmt(v.gainPerDay)}/ngày` : '')}
+          ${stat('Tim', fmt(v.likes))}${stat('Bình luận', fmt(v.comments))}${stat('Chia sẻ', fmt(v.shares))}
+          ${stat('Lưu', fmt(v.saves))}${stat('Tỉ lệ tương tác', pct(v.engagementRate), '(tim + cmt + share + lưu) ÷ view')}${stat('Điểm tổng hợp', v.score != null ? fmt(v.score) : '–')}
+        </div>
+        <div class="tt-dr-sec">Nằm trong từ khoá</div>
+        <div>${places.map(([c, x]) => `<button type="button" class="chip" data-dr-col="${current.data.columns.indexOf(c)}">#${x.rank} · ${esc(c.keyword)}</button>`).join(' ')}</div>
+        <div class="tt-dr-sec">Top comment nhiều tym</div>
+        ${v.topComments?.length ? v.topComments.map((c) => `<div class="tt-dr-cm"><span class="tt-cm-likes">♥ ${fmt(c.likes)}</span> ${esc(c.text)}</div>`).join('') : '<div class="small muted">Lần quét này không lấy comment.</div>'}
+      </div>`;
+    dr.hidden = false;
+    syncSel();
+    resBox.querySelectorAll('[data-vid]').forEach((el) => el.classList.toggle('active', /** @type {HTMLElement} */ (el).dataset.vid === v.id));
+    resBox.querySelector(`[data-rbody] [data-vid="${CSS.escape(v.id)}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+  }
+
+  function stepDrawer(d) {
+    const ids = navIds();
+    const k = ids.indexOf(openId);
+    const next = ids[k + d];
+    if (next) openDrawer(next);
+  }
+
+  shown.on(resBox, 'click', '[data-rbody] [data-vid]', (e, el) => {
+    const t = /** @type {HTMLElement} */ (e.target);
+    if (t.closest('input, label, select, button')) return;
+    const a = t.closest('a');
+    if (a && (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1)) return; // open on TikTok as usual
+    e.preventDefault();
+    openId === el.dataset.vid ? closeDrawer() : openDrawer(el.dataset.vid);
+  });
+  shown.on(resBox, 'click', '[data-dr-close]', closeDrawer);
+  shown.on(resBox, 'click', '[data-dr-step]', (e, el) => stepDrawer(Number(el.dataset.drStep)));
+  shown.on(resBox, 'click', '[data-dr-col]', (e, el) => {
+    if (st.tab !== 'compare') {
+      st.tab = 'compare';
+      persist('tt-topic-form', st);
+      resBox.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('on', /** @type {HTMLElement} */ (b).dataset.tab === 'compare'));
+      renderBody();
+    }
+    jumpTo(Number(el.dataset.drCol));
+  });
+  const onKey = (e) => {
+    if (!openId || resultEl.hidden) return;
+    if (/** @type {HTMLElement} */ (e.target).closest?.('input, select, textarea')) return;
+    if (e.key === 'Escape') closeDrawer();
+    else if (e.key === 'ArrowDown' || e.key === 'j') (e.preventDefault(), stepDrawer(1));
+    else if (e.key === 'ArrowUp' || e.key === 'k') (e.preventDefault(), stepDrawer(-1));
+    else if (e.key === 'x') {
+      selected.has(openId) ? selected.delete(openId) : selected.add(openId);
+      syncSel();
+    }
+  };
+  document.addEventListener('keydown', onKey);
+  shown.add(() => document.removeEventListener('keydown', onKey));
+
+  // ---------------- column navigation ----------------
+  function jumpTo(i) {
+    const cols = resBox.querySelector('.tt-cols');
+    const col = /** @type {HTMLElement} */ (resBox.querySelector(`.tt-col[data-col="${i}"]`));
+    if (cols && col) cols.scrollTo({ left: col.offsetLeft - /** @type {HTMLElement} */ (cols).offsetLeft - 14, behavior: 'smooth' });
+  }
+  shown.on(resBox, 'click', '[data-jump]', (e, el) => jumpTo(Number(el.dataset.jump)));
+  shown.on(resBox, 'click', '[data-scroll]', (e, el) => {
+    const cols = resBox.querySelector('.tt-cols');
+    cols?.scrollBy({ left: Number(el.dataset.scroll) * ((Number(st.colw) || 320) + 12), behavior: 'smooth' });
   });
 
   // ---------------- result controls ----------------
