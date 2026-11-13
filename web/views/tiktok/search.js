@@ -1,4 +1,5 @@
 import { records } from '../../http/client.js';
+import { historyList } from '../../components/history-list.js';
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl, resumeJob, toggleSave } from '../../lib.js';
 import { tiktokVideoCard, tiktokVideoFilters, offTopicDetails, tiktokCriteria } from '../../components/index.js';
 import { scope } from '../../dom.js';
@@ -91,11 +92,7 @@ export async function mount(root, params) {
     render();
   }
 
-  async function history() {
-    const list = await records.list('tiktok_search', 5);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Lần tìm trước</h3><a class="btn sm" href="#/history?kind=tiktok_search">Xem tất cả</a></div>${list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/tiktok/search?id=${r.id}">${esc(r.title)}</a>${tiktokCriteria(r.params) ? `<span class="small muted">${esc(tiktokCriteria(r.params))}</span>` : ''}<span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa tìm lần nào')}`;
-    root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));
-  }
+  const history = historyList(root.querySelector('[data-history]'), { kind: 'tiktok_search', path: '/tiktok/search', title: 'Lần tìm trước', empty: 'Chưa tìm lần nào', extra: (r) => tiktokCriteria(r.params) });
   history();
   if (params.id) show(params.id);
   else resumeJob('tiktok_search', out, (j) => `Đang tìm TikTok: ${j.title}`, async (res) => (await show(res.id), history()));

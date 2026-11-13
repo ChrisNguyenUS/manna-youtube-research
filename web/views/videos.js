@@ -1,4 +1,5 @@
 import { records } from '../http/client.js';
+import { historyList } from '../components/history-list.js';
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, setUrl, resumeJob } from '../lib.js';
 import { mountVideoResults } from '../components/index.js';
 
@@ -115,20 +116,7 @@ export async function mount(root, params) {
     });
   }
 
-  async function history() {
-    const list = await records.list('video_search', 5);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Lần tìm trước</h3><a class="btn sm" href="#/history?kind=video_search">Xem tất cả</a></div>${
-      list.length
-        ? list.map((r) => `<div class="list-row"><a class="name" href="#/videos?id=${r.id}">${esc(r.title)}</a><span class="muted small">${esc(r.params?.upload || '')}</span><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('')
-        : emptyState('Chưa tìm lần nào')
-    }`;
-    root.querySelectorAll('[data-del]').forEach((b) =>
-      b.addEventListener('click', async () => {
-        await records.remove(b.dataset.del);
-        history();
-      }),
-    );
-  }
+  const history = historyList(root.querySelector('[data-history]'), { kind: 'video_search', path: '/videos', title: 'Lần tìm trước', empty: 'Chưa tìm lần nào', extra: (r) => r.params?.upload || '' });
   history();
   if (params.id) show(params.id);
   else if (params.q && params.run) run();

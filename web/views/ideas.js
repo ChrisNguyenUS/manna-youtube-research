@@ -1,4 +1,5 @@
 import { scope } from '../dom.js';
+import { historyList } from '../components/history-list.js';
 import { records } from '../http/client.js';
 import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, bindTips, setUrl, resumeJob } from '../lib.js';
 import { scoreCard, bindScoreCards } from '../components/index.js';
@@ -55,13 +56,7 @@ export async function mount(root, params) {
     out.innerHTML = `<div class="row" style="margin-bottom:10px"><span class="muted small">${results.length} từ khoá · ${ago(rec.created_at)}</span><span class="spacer"></span><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div>
       <div class="score-grid">${results.map((r) => scoreCard(r)).join('')}</div>`;
   }
-  async function history() {
-    const list = await records.list('idea_check', 5);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>Đã chấm</h3><a class="btn sm" href="#/history?kind=idea_check">Xem tất cả</a></div>${
-      list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/ideas?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa chấm từ khoá nào')
-    }`;
-    root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));
-  }
+  const history = historyList(root.querySelector('[data-history]'), { kind: 'idea_check', path: '/ideas', title: 'Đã chấm', empty: 'Chưa chấm từ khoá nào' });
   history();
   if (params.id) show(params.id);
   else if (params.ideas && params.run) run();

@@ -70,6 +70,14 @@ test('static files and SPA fallback; no path traversal', async () => {
   assert.match(await (await fetch(`${s.base}/some/route`)).text(), /<title>Content Research/);
   const t = await fetch(`${s.base}/..%2f..%2fpackage.json`);
   assert.doesNotMatch(await t.text(), /"devDependencies"/);
+  // Static files are revalidated: same file → 304 without a body; API answers are never cached.
+  const css = await fetch(`${s.base}/styles.css`);
+  assert.equal(css.headers.get('cache-control'), 'no-cache');
+  const again = await fetch(`${s.base}/styles.css`, { headers: { 'if-none-match': css.headers.get('etag') || '' } });
+  assert.equal(again.status, 304);
+  assert.equal(await again.text(), '');
+  assert.equal((await fetch(`${s.base}/styles.css`, { headers: { 'if-none-match': '"old"' } })).status, 200);
+  assert.equal((await fetch(`${s.base}/api/v1/status`)).headers.get('cache-control'), 'no-store');
   s.close();
 });
 

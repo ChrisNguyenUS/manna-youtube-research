@@ -1,4 +1,5 @@
 import { scope } from '../dom.js';
+import { historyList } from '../components/history-list.js';
 import { records } from '../http/client.js';
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, mult, ago, emptyState, thumb, ytVideo, dur, ageText, bindTips, setUrl, resumeJob } from '../lib.js';
 import { mountVideoResults, hbars, patternList, phraseChips, oscoreBadge, outlierTip } from '../components/index.js';
@@ -197,13 +198,7 @@ export async function mount(root, params) {
     renderTab(tab);
   }
 
-  async function history() {
-    const list = await records.list('research', 5);
-    root.querySelector('[data-history]').innerHTML = `<div class="card-head"><h3>${icon('doc')} Báo cáo đã lập</h3><a class="btn sm" href="#/history?kind=research">Xem tất cả</a></div>${
-      list.length ? list.map((r) => `<div class="list-row"><a class="name" href="#/research?id=${r.id}">${esc(r.title)}</a><span class="when">${ago(r.created_at)}</span><button class="icon-btn" data-del="${r.id}" title="Xoá">${icon('trash')}</button></div>`).join('') : emptyState('Chưa có báo cáo nào')
-    }`;
-    root.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.dataset.del), history())));
-  }
+  const history = historyList(root.querySelector('[data-history]'), { kind: 'research', path: '/research', title: `${icon('doc')} Báo cáo đã lập`, empty: 'Chưa có báo cáo nào' });
   history();
   if (params.id) show(params.id);
   else resumeJob('research', out, (j) => `Đang nghiên cứu: ${j.title}`, async (res) => (history(), await show(res.id)));
