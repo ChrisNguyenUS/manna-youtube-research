@@ -1,5 +1,9 @@
 // Use case: "Tìm theo chủ đề" — a topic becomes ~10 related keywords (TikTok's own suggestions), each keyword
 // a column of its best videos with their 3 most liked comments. Rescanning a topic compares views with the last scan.
+//
+// TikTok returns a different set of videos for the same keyword from one search to the next (a 1.3M-view video
+// was in the first 30 results at 22:22 and 02:57, not at 23:58 or 03:52). So each keyword reads 60 results, and a
+// rescan keeps the previous scan's videos that TikTok left out this time (marked "carried"), for up to 30 days.
 import { noop, splitList } from '../shared.js';
 import { videoMetrics } from '../../core/tiktok/metrics.js';
 import { rankVideos } from '../../core/tiktok/rank.js';
@@ -11,6 +15,8 @@ import { rethrowIfCancelled } from '../../core/cancel.js';
 
 export const TOPIC_SORTS = ['score', 'plays', 'trending', 'fresh'];
 const DAY = 86_400_000;
+/** A video TikTok stops returning is kept this long after it was last actually found. */
+export const CARRY_DAYS = 30;
 const clamp = (x, lo, hi, d) => (Number.isFinite(Number(x)) && Number(x) > 0 ? Math.min(Math.max(Number(x), lo), hi) : d);
 /** Same topic whatever the accents or spacing: the key that links a rescan to the previous scan. */
 export const topicRef = (topic) => foldWords(topic);
@@ -37,6 +43,8 @@ const row = (v) => ({
   id: v.id, url: v.url, caption: v.caption, hashtags: v.hashtags, author: v.author, authorName: v.authorName, cover: v.cover,
   createdAt: v.createdAt, plays: v.plays, likes: v.likes, comments: v.comments, shares: v.shares, saves: v.saves,
   ageDays: v.ageDays, interactions: v.interactions, engagementRate: v.engagementRate, playsPerDay: v.playsPerDay, score: v.score, onTopic: v.onTopic,
+  // Found in an earlier scan, not in this one: views are as of lastSeenAt.
+  ...(v.carried ? { carried: true, lastSeenAt: v.lastSeenAt } : {}),
 });
 
 /** @param {{tiktok: import('../../ports/tiktok-source.js').TikTokSource, records: any, now: () => number}} deps */
@@ -51,6 +59,7 @@ export function makeTikTokTopicScan({ tiktok, records, now }) {
     const maxAgeDays = Number(params.maxAgeDays) || 0;
     const topComments = params.topComments === 0 ? 0 : 3;
     const keepOffTopic = Boolean(params.keepOffTopic);
+    const keepPrevious = params.keepPrevious !== false;
 
     // Keywords: the ones the user picked on screen, or TikTok's related searches when none were sent.
     let keywordList = splitList(params.keywords);
@@ -69,10 +78,11 @@ export function makeTikTokTopicScan({ tiktok, records, now }) {
     const prevPlays = new Map();
     for (const col of prev?.data.columns ?? []) for (const v of col.videos) prevPlays.set(v.id, v.plays);
     const prevAt = prev ? Date.parse(prev.data.scannedAt) : null;
+    const prevCols = new Map((prev?.data.columns ?? []).map((c) => [foldWords(c.keyword), c]));
 
     const scannedAt = new Date(now()).toISOString();
     const data = {
-      topic, scannedAt, status: 'running', params: { perKeyword, sort, minPlays, maxAgeDays, topComments, keepOffTopic },
+      topic, scannedAt, status: 'running', params: { perKeyword, sort, minPlays, maxAgeDays, topComments, keepOffTopic, keepPrevious },
       keywords: discovered, columns: [], summary: null, hashtags: [],
       previous: prev ? { id: prev.id, scannedAt: prev.data.scannedAt } : null,
     };
@@ -100,16 +110,18 @@ export function makeTikTokTopicScan({ tiktok, records, now }) {
       for (const [i, kw] of keywordList.entries()) {
         const step = `Quét "${kw}" (${i + 1}/${keywordList.length})`;
         progress({ step, done: i, total: keywordList.length, recordId: id });
-        const col = { keyword: kw, intent: intentOf(kw), intentLabel: INTENT_LABELS[intentOf(kw)], videos: [], found: 0, offTopic: 0, offTopicVideos: [], junk: false, stats: null, error: null };
+        const col = { keyword: kw, intent: intentOf(kw), intentLabel: INTENT_LABELS[intentOf(kw)], videos: [], found: 0, carried: 0, offTopic: 0, offTopicVideos: [], junk: false, stats: null, error: null };
         try {
-          // Fetch more than shown, so the view/age filters still leave a full column.
-          const list = await tiktok.searchVideos(kw, { max: Math.min(Math.max(perKeyword * 3, 30), 60) });
+          // Read well past what is shown: the view/age filters still leave a full column, and big videos that
+          // TikTok ranks 31st–60th this time are not missed.
+          const list = await tiktok.searchVideos(kw, { max: Math.min(Math.max(perKeyword * 3, 60), 90) });
           col.found = list.length;
           const t = now();
           for (const v of list) pool.set(v.id, v);
           const poolList = [...pool.values()];
           const verdicts = classifyOnTopic(poolList, [topic, kw]);
           const verdictOf = new Map(poolList.map((v, k) => [v.id, verdicts[k]]));
+          /** @type {any[]} */
           let vids = list.map((v) => ({ ...v, ...videoMetrics(v, t), onTopic: verdictOf.get(v.id).onTopic, offTopicReason: verdictOf.get(v.id).reason }));
           // Counted among the videos the view/age filters would show: smaller ones are left out either way.
           const shown = vids.filter((v) => v.plays >= minPlays && (!maxAgeDays || (v.ageDays != null && v.ageDays <= maxAgeDays)));
@@ -119,14 +131,31 @@ export function makeTikTokTopicScan({ tiktok, records, now }) {
           // A suggestion TikTok made whose videos, among those big enough to show, are mostly unrelated
           // ("Di Trú Mỹ - Vogue": its top videos are JISOO and dance clips, the on-topic ones are small).
           col.junk = shown.length >= 4 && off.length > shown.length / 2;
+          // Same keyword in the previous scan: its videos missing from this search stay in the running.
+          const found = new Set(list.map((v) => v.id));
+          const prevCol = keepPrevious ? prevCols.get(foldWords(kw)) : null;
+          const carried = [];
+          for (const old of prevCol?.videos ?? []) {
+            if (found.has(old.id)) continue;
+            // Another keyword of this scan found it: today's numbers, not last scan's.
+            const fresh = pool.get(old.id);
+            if (fresh) carried.push({ ...fresh, ...videoMetrics(fresh, t), onTopic: verdictOf.get(old.id).onTopic, offTopicReason: verdictOf.get(old.id).reason });
+            else {
+              const lastSeenAt = old.lastSeenAt ?? prev.data.scannedAt;
+              if (t - Date.parse(lastSeenAt) <= CARRY_DAYS * DAY) carried.push({ ...old, ...videoMetrics(old, t), lastSeenAt, onTopic: old.onTopic !== false, carried: true });
+            }
+          }
+          vids = [...vids, ...carried];
           if (!keepOffTopic) vids = vids.filter((v) => v.onTopic);
           vids = vids.filter((v) => v.plays >= minPlays && (!maxAgeDays || (v.ageDays != null && v.ageDays <= maxAgeDays)));
           let ranked = rankVideos(vids, { sort: sort === 'plays' ? 'score' : sort });
           if (sort === 'plays') ranked = ranked.sort((a, b) => b.plays - a.plays).map((v, k) => ({ ...v, rank: k + 1 }));
           ranked = ranked.slice(0, perKeyword);
-          const withComments = await Promise.all(ranked.map(async (v) => ({ ...row(v), rank: v.rank, topComments: topComments ? await commentsOf(v.id) : null })));
+          // A carried video keeps the comments read last time (no new request for a video TikTok did not show).
+          const withComments = await Promise.all(ranked.map(async (v) => ({ ...row(v), rank: v.rank, topComments: !topComments ? null : v.carried ? (v.topComments ?? null) : await commentsOf(v.id) })));
+          col.carried = withComments.filter((v) => v.carried).length;
           col.videos = withComments.map((v) => {
-            if (!prev) return v;
+            if (!prev || v.carried) return v;
             if (!prevPlays.has(v.id)) return { ...v, isNew: true };
             const gain = v.plays - prevPlays.get(v.id);
             const days = Math.max((Date.parse(scannedAt) - prevAt) / DAY, 1 / 24);
@@ -152,8 +181,8 @@ export function makeTikTokTopicScan({ tiktok, records, now }) {
       const unique = new Map();
       for (const col of data.columns) for (const v of col.videos) {
         const cur = unique.get(v.id);
-        if (cur) cur.keywords.push(col.keyword);
-        else unique.set(v.id, { ...v, keywords: [col.keyword] });
+        if (cur && !(cur.carried && !v.carried)) cur.keywords.push(col.keyword);
+        else unique.set(v.id, { ...v, keywords: cur ? [...cur.keywords, col.keyword] : [col.keyword] });
       }
       const all = [...unique.values()];
       data.summary = {
@@ -163,6 +192,7 @@ export function makeTikTokTopicScan({ tiktok, records, now }) {
         maxPlays: all.length ? Math.max(...all.map((v) => v.plays)) : 0,
         fresh30: all.filter((v) => v.ageDays != null && v.ageDays <= 30).length,
         newSincePrevious: prev ? all.filter((v) => v.isNew).length : null,
+        carried: all.filter((v) => v.carried).length,
         offTopic: data.columns.reduce((s, c) => s + (c.offTopic ?? 0), 0),
         junkKeywords: data.columns.filter((c) => c.junk).map((c) => c.keyword),
       };

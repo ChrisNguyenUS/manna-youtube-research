@@ -53,6 +53,9 @@ export function tiktokCommentsMarkdown(d) {
   return L.join('\n');
 }
 
+/** A video kept from an earlier scan because TikTok did not return it this time. @param {any} v */
+const carriedNote = (v) => (v.carried ? `lần này TikTok không trả về, giữ từ lần quét ${String(v.lastSeenAt).slice(0, 10)} (view tính đến hôm đó)` : '');
+
 /** Topic scan as Markdown: one section per keyword, videos with their top comments. @param {any} d */
 export function tiktokTopicMarkdown(d) {
   const L = [`# Tìm theo chủ đề TikTok: ${d.topic} — ${String(d.scannedAt).slice(0, 10)}`, '', BANNER, ''];
@@ -62,7 +65,7 @@ export function tiktokTopicMarkdown(d) {
   for (const col of d.columns) {
     L.push(`## ${col.keyword} (${col.intentLabel}) · ${col.videos.length} video${col.error ? ` · lỗi: ${col.error}` : ''}`, '');
     for (const v of col.videos) {
-      L.push(`${v.rank}. [${cell(v.caption).slice(0, 90) || '(không caption)'}](${v.url}) · @${cell(v.author)} · ${n(v.plays)} view · ${v.ageDays ?? '–'} ngày · ${n(v.playsPerDay)}/ngày${v.gain != null ? ` · +${n(v.gain)} view từ lần trước` : v.isNew ? ' · mới so với lần trước' : ''}`);
+      L.push(`${v.rank}. [${cell(v.caption).slice(0, 90) || '(không caption)'}](${v.url}) · @${cell(v.author)} · ${n(v.plays)} view · ${v.ageDays ?? '–'} ngày · ${n(v.playsPerDay)}/ngày${carriedNote(v) ? ` · ${carriedNote(v)}` : v.gain != null ? ` · +${n(v.gain)} view từ lần trước` : v.isNew ? ' · mới so với lần trước' : ''}`);
       for (const [k, c] of (v.topComments ?? []).entries()) L.push(`   ${k + 1}. "${cell(c.text).slice(0, 200)}" — ${c.likes} tym`);
     }
     L.push('');
@@ -77,7 +80,7 @@ const commentsCell = (list) => (list ?? []).map((c, k) => `${k + 1}. "${String(c
 export function tiktokTopicSheets(d) {
   const videos = d.columns.flatMap((col) => col.videos.map((v) => [
     d.topic, col.keyword, col.intentLabel, v.rank, v.caption, v.url, `@${v.author}`, v.plays, v.likes, v.comments, v.shares, v.saves,
-    day(v.createdAt), v.ageDays, v.playsPerDay, v.gain ?? (v.isNew ? 'mới' : ''), commentsCell(v.topComments),
+    day(v.createdAt), v.ageDays, v.playsPerDay, v.carried ? `giữ từ lần quét ${day(v.lastSeenAt)}` : v.gain ?? (v.isNew ? 'mới' : ''), commentsCell(v.topComments),
   ]));
   const keywords = d.columns.map((c) => [c.keyword, c.intentLabel, c.stats?.count ?? 0, c.stats?.medianPlays ?? '', c.stats?.medianPlaysPerDay ?? '', c.stats?.maxPlays ?? '', c.stats?.fresh30 ?? 0, c.error ?? '']);
   return [
