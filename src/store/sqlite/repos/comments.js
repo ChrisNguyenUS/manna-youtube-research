@@ -156,5 +156,19 @@ export function commentsRepo(db, now = Date.now) {
     return moved;
   }
 
-  return { pack, unpack, linkAll, byIds, ofVideo, coverage, videos, countsByRecord, moveEmbedded };
+  /**
+   * Every report of this workspace that holds comments of these videos, with how many it holds per video.
+   * @param {string} ws @param {string[]} videoIds
+   */
+  function runs(ws, videoIds) {
+    if (!videoIds.length) return [];
+    const ids = [...new Set(videoIds.map(String))];
+    return /** @type {any[]} */ (db.prepare(`SELECT c.video_id AS videoId, r.id AS recordId, r.kind, r.params, r.created_at AS createdAt,
+          SUM(c.parent_id IS NULL) AS parents, COUNT(*) AS total
+        FROM comment_links l JOIN comments c ON c.platform = l.platform AND c.comment_id = l.comment_id JOIN records r ON r.id = l.record_id
+        WHERE c.platform = ? AND c.video_id IN (${ids.map(() => '?').join(',')}) AND r.workspace_id = ? GROUP BY c.video_id, r.id`).all(PLATFORM, ...ids, ws))
+      .map((r) => ({ ...r, params: r.params ? JSON.parse(r.params) : null }));
+  }
+
+  return { pack, unpack, linkAll, byIds, ofVideo, coverage, videos, countsByRecord, moveEmbedded, runs };
 }

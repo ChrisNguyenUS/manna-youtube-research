@@ -19,7 +19,7 @@ import { makeTikTokComments } from './features/tiktok/comments.js';
 import { makeTikTokInsight, makeTikTokInsightTopics } from './features/tiktok/insight.js';
 import { makeTikTokScrape } from './features/tiktok/scrape.js';
 import { makeTikTokTopicKeywords, makeTikTokTopicScan } from './features/tiktok/topic.js';
-import { makeTikTokVideoAnalysis } from './features/tiktok/video-analysis.js';
+import { makeTikTokVideoAnalysis, makeVideoAnalysisHistory } from './features/tiktok/video-analysis.js';
 import { makeTikTokChannelAnalysis } from './features/tiktok/channel.js';
 import { makeFollows } from './features/follows.js';
 import { makeCommentData } from './features/tiktok/comment-data.js';
@@ -61,9 +61,10 @@ export function createApp({ config = loadConfig(), source, store, tiktok } = {})
     tiktokScrape: makeTikTokScrape({ tiktokSearch, now: base.now }),
     tiktokTopicKeywords: makeTikTokTopicKeywords({ tiktok }),
     tiktokTopicScan: makeTikTokTopicScan({ tiktok, records: base.records, now: base.now }),
-    tiktokVideoAnalysis: makeTikTokVideoAnalysis({ tiktok, records: base.records, now: base.now, comments: { coverage: (ids) => store.comments.coverage(ws, ids), ofVideo: (id) => store.comments.ofVideo(id) } }),
+    tiktokVideoAnalysis: makeTikTokVideoAnalysis({ tiktok, records: base.records, now: base.now, comments: { coverage: (ids, want) => features.commentData.coverage(ids, want), ofVideo: (id) => store.comments.ofVideo(id) } }),
     follows: makeFollows({ ...base, tiktok }),
     commentData: makeCommentData({ store, ws }),
+    videoAnalysisHistory: makeVideoAnalysisHistory({ store, ws }),
     tiktokChannel: makeTikTokChannelAnalysis({ tiktok, records: base.records, now: base.now, settings }),
   };
 

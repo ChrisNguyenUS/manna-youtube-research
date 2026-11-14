@@ -50,7 +50,8 @@ function pageNumbers(cur, total) {
  */
 export function commentExplorer(box, o) {
   const mode = o.mode ?? 'full';
-  const prefs = store('cx-prefs', { sort: 'likes', per: 20 });
+  const prefs = store('cx-prefs', { sort: 'likes', per: 20, density: 'compact' });
+  if (![20, 50, 100].includes(prefs.per)) prefs.per = 20;
   const facets = o.facets ?? [];
   const all = o.comments;
   const byId = new Map(all.map((c) => [String(c.id), c]));
@@ -63,14 +64,15 @@ export function commentExplorer(box, o) {
   st.open = st.open instanceof Set ? st.open : new Set(st.open ? [String(st.open)] : []);
   const parents = all.filter((c) => !c.parentId).length;
 
-  box.innerHTML = `<div class="cx ${mode}">${o.head ?? ''}
+  box.innerHTML = `<div class="cx ${mode} ${prefs.density}" data-cx>${o.head ?? ''}
     <div class="cx-chips" data-intents role="group" aria-label="Lọc theo ý định"></div>
     <div class="cx-tools">
       <label class="cx-search">${icon('search')}<input data-q type="search" placeholder="${esc(o.placeholder ?? `Tìm trong ${fmt(all.length)} comment…`)}" value="${esc(st.q)}" aria-label="Tìm comment"></label>
-      <div class="cx-seg" role="group" aria-label="Loại comment">${[['all', `Tất cả (${fmt(all.length)})`], ['parent', `Comment gốc (${fmt(parents)})`], ['reply', `Trả lời (${fmt(all.length - parents)})`]].map(([v, l]) => `<button type="button" data-type="${v}" class="${st.type === v ? 'on' : ''}">${l}</button>`).join('')}</div>
+      <div class="cx-seg" role="group" aria-label="Loại comment">${[['all', `Tất cả bản ghi (${fmt(all.length)})`], ['parent', `Comment gốc (${fmt(parents)})`], ['reply', `Trả lời (${fmt(all.length - parents)})`]].map(([v, l]) => `<button type="button" data-type="${v}" class="${st.type === v ? 'on' : ''}">${l}</button>`).join('')}</div>
       ${many ? `<select class="input cx-select" data-video aria-label="Video nguồn">${opt('', `Mọi video (${vids.length})`, st.video)}${vids.map((v) => opt(v.id, String(v.caption || v.url || v.id).slice(0, 60), st.video)).join('')}</select>` : ''}
       ${facets.map((f) => `<select class="input cx-select" data-facet="${esc(f.key)}" aria-label="${esc(f.label)}">${opt('', f.all, st[f.key])}${f.choices.map((ch) => opt(ch.value, ch.label, st[f.key])).join('')}</select>`).join('')}
       <select class="input cx-select" data-sort aria-label="Sắp xếp">${Object.entries(SORTS).map(([k, [l]]) => opt(k, `Sắp xếp: ${l}`, prefs.sort)).join('')}</select>
+      <div class="cx-seg cx-density" role="group" aria-label="Kiểu hiển thị">${[['compact', 'Gọn'], ['comfortable', 'Thoáng']].map(([v, l]) => `<button type="button" data-density="${v}" class="${prefs.density === v ? 'on' : ''}" aria-pressed="${prefs.density === v}">${l}</button>`).join('')}</div>
     </div>
     ${o.note ? `<p class="cx-note">${o.note}</p>` : ''}
     <div class="cx-count" data-count></div>
@@ -148,7 +150,7 @@ export function commentExplorer(box, o) {
       ${pages > 1 ? `<div class="tx-pager"><button type="button" data-page="${st.page - 1}" ${st.page > 1 ? '' : 'disabled'} aria-label="Trang trước">${icon('back')}</button>
         ${pageNumbers(st.page, pages).map((p) => (p === '…' ? '<span class="muted">…</span>' : `<button type="button" class="${p === st.page ? 'on' : ''}" data-page="${p}">${p}</button>`)).join('')}
         <button type="button" class="tt-flip" data-page="${st.page + 1}" ${st.page < pages ? '' : 'disabled'} aria-label="Trang sau">${icon('back')}</button></div>` : ''}
-      <select class="input cx-select" data-per aria-label="Số comment mỗi trang">${[10, 20, 50].map((p) => opt(p, `${p} / trang`, prefs.per)).join('')}</select>`;
+      <select class="input cx-select" data-per aria-label="Số comment mỗi trang">${[20, 50, 100].map((p) => opt(p, `${p} / trang`, prefs.per)).join('')}</select>`;
   }
 
   const savePrefs = () => persist('cx-prefs', prefs);
@@ -169,6 +171,14 @@ export function commentExplorer(box, o) {
     st.page = 1;
     box.querySelectorAll('[data-type]').forEach((b) => b.classList.toggle('on', b === el));
     render();
+  });
+  on('click', '[data-density]', (e, el) => {
+    prefs.density = el.dataset.density === 'comfortable' ? 'comfortable' : 'compact';
+    savePrefs();
+    const root = box.querySelector('[data-cx]');
+    root.classList.toggle('compact', prefs.density === 'compact');
+    root.classList.toggle('comfortable', prefs.density === 'comfortable');
+    box.querySelectorAll('[data-density]').forEach((b) => (b.classList.toggle('on', b === el), b.setAttribute('aria-pressed', String(b === el))));
   });
   on('change', '[data-video]', (e, el) => ((st.video = /** @type {HTMLSelectElement} */ (el).value), (st.page = 1), render()));
   on('change', '[data-facet]', (e, el) => ((st[el.dataset.facet] = /** @type {HTMLSelectElement} */ (el).value), (st.page = 1), render()));

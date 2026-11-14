@@ -46,11 +46,13 @@ export const tiktokRoutes = [
   // Topic explorer of an insight report: each group with the ids of its comments (no new scraping).
   { method: 'GET', path: '/api/v1/tiktok/insight/:id/topics', handler: ({ app, params }) => app.features.tiktokInsightTopics(Number(params.id)) },
   // Shared comment dataset (every screen that collected TikTok comments). Reads only.
+  { method: 'GET', path: '/api/v1/tiktok/video-analyses', handler: ({ app, query }) => app.features.videoAnalysisHistory(Math.min(Number(query.get('limit')) || 20, 100)) },
   { method: 'GET', path: '/api/v1/tiktok/comment-videos', handler: ({ app }) => app.features.commentData.videos() },
   { method: 'GET', path: '/api/v1/tiktok/comment-collections', handler: ({ app, query }) => app.features.commentData.collections(Number(query.get('limit')) || 100) },
   {
     method: 'GET', path: '/api/v1/tiktok/comment-coverage',
-    handler: ({ app, query }) => app.features.commentData.coverage(String(query.get('ids') || '').split(',').filter((x) => /^\d{15,25}$/.test(x))),
+    handler: ({ app, query }) => app.features.commentData.coverage(String(query.get('ids') || '').split(',').filter((x) => /^\d{15,25}$/.test(x)),
+      { max: Number(query.get('max')) === 300 ? 300 : 100, replies: query.get('replies') !== 'false' }),
   },
   {
     method: 'GET', path: '/api/v1/tiktok/comments',
