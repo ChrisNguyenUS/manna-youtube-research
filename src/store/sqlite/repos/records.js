@@ -2,11 +2,15 @@
 import { upgradeRecord, LATEST } from '../../upgrades/index.js';
 import { currentJobId, throwIfCancelled } from '../../../core/cancel.js';
 
-/** @param {import('node:sqlite').DatabaseSync} db @param {() => number} [now] */
-export function recordsRepo(db, now = Date.now) {
+/**
+ * @param {import('node:sqlite').DatabaseSync} db @param {() => number} [now]
+ * @param {ReturnType<typeof import('./comments.js').commentsRepo>} [comments] canonical comments: reports of comment kinds store references
+ */
+export function recordsRepo(db, now = Date.now, comments) {
   const parse = (r) => {
     if (!r) return r;
-    const up = upgradeRecord(r.kind, r.schema_version ?? 1, r.data != null ? JSON.parse(r.data) : null);
+    const raw = r.data != null ? JSON.parse(r.data) : null;
+    const up = upgradeRecord(r.kind, r.schema_version ?? 1, comments && raw ? comments.unpack(r.kind, raw) : raw);
     return { ...r, params: r.params != null ? JSON.parse(r.params) : null, data: up.data, schema_version: up.version };
   };
   /** @param {string} sql @param {...any} args */
@@ -20,16 +24,22 @@ export function recordsRepo(db, now = Date.now) {
      */
     add(ws, kind, title, { ref = null, params = null, data = null, schemaVersion = LATEST[kind] ?? 1, jobId = currentJobId() } = {}) {
       throwIfCancelled(); // a cancelled job writes nothing
+      const packed = comments && data ? comments.pack(kind, data) : { data, ids: [] };
       const r = db
         .prepare('INSERT INTO records (workspace_id, kind, title, ref, params, data, schema_version, job_id, created_at) VALUES (?,?,?,?,?,?,?,?,?)')
-        .run(ws, kind, title, ref, JSON.stringify(params), JSON.stringify(data), schemaVersion, jobId, now());
-      return Number(r.lastInsertRowid);
+        .run(ws, kind, title, ref, JSON.stringify(params), JSON.stringify(packed.data), schemaVersion, jobId, now());
+      const id = Number(r.lastInsertRowid);
+      if (packed.ids.length) comments?.linkAll(id, packed.ids);
+      return id;
     },
     get: (ws, id) => parse(one('SELECT * FROM records WHERE workspace_id = ? AND id = ?', ws, id)),
     /** @param {string} ws @param {number} id @param {any} data @param {number} [schemaVersion] */
     update(ws, id, data, schemaVersion) {
       throwIfCancelled();
-      db.prepare('UPDATE records SET data = ?, schema_version = COALESCE(?, schema_version) WHERE workspace_id = ? AND id = ?').run(JSON.stringify(data), schemaVersion ?? null, ws, id);
+      const kind = /** @type {any} */ (db.prepare('SELECT kind FROM records WHERE workspace_id = ? AND id = ?').get(ws, id))?.kind;
+      const packed = comments && kind && data ? comments.pack(kind, data) : { data, ids: [] };
+      db.prepare('UPDATE records SET data = ?, schema_version = COALESCE(?, schema_version) WHERE workspace_id = ? AND id = ?').run(JSON.stringify(packed.data), schemaVersion ?? null, ws, id);
+      if (packed.ids.length) comments?.linkAll(id, packed.ids);
     },
     /** @param {string} ws @param {string|null} [kind] @param {number} [limit] */
     list(ws, kind = null, limit = 50) {

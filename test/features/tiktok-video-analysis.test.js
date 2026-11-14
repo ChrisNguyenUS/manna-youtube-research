@@ -19,7 +19,7 @@ test('a batch: one record with every video, saved as it goes; a failed video doe
   assert.equal(rec.title, 'Phỏng vấn quốc tịch Mỹ đậu rồi (+2)');
   const d = rec.data;
   assert.equal(d.platform, 'tiktok');
-  assert.deepEqual(d.params, { videos: `${A}\n${GONE}\n${B}`, script: true, comments: 100, replies: true });
+  assert.deepEqual(d.params, { videos: `${A}\n${GONE}\n${B}`, script: true, comments: 100, replies: true, reuse: false });
   assert.deepEqual(d.videos.map((v) => v.link), [A, GONE, B], 'rows keep the order of the pasted links');
 
   const [one, gone, two] = d.videos;

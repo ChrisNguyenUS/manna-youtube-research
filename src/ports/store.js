@@ -17,6 +17,7 @@
  * @property {{list: (ws: string, platform?: string) => any[], get: (ws: string, platform: string, ref: string) => any, put: (ws: string, platform: string, ref: string, title: string, data: any) => void,
  *   note: (ws: string, platform: string, ref: string, note: string) => void, remove: (ws: string, platform: string, ref: string) => void,
  *   saveScan: (ws: string, platform: string, ref: string, o: {title?: string, data?: any, seen?: string[], lastScan: any}) => void, keys: (ws: string) => string[]}} follows  Followed YouTube/TikTok channels.
+ * @property {any} comments  Canonical TikTok comments shared by the comment reports (store/sqlite/repos/comments.js).
  * @property {any} jobs  Persistent jobs; only the job runner uses it.
  */
 

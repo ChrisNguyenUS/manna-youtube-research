@@ -14,17 +14,23 @@ const GROUPS = [
   {
     key: 'tiktok', title: 'TikTok',
     items: [
-      { icon: 'compass', label: 'Tìm theo chủ đề', tabs: [['/tiktok/topic', 'Tìm theo chủ đề', () => import('./views/tiktok/topic.js')]] },
-      { icon: 'message', label: 'Insight khách hàng', tabs: [['/tiktok/insight', 'Insight khách hàng', () => import('./views/tiktok/insight.js')]] },
-      { icon: 'bars', label: 'Phân tích video', tabs: [['/tiktok/video', 'Phân tích video', () => import('./views/tiktok/video.js')]] },
-      { icon: 'users', label: 'Phân tích kênh', tabs: [['/tiktok/channel', 'Phân tích kênh', () => import('./views/tiktok/channel.js')]] },
       {
-        icon: 'play', label: 'Video & comment',
+        icon: 'compass', label: 'Tìm theo chủ đề',
         tabs: [
+          ['/tiktok/topic', 'Tìm theo chủ đề', () => import('./views/tiktok/topic.js')],
           ['/tiktok/search', 'Tìm video', () => import('./views/tiktok/search.js')],
-          ['/tiktok/comments', 'Lấy comment', () => import('./views/tiktok/comments.js')],
         ],
       },
+      {
+        icon: 'target', label: 'Insight khách hàng',
+        tabs: [
+          ['/tiktok/insight', 'Theo từ khoá', () => import('./views/tiktok/insight.js')],
+          ['/tiktok/insight/collected', 'Từ comment đã có', () => import('./views/tiktok/insight-collected.js')],
+        ],
+      },
+      { icon: 'bars', label: 'Phân tích video', tabs: [['/tiktok/video', 'Phân tích video', () => import('./views/tiktok/video.js')]] },
+      { icon: 'users', label: 'Phân tích kênh', tabs: [['/tiktok/channel', 'Phân tích kênh', () => import('./views/tiktok/channel.js')]] },
+      { icon: 'message', label: 'Thu thập bình luận', tabs: [['/tiktok/comments', 'Thu thập bình luận', () => import('./views/tiktok/comments.js')]] },
     ],
   },
   {

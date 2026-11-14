@@ -104,6 +104,8 @@ export function titleShape(videos) {
 }
 
 // ---------- comments ----------
+/** Handles tagged inside a comment would identify people too. @param {string} s */
+export const maskMentions = (s) => String(s).replace(/@(?!…)[\p{L}\p{N}._]+/gu, '@…');
 // Vietnamese questions often skip the "?": common question phrases, and a trailing không/ko/chưa.
 const QUESTION_TAIL_RE = /(?<![\p{L}\p{N}])(không|ko|hông|chưa)[\s.!…]*$/iu;
 const QUESTION_RE = /\?|(^|\s)(cho hỏi|cho mình hỏi|cho em hỏi|cho tôi hỏi|bao lâu|thế nào|như nào|mất mấy|mấy tháng|mấy ngày|mấy năm|mấy lần|phải không|đúng không|không ạ|ko ạ|chưa ạ|gì vậy|gì ạ|tại sao|vì sao|làm sao|làm thế nào|như thế nào|ở đâu|bao nhiêu|bao giờ|khi nào|có ai|ai biết|có phải|được không|có nên|nên làm gì|là gì|why|how|what|where|when|which|who|is there|does anyone|can someone|can you|anyone know)(?![\p{L}\p{N}])/iu;

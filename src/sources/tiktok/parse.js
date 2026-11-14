@@ -1,4 +1,5 @@
 // Pure parsers for TikTok's web API (ported from ~/tiktok-keyword-comments-actor, verified 2026-10-22).
+import { maskMentions } from '../../core/analysis/text.js';
 const iso = (unix) => (Number(unix) > 0 ? new Date(Number(unix) * 1000).toISOString() : null);
 
 /** Relative URL of TikTok's "Top" search API; must be fetched from inside a tiktok.com page (TikTok signs it). */
@@ -70,8 +71,7 @@ export const isShortLink = (url) => /^https?:\/\/(vm|vt)\.tiktok\.com\//.test(ur
 export const commentListUrl = (videoId, cursor) => `${COMMENT_API}/?${new URLSearchParams({ aid: '1988', aweme_id: videoId, count: String(PAGE_SIZE), cursor: String(cursor) })}`;
 export const replyListUrl = (videoId, commentId, cursor) => `${COMMENT_API}/reply/?${new URLSearchParams({ aid: '1988', item_id: videoId, comment_id: commentId, count: String(PAGE_SIZE), cursor: String(cursor) })}`;
 
-/** Handles tagged inside a comment would identify people too. */
-export const maskMentions = (s) => s.replace(/@[\p{L}\p{N}._]+/gu, '@…');
+export { maskMentions };
 
 /** Commenter name/username are deliberately not read: reports must never identify customers. */
 export function parseCommentPage(body, parentId) {

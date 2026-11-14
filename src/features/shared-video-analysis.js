@@ -19,7 +19,7 @@ const invalid = (message) => Object.assign(new Error(message), { code: 'invalid_
  * @param {{
  *   kind: string, platform: 'tiktok'|'youtube', records: any, now: () => number,
  *   fetchVideo: (link: string, o: {script: boolean}) => Promise<{video: any, transcript: any|null, transcriptNote?: string|null}>,
- *   fetchComments: (video: any, o: {max: number, replies: boolean}, onProgress: (n: number) => void) => Promise<any[]>,
+ *   fetchComments: (video: any, o: {max: number, replies: boolean, reuse: boolean}, onProgress: (n: number) => void) => Promise<any[] | {comments: any[], reused: any}>,
  *   titleOf: (video: any) => string,
  * }} o  fetchVideo throws (with a code) when the video cannot be analyzed; transcriptNote says why there is no script ('none' by default)
  */
@@ -32,7 +32,8 @@ export function makeVideoAnalysisRunner({ kind, platform, records, now, fetchVid
     const script = params.script !== false;
     const max = COMMENT_CHOICES.includes(Number(params.comments)) ? Number(params.comments) : 100;
     const replies = params.replies !== false;
-    const clean = { videos: links.join('\n'), script, comments: max, replies };
+    const reuse = params.reuse === true;
+    const clean = { videos: links.join('\n'), script, comments: max, replies, reuse };
     const data = { platform, params: clean, analyzedAt: new Date(now()).toISOString(), videos: /** @type {any[]} */ ([]) };
     /** @type {number|null} */
     let id = null;
@@ -41,7 +42,7 @@ export function makeVideoAnalysisRunner({ kind, platform, records, now, fetchVid
     for (const [i, link] of links.entries()) {
       const label = `Video ${i + 1}/${links.length}`;
       at(i, `${label}: thông số${script ? ' và script' : ''}`);
-      const entry = { link, video: null, row: null, transcript: null, transcriptNote: script ? null : 'off', script: null, comments: [], commentsNote: null, groups: voiceTopics([]), error: null };
+      const entry = { link, video: null, row: null, transcript: null, transcriptNote: script ? null : 'off', script: null, comments: [], commentsNote: null, commentsReused: null, groups: voiceTopics([]), error: null };
       try {
         const got = await fetchVideo(link, { script });
         entry.video = got.video;
@@ -53,7 +54,9 @@ export function makeVideoAnalysisRunner({ kind, platform, records, now, fetchVid
         }
         if (max > 0) {
           try {
-            const list = await fetchComments(got.video, { max, replies }, (n) => at(i, `${label}: comment ${n}/${max}`));
+            const res = await fetchComments(got.video, { max, replies, reuse }, (n) => at(i, `${label}: comment ${n}/${max}`));
+            const list = Array.isArray(res) ? res : res.comments;
+            if (!Array.isArray(res) && res.reused) entry.commentsReused = res.reused; // taken from comments collected before
             entry.comments = list.map((c) => ({ ...c, videoId: got.video.id }));
             entry.groups = voiceTopics(entry.comments);
           } catch (e) {

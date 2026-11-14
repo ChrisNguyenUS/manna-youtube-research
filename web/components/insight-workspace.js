@@ -3,7 +3,8 @@
 // a comment browser (Comments and Questions tabs), the topic explorer, the video gallery and the overview.
 // Everything shown comes from the comments stored with the report; commenter names are never stored.
 import { esc, icon, fmt, store, persist, emptyState, toast, isSaved, toggleSave, saveMany } from '../lib.js';
-import { savedQuote, savedTikTokVideo } from '../saved-items.js';
+import { savedTikTokVideo } from '../saved-items.js';
+import { commentExplorer } from './comment-explorer.js';
 
 export const COMMENT_SORTS = {
   attention: ['Được chú ý nhất (tim + trả lời)', (c) => (c.likes ?? 0) + (c.replies ?? 0)],
@@ -69,167 +70,33 @@ export function insightContext(rec, groups) {
 }
 /** @typedef {ReturnType<typeof insightContext>} InsightCtx */
 
-/** One comment: full text (clamped until opened), its numbers, groups, keyword and source video. */
-function commentRow(ctx, c, { open = false, picked = false } = {}) {
-  const v = ctx.videos.get(c.videoId);
-  const parent = c.parentId ? ctx.comments.get(c.parentId) : null;
-  const answers = (ctx.replies.get(c.id) ?? []).slice().sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0));
-  const groups = ctx.topicsOf(c.id);
-  return `<div class="tx-row ${open ? 'open' : ''} ${picked ? 'picked' : ''}" data-cid="${esc(c.id)}">
-    <input type="checkbox" class="tt-cb" data-pick="${esc(c.id)}" ${picked ? 'checked' : ''} aria-label="Chọn comment">
-    <div class="tx-body">
-      <div class="tx-text">${esc(c.text)}</div>
-      ${open && parent ? `<div class="tx-parent">Trả lời cho: “${esc(parent.text)}”</div>` : ''}
-      <div class="tx-meta"><span>${icon('heart')} ${fmt(c.likes ?? 0)}</span><span>${icon('message')} ${fmt(c.replies ?? 0)} trả lời</span>
-        ${monthYear(c.createdAt) ? `<span title="Tháng/năm comment">${monthYear(c.createdAt)}</span>` : ''}
-        ${c.isReply ? '<span class="tag">Là trả lời</span>' : ''}${c.pinned ? '<span class="tag">Ghim</span>' : ''}
-        ${groups.map((t) => `<span class="tx-topic" title="Nhóm của báo cáo">${esc(t.label)}</span>`).join('')}
-        ${ctx.keywordsOf(c).map((k) => `<span class="tx-kw" title="Từ khoá nghiên cứu">${esc(k)}</span>`).join('')}</div>
-      ${open && v ? `<div class="tx-detail">
-        <div><span class="muted">Comment lúc</span> ${fullDate(c.createdAt)}</div>
-        <div><span class="muted">Video nguồn:</span> ${esc(v.caption || '(không caption)')}</div>
-        <div><span class="muted">Creator:</span> <b>@${esc(v.author)}</b>${v.authorName ? ` (${esc(v.authorName)})` : ''} · đăng ${fullDate(v.createdAt)} · ${fmt(v.plays)} view · ${fmt(v.likes)} tim · ${fmt(v.comments)} bình luận</div>
-        ${answers.length ? `<div class="tx-answers"><div class="muted small">${answers.length} trả lời đã đọc</div>${answers.slice(0, 5).map((a) => `<div class="tx-answer">↳ ${esc(a.text)} <span class="muted small">♥ ${fmt(a.likes ?? 0)}</span></div>`).join('')}</div>` : ''}
-        <div class="row"><a class="btn sm primary" href="${esc(v.url)}" target="_blank" rel="noopener">${icon('ext')} Mở video trên TikTok</a>
-          <button type="button" class="btn sm" data-copy-one="${esc(c.id)}">${icon('doc')} Sao chép comment</button>
-          <button type="button" class="btn sm ${isSaved('quote', c.id) ? 'on' : ''}" data-save-one="${esc(c.id)}" title="Giữ câu này trong Đã lưu để dùng khi viết kịch bản, quảng cáo">${icon('bookmark')} ${isSaved('quote', c.id) ? 'Đã lưu' : 'Lưu comment'}</button>
-          <a class="btn sm" href="#/tiktok/comments?videos=${encodeURIComponent(v.url)}">${icon('message')} Đọc thêm comment video này</a></div>
-      </div>` : ''}
-    </div>
-    ${v ? `<a class="tx-video" href="${esc(v.url)}" target="_blank" rel="noopener" title="Mở video trên TikTok">
-      <span class="tx-thumb">${cover(v)}</span>
-      <span class="tx-vinfo"><span class="tx-vcap">${esc(v.caption || '(không caption)')}</span><span class="muted">@${esc(v.author)}</span><span class="muted">${icon('eye')} ${fmt(v.plays)}</span></span></a>` : '<span></span>'}
-  </div>`;
-}
-
-const quoteLine = (c) => `“${String(c.text).replace(/\s+/g, ' ').trim()}” (♥ ${c.likes ?? 0}, ${c.replies ?? 0} trả lời)`;
-async function copyText(text, n) {
-  try {
-    await navigator.clipboard.writeText(text);
-    toast(`Đã chép ${n} comment`);
-  } catch {
-    toast('Trình duyệt không cho chép, thử lại', 'error');
-  }
-}
-
-function pageNumbers(cur, total) {
-  const list = [...new Set([1, total, cur - 1, cur, cur + 1].filter((n) => n >= 1 && n <= total))].sort((a, b) => a - b);
-  const out = [];
-  for (const [i, n] of list.entries()) {
-    if (i && n - list[i - 1] > 1) out.push('…');
-    out.push(n);
-  }
-  return out;
-}
-
 /**
- * A searchable, filterable, paged list of comments.
+ * The report's comments in the shared comment explorer, with the report's own filters (group, keyword, creator) and
+ * its groups and keywords shown on each comment.
  * @param {HTMLElement} box
  * @param {InsightCtx} ctx
- * @param {{base: any[], filters?: ('topic'|'keyword'|'video'|'creator')[], topicChoices?: any[], initial?: Record<string, string>, head?: string, placeholder?: string}} o
+ * @param {{base: any[], filters?: ('topic'|'keyword'|'video'|'creator')[], topicChoices?: any[], initial?: Record<string, string>, head?: string, placeholder?: string, mode?: 'full'|'embedded', openFull?: string}} o
  * @returns {{off: () => void, set: (patch: Record<string, string>) => void}}
  */
 export function commentBrowser(box, ctx, o) {
-  const prefs = store('tt-explorer', { sort: 'attention', per: 10 });
   const filters = o.filters ?? ['topic', 'keyword', 'video', 'creator'];
-  const st = { q: '', topic: '', kw: '', video: '', creator: '', page: 1, open: /** @type {string|null} */ (null), picked: new Set(), ...(o.initial ?? {}) };
   const base = o.base;
-  const vids = [...new Set(base.map((c) => c.videoId))].map((id) => ctx.videos.get(id)).filter(Boolean).sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
-  const creators = [...new Set(vids.map((v) => v.author))];
   const topicChoices = o.topicChoices ?? ctx.topics;
   const kwChoices = [...new Set(base.flatMap(ctx.keywordsOf))];
-  box.innerHTML = `${o.head ?? ''}
-    <div class="tx-tools">
-      <label class="tt-searchmini tx-grow">${icon('search')}<input data-cq placeholder="${esc(o.placeholder ?? `Tìm trong ${base.length} comment…`)}" value="${esc(st.q)}"></label>
-      ${filters.includes('topic') ? `<label class="tt-pill"><select data-f="topic" title="Lọc theo nhóm">${opt('', 'Tất cả nhóm', st.topic)}${topicChoices.map((t) => opt(t.key, `${t.label} (${t.count})`, st.topic)).join('')}${o.topicChoices ? '' : opt('none', 'Chưa vào nhóm nào', st.topic)}</select></label>` : ''}
-      ${filters.includes('keyword') && kwChoices.length > 1 ? `<label class="tt-pill"><select data-f="kw" title="Lọc theo từ khoá">${opt('', `Tất cả từ khoá (${kwChoices.length})`, st.kw)}${kwChoices.map((k) => opt(k, k, st.kw)).join('')}</select></label>` : ''}
-      ${filters.includes('video') ? `<label class="tt-pill"><select data-f="video" title="Lọc theo video">${opt('', `Tất cả video (${vids.length})`, st.video)}${vids.map((v) => opt(v.id, `#${v.rank ?? ''} ${String(v.caption || '(không caption)').slice(0, 50)}`, st.video)).join('')}</select></label>` : ''}
-      ${filters.includes('creator') ? `<label class="tt-pill"><select data-f="creator" title="Lọc theo creator">${opt('', `Tất cả creator (${creators.length})`, st.creator)}${creators.map((a) => opt(a, `@${a}`, st.creator)).join('')}</select></label>` : ''}
-      <label class="tt-pill"><span class="muted">Sắp xếp:</span><select data-csort>${Object.entries(COMMENT_SORTS).map(([k, [l]]) => opt(k, l, prefs.sort)).join('')}</select></label>
-    </div>
-    <div class="tx-count small muted" data-ccount></div>
-    <div class="tx-comments" data-clist></div>
-    <div class="tx-foot" data-cfoot></div>`;
-  const L = listen(box);
-
-  function filtered() {
-    const q = fold(st.q);
-    const list = base.filter((c) => {
-      const v = ctx.videos.get(c.videoId);
-      const tps = ctx.topicsOf(c.id);
-      return (!st.topic || (st.topic === 'none' ? !tps.length : tps.some((t) => t.key === st.topic)))
-        && (!st.kw || ctx.keywordsOf(c).includes(st.kw)) && (!st.video || c.videoId === st.video)
-        && (!st.creator || v?.author === st.creator) && (!q || fold(c.text).includes(q));
-    });
-    const f = (COMMENT_SORTS[prefs.sort] ?? COMMENT_SORTS.attention)[1];
-    return list.sort((a, b) => f(b) - f(a) || (b.likes ?? 0) - (a.likes ?? 0));
+  const creators = [...new Set(base.map((c) => ctx.videos.get(c.videoId)?.author).filter(Boolean))];
+  /** @type {import('./comment-explorer.js').Facet[]} */
+  const facets = [];
+  if (filters.includes('topic') && topicChoices.length) {
+    facets.push({ key: 'topic', label: 'Nhóm câu hỏi', all: 'Mọi nhóm câu hỏi', choices: [...topicChoices.map((t) => ({ value: t.key, label: `${t.label} (${t.count})` })), ...(o.topicChoices ? [] : [{ value: 'none', label: 'Chưa vào nhóm nào' }])],
+      test: (c, v) => (v === 'none' ? !ctx.topicsOf(c.id).length : ctx.topicsOf(c.id).some((t) => t.key === v)) });
   }
-
-  function render() {
-    const list = filtered();
-    const pages = Math.max(1, Math.ceil(list.length / prefs.per));
-    st.page = Math.min(st.page, pages);
-    const slice = list.slice((st.page - 1) * prefs.per, st.page * prefs.per);
-    box.querySelector('[data-ccount]').textContent = list.length === base.length ? `${base.length} comment` : `${list.length} / ${base.length} comment khớp bộ lọc`;
-    box.querySelector('[data-clist]').innerHTML = slice.length ? slice.map((c) => commentRow(ctx, c, { open: st.open === c.id, picked: st.picked.has(c.id) })).join('') : `<div class="card-pad">${emptyState('Không có comment khớp', 'Thử bỏ bớt chữ tìm kiếm hoặc bộ lọc.')}</div>`;
-    const allPicked = list.length > 0 && list.every((c) => st.picked.has(c.id));
-    box.querySelector('[data-cfoot]').innerHTML = `
-      <label class="tx-pickall"><input type="checkbox" class="tt-cb" data-pickall ${allPicked ? 'checked' : ''} ${list.length ? '' : 'disabled'}> Chọn tất cả (${list.length})</label>
-      <button type="button" class="btn sm" data-copy ${st.picked.size ? '' : 'disabled'} title="Chép nguyên văn comment đã chọn, kèm số tim">${icon('doc')} Sao chép${st.picked.size ? ` (${st.picked.size})` : ''}</button>
-      <button type="button" class="btn sm" data-save-picked ${st.picked.size ? '' : 'disabled'} title="Giữ các comment đã chọn trong Đã lưu">${icon('bookmark')} Lưu${st.picked.size ? ` (${st.picked.size})` : ''}</button>
-      <span class="spacer"></span>
-      ${pages > 1 ? `<div class="tx-pager"><button type="button" data-page="${st.page - 1}" ${st.page > 1 ? '' : 'disabled'} aria-label="Trang trước">${icon('back')}</button>
-        ${pageNumbers(st.page, pages).map((n) => (n === '…' ? '<span class="muted">…</span>' : `<button type="button" class="${n === st.page ? 'on' : ''}" data-page="${n}">${n}</button>`)).join('')}
-        <button type="button" class="tt-flip" data-page="${st.page + 1}" ${st.page < pages ? '' : 'disabled'} aria-label="Trang sau">${icon('back')}</button></div>` : ''}
-      <label class="tt-pill"><select data-per>${[10, 20, 50].map((n) => opt(n, `${n} / trang`, prefs.per)).join('')}</select></label>`;
-  }
-
-  const save = () => persist('tt-explorer', prefs);
-  L.on('input', '[data-cq]', (e, el) => ((st.q = el.value), (st.page = 1), render()));
-  L.on('change', '[data-f]', (e, el) => ((st[el.dataset.f] = el.value), (st.page = 1), render()));
-  L.on('change', '[data-csort]', (e, el) => ((prefs.sort = el.value), save(), (st.page = 1), render()));
-  L.on('change', '[data-per]', (e, el) => ((prefs.per = Number(el.value)), save(), (st.page = 1), render()));
-  L.on('click', '[data-page]', (e, el) => {
-    st.page = Number(el.dataset.page);
-    render();
-    box.querySelector('[data-clist]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  if (filters.includes('keyword') && kwChoices.length > 1) facets.push({ key: 'kw', label: 'Từ khoá', all: `Mọi từ khoá (${kwChoices.length})`, choices: kwChoices.map((k) => ({ value: k, label: k })), test: (c, v) => ctx.keywordsOf(c).includes(v) });
+  if (filters.includes('creator') && creators.length > 1) facets.push({ key: 'creator', label: 'Creator', all: `Mọi creator (${creators.length})`, choices: creators.map((a) => ({ value: a, label: `@${a}` })), test: (c, v) => ctx.videos.get(c.videoId)?.author === v });
+  const tags = (c) => [...ctx.topicsOf(c.id).map((t) => `<span class="tx-topic" title="Nhóm câu hỏi của báo cáo">${esc(t.label)}</span>`), ...(filters.includes('keyword') ? ctx.keywordsOf(c).map((k) => `<span class="tx-kw" title="Từ khoá nghiên cứu">${esc(k)}</span>`) : [])].join('');
+  return commentExplorer(box, {
+    comments: base, videos: ctx.videos, mode: o.mode ?? 'full', facets, tags, head: o.head, placeholder: o.placeholder, openFull: o.openFull,
+    initial: o.initial ? { ...o.initial } : undefined, source: { title: ctx.rec.title, recordId: ctx.rec.id },
   });
-  L.on('change', '[data-pick]', (e, el) => (el.checked ? st.picked.add(el.dataset.pick) : st.picked.delete(el.dataset.pick), render()));
-  L.on('change', '[data-pickall]', (e, el) => {
-    for (const c of filtered()) el.checked ? st.picked.add(c.id) : st.picked.delete(c.id);
-    render();
-  });
-  L.on('click', '[data-copy]', () => copyText([...st.picked].map((id) => ctx.comments.get(id)).filter(Boolean).map(quoteLine).join('\n'), st.picked.size));
-  L.on('click', '[data-copy-one]', (e, el) => copyText(quoteLine(ctx.comments.get(el.dataset.copyOne)), 1));
-  // Saved quotes keep the words, the numbers, the report's groups and the source video; never who wrote them.
-  const quoteOf = (c) => savedQuote(c, { video: ctx.videos.get(c.videoId), topics: ctx.topicsOf(c.id).map((t) => t.label), source: ctx.rec.title, recordId: ctx.rec.id });
-  L.on('click', '[data-save-picked]', async () => {
-    await saveMany('quote', [...st.picked].map((id) => ctx.comments.get(id)).filter(Boolean).map(quoteOf), 'comment');
-    render();
-  });
-  L.on('click', '[data-save-one]', async (e, el) => {
-    const c = ctx.comments.get(el.dataset.saveOne);
-    if (!c) return;
-    const q = quoteOf(c);
-    await toggleSave('quote', q.ref, q.title, q.data);
-    render();
-  });
-  // Click a comment to read it whole, with its video, creator and the replies read under it.
-  L.on('click', '[data-cid]', (e, el) => {
-    if (/** @type {HTMLElement} */ (e.target).closest('a, input, label, button, select')) return;
-    if (window.getSelection()?.toString()) return; // selecting text to copy is not a click
-    st.open = st.open === el.dataset.cid ? null : el.dataset.cid;
-    render();
-  });
-  render();
-  return {
-    off: L.off,
-    set(patch) {
-      Object.assign(st, patch, { page: 1 });
-      for (const el of box.querySelectorAll('[data-f]')) /** @type {HTMLSelectElement} */ (el).value = st[/** @type {HTMLElement} */ (el).dataset.f] ?? '';
-      render();
-    },
-  };
 }
 
 const TOPIC_SORTS = { count: 'Nhiều comment nhất', order: 'Theo thứ tự báo cáo', az: 'Theo tên A–Z' };

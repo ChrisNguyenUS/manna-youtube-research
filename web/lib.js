@@ -179,6 +179,12 @@ function announce(j) {
 }
 
 let jobsTimer = null;
+document.addEventListener('click', (e) => {
+  if (!/** @type {HTMLElement} */ (e.target).closest?.('[data-jobs-toggle]')) return;
+  const st = store('jobs-panel', { collapsed: false });
+  persist('jobs-panel', { collapsed: !st.collapsed });
+  refreshJobs();
+});
 export async function refreshJobs() {
   try {
     const list = await jobs.list();
@@ -188,15 +194,21 @@ export async function refreshJobs() {
     }
     const box = document.getElementById('jobs');
     box.hidden = !list.length;
-    document.getElementById('jobs-list').innerHTML = list
-      .slice(0, 5)
+    // Recent jobs, not menu entries: each shows what it ran on (keyword, link…) first, its kind second and smaller,
+    // so several jobs of one kind never read like the same menu item repeated. Running jobs always show.
+    const open = !store('jobs-panel', { collapsed: false }).collapsed;
+    const active = list.filter((j) => ACTIVE.includes(j.status));
+    const shown = open ? [...active, ...list.filter((j) => !ACTIVE.includes(j.status))].slice(0, Math.max(3, active.length)) : active;
+    document.getElementById('jobs-head').innerHTML = `<button type="button" class="jobs-toggle" data-jobs-toggle aria-expanded="${open}">Việc gần đây <span>${list.length}</span>${icon('chevron')}</button>`;
+    document.getElementById('jobs-list').innerHTML = shown
       .map((j) => {
         const pct = j.progress.total ? Math.min(100, Math.round((j.progress.done / j.progress.total) * 100)) : j.status === 'succeeded' ? 100 : 8;
-        const step = j.status === 'failed' ? j.error : ACTIVE.includes(j.status) ? j.progress.step : j.title;
-        const open = j.status === 'succeeded' ? 'Mở kết quả' : ACTIVE.includes(j.status) ? 'Xem tiến trình' : 'Mở màn này';
-        return `<div class="job"><span class="job-state ${j.status}">${STATE[j.status] || j.status}</span><a class="job-title" href="${esc(jobHref(j))}" title="${open}: ${esc(j.title)}">${esc(LABELS[j.kind] || j.kind)}</a>
-          <div class="job-step">${esc(step)}</div>
-          ${ACTIVE.includes(j.status) ? `<div class="bar"><i style="width:${pct}%"></i></div><button class="btn sm ghost" data-job-cancel="${j.id}" style="margin-top:4px">Huỷ</button>` : ''}
+        const hint = j.status === 'succeeded' ? 'Mở kết quả' : ACTIVE.includes(j.status) ? 'Xem tiến trình' : 'Mở màn này';
+        const running = ACTIVE.includes(j.status);
+        return `<div class="job ${j.status}"><a class="job-title" href="${esc(jobHref(j))}" title="${hint}: ${esc(LABELS[j.kind] || j.kind)} · ${esc(j.title)}">${esc(j.title || LABELS[j.kind] || j.kind)}</a>
+          <div class="job-kind"><span class="job-dot"></span>${esc(LABELS[j.kind] || j.kind)} · <span class="job-state ${j.status}">${STATE[j.status] || j.status}</span></div>
+          ${running ? `<div class="job-step">${esc(j.progress.step)}</div><div class="bar"><i style="width:${pct}%"></i></div><button class="btn sm ghost" data-job-cancel="${j.id}" style="margin-top:4px">Huỷ</button>` : ''}
+          ${j.status === 'failed' ? `<div class="job-step">${esc(j.error)}</div>` : ''}
           ${RETRY.includes(j.status) ? `<button class="btn sm" data-job-retry="${j.id}" style="margin-top:6px">Chạy lại</button>` : ''}</div>`;
       })
       .join('');
@@ -207,7 +219,7 @@ export async function refreshJobs() {
     /* server restarting */
   }
 }
-const LABELS = { tiktok_channel: 'Phân tích kênh TikTok', follow_refresh: 'Kiểm tra kênh theo dõi', tiktok_topic: 'Tìm theo chủ đề TikTok', tiktok_video_analysis: 'Phân tích video TikTok', tiktok_search: 'Tìm video TikTok', tiktok_insight: 'Insight TikTok', tiktok_comments: 'Comment TikTok', video_search: 'Tìm video', channel_search: 'Tìm kênh', channel_analysis: 'Phân tích kênh', research: 'Nghiên cứu chủ đề', research_comments: 'Đọc comment', comments: 'Lấy comment', idea_check: 'Chấm điểm từ khoá', keyword_score: 'Chấm điểm từ khoá liên quan', keywords: 'Từ khoá' };
+const LABELS = { tiktok_channel: 'Phân tích kênh TikTok', follow_refresh: 'Kiểm tra kênh theo dõi', tiktok_topic: 'Tìm theo chủ đề TikTok', tiktok_video_analysis: 'Phân tích video TikTok', tiktok_search: 'Tìm video TikTok', tiktok_insight: 'Insight TikTok', tiktok_comments: 'Thu thập bình luận', video_search: 'Tìm video', channel_search: 'Tìm kênh', channel_analysis: 'Phân tích kênh', research: 'Nghiên cứu chủ đề', research_comments: 'Đọc comment', comments: 'Lấy comment', idea_check: 'Chấm điểm từ khoá', keyword_score: 'Chấm điểm từ khoá liên quan', keywords: 'Từ khoá' };
 
 /**
  * An error and the ways out of it: sign in to TikTok when that is what is missing, run the job again when there was one.

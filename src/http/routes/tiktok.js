@@ -45,6 +45,21 @@ export const tiktokRoutes = [
   },
   // Topic explorer of an insight report: each group with the ids of its comments (no new scraping).
   { method: 'GET', path: '/api/v1/tiktok/insight/:id/topics', handler: ({ app, params }) => app.features.tiktokInsightTopics(Number(params.id)) },
+  // Shared comment dataset (every screen that collected TikTok comments). Reads only.
+  { method: 'GET', path: '/api/v1/tiktok/comment-videos', handler: ({ app }) => app.features.commentData.videos() },
+  { method: 'GET', path: '/api/v1/tiktok/comment-collections', handler: ({ app, query }) => app.features.commentData.collections(Number(query.get('limit')) || 100) },
+  {
+    method: 'GET', path: '/api/v1/tiktok/comment-coverage',
+    handler: ({ app, query }) => app.features.commentData.coverage(String(query.get('ids') || '').split(',').filter((x) => /^\d{15,25}$/.test(x))),
+  },
+  {
+    method: 'GET', path: '/api/v1/tiktok/comments',
+    handler: ({ app, query }) => {
+      const ids = String(query.get('videos') || '').split(',').filter((x) => /^\d{15,25}$/.test(x));
+      if (!ids.length) throw httpError('invalid_input', 'Chọn ít nhất một video', 'videos');
+      return app.features.commentData.comments(ids);
+    },
+  },
   { method: 'POST', path: '/api/v1/tiktok/videos', handler: ({ app, body, signal }) => scrape(app, body, signal) },
   {
     method: 'GET', path: '/api/v1/tiktok/videos',

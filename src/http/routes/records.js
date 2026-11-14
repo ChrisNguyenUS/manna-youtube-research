@@ -145,7 +145,7 @@ export const recordRoutes = [
     handler: ({ app, ws, params }) => {
       const r = app.store.records.get(ws, Number(params.id));
       if (!r) throw httpError('not_found', 'Không thấy báo cáo');
-      return r;
+      return app.features.commentData.tagRecord(r); // comment reports: each comment with its intents
     },
   },
   { method: 'DELETE', path: '/api/v1/records/:id', handler: ({ app, ws, params }) => (app.store.records.remove(ws, Number(params.id)), { ok: true }) },

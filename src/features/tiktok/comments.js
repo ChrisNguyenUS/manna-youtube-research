@@ -1,7 +1,7 @@
 // Use case: comments of TikTok links (spec §4.3) + the helper the insight report shares.
 import { noop, splitList } from '../shared.js';
 import { attentionPerDay } from '../../core/tiktok/metrics.js';
-import { commentInsights } from '../../core/analysis/text.js';
+import { intentInsights } from '../../core/analysis/comment-intents.js';
 import { rethrowIfCancelled } from '../../core/cancel.js';
 
 /** Adds attentionPerDay, and parentText on replies (first 200 chars of the parent comment). */
@@ -37,12 +37,20 @@ export function makeTikTokComments({ tiktok, records, now }) {
         skipped.push(link);
         continue;
       }
-      done.push({ video, comments: withAttention(r.comments, now()) });
+      // Caption, creator and cover for the history list; the comments are kept even when this page fails.
+      let about = null;
+      try {
+        about = (await tiktok.getVideo(video.url)).video;
+      } catch (e) {
+        rethrowIfCancelled(e);
+      }
+      const info = about ? { id: video.id, url: video.url, caption: about.caption, author: about.author, authorName: about.authorName, cover: about.cover, plays: about.plays, likes: about.likes, comments: about.comments, createdAt: about.createdAt } : video;
+      done.push({ video: info, comments: withAttention(r.comments, now()) });
     }
     if (!done.length) throw new Error(skipped.length ? 'Không lấy được comment từ link nào' : 'Không có link video TikTok hợp lệ');
     // Saved after the loop so every record lists all skipped links.
     const jobs = done.map(({ video, comments }) => {
-      const data = { video, comments, insight: commentInsights(comments, { limit: 50 }), params, skipped };
+      const data = { video, comments, insight: intentInsights(comments, { limit: 50 }), params, skipped };
       return { id: records.add('tiktok_comments', video.url, { ref: video.id, params, data }), video, count: comments.length };
     });
     // inline: the runner keeps this result, so the screen can show every video of a multi-link job.

@@ -4,11 +4,14 @@ import { savedRepo } from './repos/saved.js';
 import { settingsRepo, DEFAULT_SETTINGS } from './repos/settings.js';
 import { jobsRepo } from './repos/jobs.js';
 import { followsRepo } from './repos/follows.js';
+import { commentsRepo } from './repos/comments.js';
 
 export { DEFAULT_SETTINGS };
 
 /** @param {import('node:sqlite').DatabaseSync} db */
 export function createSqliteStore(db) {
-  return { db, cache: cacheRepo(db), records: recordsRepo(db), saved: savedRepo(db), settings: settingsRepo(db), jobs: jobsRepo(db), follows: followsRepo(db) };
+  const comments = commentsRepo(db);
+  comments.moveEmbedded(); // once: comments of reports written before the comments table
+  return { db, cache: cacheRepo(db), records: recordsRepo(db, Date.now, comments), saved: savedRepo(db), settings: settingsRepo(db), jobs: jobsRepo(db), follows: followsRepo(db), comments };
 }
 /** @typedef {ReturnType<typeof createSqliteStore>} Store */

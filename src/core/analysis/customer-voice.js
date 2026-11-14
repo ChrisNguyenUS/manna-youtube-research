@@ -38,13 +38,15 @@ export const isSeller = (text) => has(` ${foldWords(text)} `, SELLER_FOLDED);
 export function classifyVoice(text) {
   const t = String(text || '');
   const f = ` ${foldWords(t)} `;
-  const question = classifyComment(t).question;
+  const base = classifyComment(t);
+  const question = base.question;
   const themes = question ? QUESTION_THEMES.filter(([, , words]) => has(f, words)).map(([k]) => k) : [];
+  // Same fear / buying rule as every other comment screen (comment-intents.js): these lists plus the general ones.
   return {
     question,
     themes: question && !themes.length ? ['other'] : themes,
-    fear: has(f, FEAR_FOLDED) || FEAR_ACCENTED.test(t),
-    buying: has(f, BUYING_FOLDED),
+    fear: has(f, FEAR_FOLDED) || FEAR_ACCENTED.test(t) || base.fear,
+    buying: has(f, BUYING_FOLDED) || base.buying,
   };
 }
 

@@ -1,6 +1,6 @@
 // "Phân tích video" (TikTok): paste up to 10 links → numbers, script and comments of each, side by side.
-import { records } from '../../http/client.js';
-import { esc, icon, chips, bindChips, runJob, watchJob, activeJob, progressCard, updateProgress, errorCallout, toast, store, persist, setUrl, bindTips } from '../../lib.js';
+import { records, tiktokCommentData } from '../../http/client.js';
+import { esc, icon, chips, bindChips, runJob, watchJob, activeJob, progressCard, updateProgress, errorCallout, toast, store, persist, setUrl, bindTips, fmt, ago } from '../../lib.js';
 import { scope } from '../../dom.js';
 import { historyList } from '../../components/history-list.js';
 import { videoAnalysis } from '../../components/video-analysis.js';
@@ -8,7 +8,7 @@ import { videoAnalysis } from '../../components/video-analysis.js';
 const KIND = 'tiktok_video_analysis';
 const PATH = '/tiktok/video';
 const MAX = 10;
-const FORM = { videos: '', script: true, comments: 100, replies: true };
+const FORM = { videos: '', script: true, comments: 100, replies: true, reuse: true };
 const TIKTOK = /^(https?:\/\/)?([a-z0-9-]+\.)*tiktok\.com\//i;
 const YOUTUBE = /^(https?:\/\/)?([a-z0-9-]+\.)*(youtube\.com|youtu\.be)\//i;
 
@@ -43,7 +43,9 @@ export async function mount(root, params) {
         <label class="check"><input type="checkbox" data-k="script" ${st.script ? 'checked' : ''}> Lấy script</label>
         <span class="small muted" style="margin-left:14px">Comment mỗi video</span>${chips('comments', [0, 100, 300].map((v) => ({ v, label: v ? String(v) : 'Không lấy' })), st.comments)}
         <label class="check" data-replies-wrap><input type="checkbox" data-k="replies" ${st.replies ? 'checked' : ''}> Lấy cả trả lời</label>
+        <label class="check" data-reuse-wrap title="Video nào đã có đủ comment (từ Thu thập bình luận, lần phân tích trước hoặc Insight) thì dùng lại, không lấy lại từ TikTok"><input type="checkbox" data-k="reuse" ${st.reuse ? 'checked' : ''}> Dùng lại comment đã thu thập (nếu đủ)</label>
       </div>
+      <div class="help small" data-known></div>
       <div class="row" style="margin-top:14px"><button type="button" class="btn primary lg" data-run>${icon('bars')} Phân tích</button><span class="muted small" data-eta></span></div>
     </div>
     <div data-prog style="margin-top:14px"></div>
@@ -75,7 +77,20 @@ export async function mount(root, params) {
     const secs = r.ok.length * (10 + (st.comments ? (st.comments === 300 ? 25 : 10) : 0));
     root.querySelector('[data-eta]').textContent = r.ok.length ? `Dự kiến khoảng ${secs < 90 ? `${secs} giây` : `${Math.round(secs / 60)} phút`}` : '';
     /** @type {HTMLElement} */ (root.querySelector('[data-replies-wrap]')).hidden = !st.comments;
+    /** @type {HTMLElement} */ (root.querySelector('[data-reuse-wrap]')).hidden = !st.comments;
+    known(r.ok);
     return r;
+  }
+  // Which pasted videos already have comments collected (any screen): said here, reused when the box is ticked.
+  let knownSeq = 0;
+  async function known(links) {
+    const el = /** @type {HTMLElement} */ (root.querySelector('[data-known]'));
+    const ids = links.map((l) => l.match(/\/(?:video|photo)\/(\d{15,25})/)?.[1] ?? (/^\d{15,25}$/.test(l) ? l : null)).filter(Boolean);
+    const mine = ++knownSeq;
+    if (!ids.length || !st.comments) return void (el.innerHTML = '');
+    const cov = await tiktokCommentData.coverage(ids).catch(() => []);
+    if (mine !== knownSeq) return;
+    el.innerHTML = cov.length ? `${cov.length} video đã có comment: ${cov.map((c) => `<a href="#/tiktok/comments?video=${esc(c.videoId)}">${fmt(c.parents)} gốc + ${fmt(c.replies)} trả lời (${ago(c.lastSeen)})</a>`).join(' · ')}. Chỉ dùng lại khi đủ ${st.comments} comment gốc hoặc đã lấy gần hết comment của video; thiếu thì lấy mới.` : '';
   }
   const save = () => persist('tt-video-form', st);
   linksEl.addEventListener('input', () => ((st.videos = linksEl.value), save(), check()));
@@ -107,7 +122,7 @@ export async function mount(root, params) {
     const r = check();
     if (!r.ok.length) return toast('Dán ít nhất một link TikTok', 'error');
     if (r.ok.length > MAX) return toast(`Tối đa ${MAX} video mỗi lần`, 'error');
-    const body = { videos: r.ok.join('\n'), script: st.script, comments: st.comments, replies: st.replies };
+    const body = { videos: r.ok.join('\n'), script: st.script, comments: st.comments, replies: st.replies, reuse: st.reuse };
     shownId = null;
     out.innerHTML = '';
     follow(`Đang phân tích ${r.ok.length} video`, (onProgress) => runJob(KIND, body, onProgress));
