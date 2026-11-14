@@ -8,6 +8,7 @@ export const KINDS = {
   tiktok_topic: { label: 'Tìm theo chủ đề', path: '/tiktok/topic', icon: 'compass', platform: 'tiktok' },
   tiktok_insight: { label: 'Insight khách hàng', path: '/tiktok/insight', icon: 'message', platform: 'tiktok' },
   tiktok_video_analysis: { label: 'Phân tích video', path: '/tiktok/video', icon: 'bars', platform: 'tiktok' },
+  tiktok_channel: { label: 'Phân tích kênh', path: '/tiktok/channel', icon: 'users', platform: 'tiktok' },
   tiktok_search: { label: 'Tìm video', path: '/tiktok/search', icon: 'search', platform: 'tiktok' },
   tiktok_comments: { label: 'Comment', path: '/tiktok/comments', icon: 'message', platform: 'tiktok' },
   research: { label: 'Nghiên cứu chủ đề', path: '/research', icon: 'compass', platform: 'youtube' },
@@ -34,6 +35,7 @@ export const recordHref = (r) => (KINDS[r.kind] ? `#${KINDS[r.kind].path}?id=${r
  * @param {{kind: string, status: string, params?: any, result?: any}} j
  */
 export function jobHref(j) {
+  if (j.kind === 'follow_refresh') return '#/follows'; // results live on the follow list, not in a record
   const k = KINDS[j.kind];
   if (!k) return '#/';
   if (j.kind === 'research_comments' && j.params?.recordId) return `#${k.path}?id=${j.params.recordId}`;

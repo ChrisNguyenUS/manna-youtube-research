@@ -1,5 +1,5 @@
 import { status as statusApi, shutdown, jobs as jobsApi } from './http/client.js';
-import { icon, refreshJobs, loadSaved, loadMetrics, esc, toast, store, persist, leaveView } from './lib.js';
+import { icon, refreshJobs, loadSaved, loadFollows, loadMetrics, esc, toast, store, persist, leaveView } from './lib.js';
 
 /**
  * The sidebar. One entry per job to be done; screens that work on the same thing share an entry and show as tabs
@@ -17,6 +17,7 @@ const GROUPS = [
       { icon: 'compass', label: 'Tìm theo chủ đề', tabs: [['/tiktok/topic', 'Tìm theo chủ đề', () => import('./views/tiktok/topic.js')]] },
       { icon: 'message', label: 'Insight khách hàng', tabs: [['/tiktok/insight', 'Insight khách hàng', () => import('./views/tiktok/insight.js')]] },
       { icon: 'bars', label: 'Phân tích video', tabs: [['/tiktok/video', 'Phân tích video', () => import('./views/tiktok/video.js')]] },
+      { icon: 'users', label: 'Phân tích kênh', tabs: [['/tiktok/channel', 'Phân tích kênh', () => import('./views/tiktok/channel.js')]] },
       {
         icon: 'play', label: 'Video & comment',
         tabs: [
@@ -57,6 +58,7 @@ const GROUPS = [
   {
     key: 'library', title: 'Lưu trữ',
     items: [
+      { icon: 'eye', label: 'Theo dõi', tabs: [['/follows', 'Kênh đang theo dõi', () => import('./views/follows.js')]] },
       { icon: 'clock', label: 'Lịch sử', tabs: [['/history', 'Lịch sử', () => import('./views/history.js')]] },
       { icon: 'bookmark', label: 'Đã lưu', tabs: [['/saved', 'Đã lưu', () => import('./views/saved.js')]] },
       { icon: 'settings', label: 'Cài đặt', tabs: [['/settings', 'Cài đặt', () => import('./views/settings.js')]] },
@@ -181,7 +183,7 @@ power.addEventListener('click', async () => {
 
 window.addEventListener('hashchange', () => stopped || route());
 window.addEventListener('unhandledrejection', (e) => toast(e.reason?.message || String(e.reason), 'error'));
-await Promise.all([loadSaved(), loadMetrics()]);
+await Promise.all([loadSaved(), loadFollows(), loadMetrics()]);
 route();
 refreshJobs();
 status();

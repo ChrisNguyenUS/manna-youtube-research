@@ -1,6 +1,6 @@
 import { scope } from '../dom.js';
 import { records } from '../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, fmt, full, mult, ago, emptyState, thumb, ytVideo, ytChannel, dur, ageText, bindTips, isSaved, toggleSave, setUrl, resumeJob, errorCallout } from '../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, fmt, full, mult, ago, emptyState, thumb, ytVideo, ytChannel, dur, ageText, bindTips, isSaved, toggleSave, isFollowing, followLabel, toggleFollow, setUrl, resumeJob, errorCallout } from '../lib.js';
 import { viewsChart, hbars, patternList, phraseChips } from '../components/index.js';
 
 export async function mount(root, params) {
@@ -45,6 +45,7 @@ export async function mount(root, params) {
           <div class="muted small"><span style="color:var(--accent)">${esc(info.handle || '')}</span> · phân tích ${ago(rec.created_at)}${info.country ? ` · ${esc(info.country)}` : ''}${info.joined ? ` · tạo kênh ${new Date(info.joined).toLocaleDateString('vi-VN')}` : ''}</div></div>
         <span class="spacer"></span>
         <button class="btn sm ${isSaved('channel', info.id) ? 'on' : ''}" data-save>${icon('bookmark')} ${isSaved('channel', info.id) ? 'Đã lưu' : 'Lưu kênh'}</button>
+        <button class="btn sm ${isFollowing('youtube', info.id) ? 'on' : ''}" data-follow>${followLabel('youtube', info.id)}</button>
         <button class="btn sm" data-rerun>${icon('refresh')} Phân tích lại</button>
         <a class="btn sm" href="${records.exportUrl(id, 'md')}">${icon('download')} Markdown</a>
         <a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div></div>
@@ -75,6 +76,8 @@ export async function mount(root, params) {
       await toggleSave('channel', info.id, info.title, { id: info.id, title: info.title, handle: info.handle, avatar: info.avatar, subs: info.subs, medianViews: stats.medianAll, country: info.country });
       e.currentTarget.innerHTML = `${icon('bookmark')} ${isSaved('channel', info.id) ? 'Đã lưu' : 'Lưu kênh'}`;
     });
+    out.querySelector('[data-follow]').addEventListener('click', (e) => toggleFollow('youtube', info.id, info.title,
+      { title: info.title, handle: info.handle, avatar: info.avatar, followers: info.subs, medianViews: stats.medianAll, url: ytChannel(info) }, /** @type {HTMLElement} */ (e.currentTarget)));
     shown.on(out, 'click', '[data-cm]', (e, b) => window.__go('/comments', { videos: b.dataset.cm }));
   }
 

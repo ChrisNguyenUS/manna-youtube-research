@@ -20,6 +20,8 @@ import { makeTikTokInsight, makeTikTokInsightTopics } from './features/tiktok/in
 import { makeTikTokScrape } from './features/tiktok/scrape.js';
 import { makeTikTokTopicKeywords, makeTikTokTopicScan } from './features/tiktok/topic.js';
 import { makeTikTokVideoAnalysis } from './features/tiktok/video-analysis.js';
+import { makeTikTokChannelAnalysis } from './features/tiktok/channel.js';
+import { makeFollows } from './features/follows.js';
 
 /**
  * @param {{config?: ReturnType<typeof loadConfig>, source?: import('./ports/youtube-source.js').YouTubeSource, store?: import('./store/sqlite/index.js').Store,
@@ -58,6 +60,8 @@ export function createApp({ config = loadConfig(), source, store, tiktok } = {})
     tiktokTopicKeywords: makeTikTokTopicKeywords({ tiktok }),
     tiktokTopicScan: makeTikTokTopicScan({ tiktok, records: base.records, now: base.now }),
     tiktokVideoAnalysis: makeTikTokVideoAnalysis({ tiktok, records: base.records, now: base.now }),
+    follows: makeFollows({ ...base, tiktok }),
+    tiktokChannel: makeTikTokChannelAnalysis({ tiktok, records: base.records, now: base.now, settings }),
   };
 
   /** Job kind → handler. ctx.progress throws after cancel, which is how jobs stop. */
@@ -80,6 +84,8 @@ export function createApp({ config = loadConfig(), source, store, tiktok } = {})
   handlers.tiktok_comments = (p, ctx) => features.tiktokComments(p, ctx.progress);
   handlers.tiktok_topic = (p, ctx) => features.tiktokTopicScan(p, ctx.progress);
   handlers.tiktok_video_analysis = (p, ctx) => features.tiktokVideoAnalysis(p, ctx.progress);
+  handlers.tiktok_channel = (p, ctx) => features.tiktokChannel(p, ctx.progress);
+  handlers.follow_refresh = (p, ctx) => features.follows.refresh(p, ctx.progress);
   const runner = createRunner({ jobsRepo: store.jobs, handlers, onCancelled: (job) => store.records.removeByJob(job.id) });
   return {
     config, store, source, tiktok, features, runner, ws, settings, close: () => tiktok.close(),

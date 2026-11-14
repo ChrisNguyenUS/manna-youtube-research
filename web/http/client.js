@@ -76,3 +76,17 @@ export const tiktokInsight = {
 };
 /** @param {string[]} ids */
 export const compareChannels = (ids) => api('/compare', { method: 'POST', body: { ids } });
+/** "Theo dõi": followed YouTube/TikTok channels. Checking them is the follow_refresh job. */
+export const follows = {
+  /** @param {'youtube'|'tiktok'} [platform] */
+  list: (platform) => api(`/follows${q({ platform })}`),
+  keys: () => api('/follows/keys'),
+  /** @param {{platform: string, ref: string, title?: string, data?: any}} f */
+  add: (f) => api('/follows', { method: 'POST', body: f }),
+  /** From what the user typed (@name or link). @param {'youtube'|'tiktok'} platform @param {string} input @returns {Promise<{platform: string, ref: string}>} */
+  addInput: (platform, input) => api('/follows/input', { method: 'POST', body: { platform, input } }),
+  /** @param {{platform: string, ref: string, note: string}} f */
+  note: (f) => api('/follows', { method: 'PATCH', body: f }),
+  /** @param {{platform: string, ref: string}} f */
+  remove: (f) => api('/follows', { method: 'DELETE', body: f }),
+};

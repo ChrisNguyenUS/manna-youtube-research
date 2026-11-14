@@ -19,6 +19,23 @@
  * @property {string} [musicTitle]
  * @property {string|null} cover    cover image (expiring link)
  * @property {string} query         keyword that found the video
+ * @property {boolean} [pinned]     pinned to the top of its creator's profile
+ * @property {'profile'|'search'} [from]  getProfile only: from the profile's newest list, or found by searching the creator (biased to popular videos)
+ */
+/**
+ * @typedef {object} TikTokProfile
+ * @property {string} id
+ * @property {string} username      without @
+ * @property {string} nickname
+ * @property {string|null} avatar   expiring link
+ * @property {string} bio
+ * @property {boolean} verified
+ * @property {boolean} private
+ * @property {number} followers
+ * @property {number} following
+ * @property {number} likes         total hearts
+ * @property {number} videoCount
+ * @property {string} url
  */
 /**
  * @typedef {object} TikTokComment
@@ -44,6 +61,7 @@
  * @property {(urlOrId: string) => Promise<{id: string, url: string}>} resolveVideo   expands vm.tiktok.com / vt.tiktok.com
  * @property {(id: string, o?: {max?: number, replies?: boolean, maxRepliesPerComment?: number}, onProgress?: (n: number) => void) => Promise<{comments: TikTokComment[], total: number}>} getComments
  * @property {(urlOrId: string) => Promise<{video: TikTokVideo, transcript: Transcript|null}>} getVideo   one page load: numbers + subtitles (null when it has none). Throws code 'video_unavailable' | 'tiktok_blocked'
+ * @property {(input: string, o?: {max?: number, search?: 'always'|'fallback'}, onProgress?: (n: number) => void) => Promise<{profile: TikTokProfile, videos: TikTokVideo[]}>} getProfile   a creator (@name, profile or video link) and their videos: the newest from the profile, plus more found by search (search: 'fallback' searches only when the profile gave none). Throws code 'invalid_input' | 'channel_not_found' | 'tiktok_blocked' | 'tiktok_login_required'
  * @property {() => Promise<LoginStatus>} login   opens a visible window; the user signs in to TikTok themselves; saves the session
  * @property {() => LoginStatus} loginStatus
  * @property {() => Promise<void>} logout          forgets the saved session

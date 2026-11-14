@@ -1,4 +1,4 @@
-import { jobs, saved as savedApi, metrics, tiktokLogin } from './http/client.js';
+import { jobs, saved as savedApi, metrics, tiktokLogin, follows as followsApi } from './http/client.js';
 import { jobHref } from './kinds.js';
 // Shared helpers for all views.
 
@@ -207,7 +207,7 @@ export async function refreshJobs() {
     /* server restarting */
   }
 }
-const LABELS = { tiktok_topic: 'Tìm theo chủ đề TikTok', tiktok_video_analysis: 'Phân tích video TikTok', tiktok_search: 'Tìm video TikTok', tiktok_insight: 'Insight TikTok', tiktok_comments: 'Comment TikTok', video_search: 'Tìm video', channel_search: 'Tìm kênh', channel_analysis: 'Phân tích kênh', research: 'Nghiên cứu chủ đề', research_comments: 'Đọc comment', comments: 'Lấy comment', idea_check: 'Chấm điểm từ khoá', keyword_score: 'Chấm điểm từ khoá liên quan', keywords: 'Từ khoá' };
+const LABELS = { tiktok_channel: 'Phân tích kênh TikTok', follow_refresh: 'Kiểm tra kênh theo dõi', tiktok_topic: 'Tìm theo chủ đề TikTok', tiktok_video_analysis: 'Phân tích video TikTok', tiktok_search: 'Tìm video TikTok', tiktok_insight: 'Insight TikTok', tiktok_comments: 'Comment TikTok', video_search: 'Tìm video', channel_search: 'Tìm kênh', channel_analysis: 'Phân tích kênh', research: 'Nghiên cứu chủ đề', research_comments: 'Đọc comment', comments: 'Lấy comment', idea_check: 'Chấm điểm từ khoá', keyword_score: 'Chấm điểm từ khoá liên quan', keywords: 'Từ khoá' };
 
 /**
  * An error and the ways out of it: sign in to TikTok when that is what is missing, run the job again when there was one.
@@ -380,6 +380,32 @@ export async function saveMany(kind, items, what) {
   }
   toast(fresh.length ? `Đã lưu ${fresh.length} ${what}` : `${items.length} ${what} này đã lưu từ trước`, '', { href: `#/saved?tab=${kind}`, label: 'Mở Đã lưu' });
   return fresh.length;
+}
+
+// ---------- followed channels ----------
+let followKeys = new Set();
+export async function loadFollows() {
+  followKeys = new Set(await followsApi.keys().catch(() => []));
+}
+/** @param {'youtube'|'tiktok'} platform @param {string} ref YouTube channel id | TikTok username (lower case) */
+export const isFollowing = (platform, ref) => followKeys.has(`${platform}:${ref}`);
+/** The label of a follow button. */
+export const followLabel = (platform, ref) => `${icon('eye')} ${isFollowing(platform, ref) ? 'Đang theo dõi' : 'Theo dõi'}`;
+/** Follow or unfollow; updates `btn` (label and .on). @param {'youtube'|'tiktok'} platform @param {string} ref @param {string} title @param {any} data @param {HTMLElement} [btn] */
+export async function toggleFollow(platform, ref, title, data, btn) {
+  if (isFollowing(platform, ref)) {
+    await followsApi.remove({ platform, ref });
+    followKeys.delete(`${platform}:${ref}`);
+    toast('Đã bỏ theo dõi');
+  } else {
+    await followsApi.add({ platform, ref, title, data });
+    followKeys.add(`${platform}:${ref}`);
+    toast('Đã theo dõi kênh', '', { href: '#/follows', label: 'Mở Theo dõi' });
+  }
+  if (btn) {
+    btn.classList.toggle('on', isFollowing(platform, ref));
+    btn.innerHTML = followLabel(platform, ref);
+  }
 }
 
 export const median = (a) => {
