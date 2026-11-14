@@ -161,10 +161,16 @@ export async function getVideoDetails(videoId, { likes = false } = {}) {
     description: d.shortDescription || '',
     isShort: d.lengthSeconds != null && Number(d.lengthSeconds) <= 180 && !!m.isShortsEligible,
     likes: null,
+    comments: null,
+    isLiveContent: d.isLiveContent === true,
   };
   if (likes) {
     try {
       const n = await call('next', { videoId });
+      // Public comment count: the comments panel's header shows it (absent when comments are off).
+      const panel = (n?.engagementPanels || []).map((x) => x?.engagementPanelSectionListRenderer).find((r) => r?.panelIdentifier === 'engagement-panel-comments-section');
+      const count = text(panel?.header?.engagementPanelTitleHeaderRenderer?.contextualInfo);
+      out.comments = count ? parseCount(count) : null;
       const lb = findFirst(n, 'likeButtonViewModel');
       const a11y = JSON.stringify(lb || {}).match(/along with ([\d,]+) other/);
       if (a11y) out.likes = Number(a11y[1].replace(/,/g, '')) + 1;

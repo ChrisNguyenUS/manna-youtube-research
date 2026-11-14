@@ -9,7 +9,7 @@ import { createRunner } from './jobs/runner.js';
 import { makeEnrich, recordsFor } from './features/shared.js';
 import { makeVideoSearch } from './features/video-search.js';
 import { makeChannelSearch } from './features/channel-search.js';
-import { makeChannelAnalysis, makeCompareChannels } from './features/channel-analysis.js';
+import { makeChannelAnalysis, makeCompareChannels, makeChannelHistory } from './features/channel-analysis.js';
 import { makeFetchComments } from './features/comments.js';
 import { makeResearch, makeResearchComments } from './features/topic-research.js';
 import { makeKeywordIdeas } from './features/keyword-ideas.js';
@@ -47,6 +47,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok } = {})
     channelSearch: makeChannelSearch({ ...base, enrich }),
     analyzeChannel: makeChannelAnalysis({ ...base, enrich }),
     compareChannels: makeCompareChannels(base),
+    channelHistory: makeChannelHistory(base),
     fetchComments: makeFetchComments({ ...base, enrich }),
     research: makeResearch({ ...base, enrich, videoSearch, keywordIdeas, researchComments }),
     researchComments,

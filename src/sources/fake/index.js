@@ -16,7 +16,7 @@ export function createFakeSource({ videos = VIDEOS, channels = CHANNELS } = {}) 
     getChannel: (id) => count(channels[id]),
     getChannelVideos: (id, o = {}) => count(CHANNEL_VIDEOS(id).slice(0, o.max ?? 30)),
     getChannelShorts: () => count([]),
-    getVideo: (id) => count({ id, title: 'x', channelId: null, channelTitle: '', views: 1, durationSec: 60, publishedAt: '2026-10-01T00:00:00Z', category: null, tags: [], description: '', isShort: false, likes: 10 }),
+    getVideo: (id) => count({ id, title: 'x', channelId: null, channelTitle: '', views: 1, durationSec: 60, publishedAt: '2026-10-01T00:00:00Z', category: null, tags: [], description: '', isShort: false, likes: 10, comments: 3 }),
     getComments: () => count({ comments: [{ id: 'c1', text: 'Làm phần 2 đi ad?', likes: 5, replies: 1, published: '1 day ago', ageDays: 1, isReply: false, byCreator: false, hearted: false }], disabled: false }),
     suggest: (q) => count([q, `${q} hay nhất`]),
     mapLimit: (items, fn, onEach) =>

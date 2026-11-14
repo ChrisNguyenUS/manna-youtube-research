@@ -48,7 +48,8 @@ export function makeEnrich(deps) {
 
   async function videoDetails(id, { likes = false } = {}) {
     const hit = store.cache.getVideo(id);
-    if (hit && (!likes || hit.likes != null)) return hit;
+    // Details cached before comment counts were read have no `comments` key: fetch them again once.
+    if (hit && (!likes || (hit.likes != null && 'comments' in hit))) return hit;
     const d = await source.getVideo(id, { likes });
     store.cache.putVideo(d);
     return d;

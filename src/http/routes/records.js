@@ -117,6 +117,8 @@ function exportRecord({ app, ws, params, query }) {
 }
 
 export const recordRoutes = [
+  // Snapshots of one YouTube channel's public numbers: one per saved analysis of it, oldest first.
+  { method: 'GET', path: '/api/v1/channels/:id/history', handler: ({ app, params }) => app.features.channelHistory(String(params.id)) },
   { method: 'GET', path: '/api/v1/records', handler: ({ app, ws, query }) => app.store.records.list(ws, query.get('kind'), Number(query.get('limit')) || 50) },
   {
     // History page: every result, filtered by kinds (comma separated) and by words of the title (accents and case ignored), paged.
