@@ -90,3 +90,5 @@ export const follows = {
   /** @param {{platform: string, ref: string}} f */
   remove: (f) => api('/follows', { method: 'DELETE', body: f }),
 };
+/** Snapshots of a YouTube channel's public numbers, one per saved analysis (oldest first). @param {string} id */
+export const channelHistory = (id) => api(`/channels/${encodeURIComponent(id)}/history`);

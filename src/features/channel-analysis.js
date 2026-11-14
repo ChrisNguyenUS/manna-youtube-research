@@ -27,13 +27,16 @@ export function makeChannelAnalysis(deps) {
     const details = new Map();
     await source.mapLimit(
       vids.slice(0, exactDates),
-      async (v) => details.set(v.id, await videoDetails(v.id)),
+      async (v) => details.set(v.id, await videoDetails(v.id, { likes: true })),
       (done, total) => progress({ step: 'Lấy ngày đăng chính xác', done, total }),
     );
     const long = addVideoMetrics(
       vids.filter((v) => !v.isLive).map((v) => {
         const d = details.get(v.id);
-        return d && !d.error ? { ...v, publishedAt: d.publishedAt, channelSubs: info.subs } : { ...v, channelSubs: info.subs };
+        // Likes, comments, category and tags only exist for the videos fetched one by one (the newest `exactDates`).
+        return d && !d.error
+          ? { ...v, publishedAt: d.publishedAt, channelSubs: info.subs, likes: d.likes ?? null, comments: d.comments ?? null, category: d.category ?? null, tags: (d.tags || []).slice(0, 30), detailed: true }
+          : { ...v, channelSubs: info.subs };
       }),
       { minSubs: 0 },
     );
@@ -62,6 +65,7 @@ export function makeChannelAnalysis(deps) {
         exactFrom: exact[exact.length - 1]?.publishedAt || null,
         exactTo: exact[0]?.publishedAt || null,
         outlierMultiple: mult,
+        detailSample: details.size,
       },
       videos,
       shorts: shorts.slice(0, 30),
@@ -95,5 +99,29 @@ export function makeCompareChannels(deps) {
         dayOfWeek: r.data.dayOfWeek,
         top: [...r.data.videos].sort((a, b) => b.views - a.views).slice(0, 5),
       }));
+  };
+}
+
+/**
+ * Public-number snapshots of one channel: every saved analysis of it is one snapshot (oldest first).
+ * Nothing before the first analysis exists, and nothing is filled in between.
+ * @param {import('./shared.js').Deps & Record<string, any>} deps
+ */
+export function makeChannelHistory({ store, ws }) {
+  /** @param {string} channelId */
+  return function channelHistory(channelId) {
+    const rows = store.records.list(ws, 'channel_analysis', 1000).filter((r) => r.ref === channelId).slice(0, 60);
+    return rows
+      .map((r) => store.records.get(ws, r.id))
+      .filter(Boolean)
+      .map((r) => ({
+        recordId: r.id,
+        at: r.created_at,
+        subs: r.data.info?.subs ?? null,
+        totalViews: r.data.info?.totalViews ?? null,
+        videoCount: r.data.info?.videoCount ?? null,
+        views: Object.fromEntries([...(r.data.videos || []), ...(r.data.shorts || [])].map((v) => [v.id, v.views])),
+      }))
+      .sort((a, b) => a.at - b.at);
   };
 }
