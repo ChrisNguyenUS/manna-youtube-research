@@ -4,6 +4,7 @@
 // that already do it.
 import { tagComments, intentCounts } from '../../core/analysis/comment-intents.js';
 import { voiceTopics } from '../../core/analysis/customer-voice.js';
+import { reuseState } from '../../core/tiktok/comment-reuse.js';
 
 const COMMENT_KINDS = ['tiktok_comments', 'tiktok_video_analysis', 'tiktok_insight'];
 
@@ -74,8 +75,16 @@ export function makeCommentData({ store, ws }) {
     };
   }
 
-  /** @param {string[]} videoIds */
-  const coverage = (videoIds) => store.comments.coverage(ws, videoIds.map(String));
+  /**
+   * How much of each video is already collected, and whether that can stand in for a new collection of
+   * `max` parent comments (with replies or not). Videos with nothing collected are left out.
+   * @param {string[]} videoIds @param {{max?: number, replies?: boolean}} [want]
+   */
+  function coverage(videoIds, { max = 100, replies = true } = {}) {
+    const ids = videoIds.map(String);
+    const runs = store.comments.runs(ws, ids);
+    return store.comments.coverage(ws, ids).map((c) => ({ ...c, ...reuseState(c, runs.filter((r) => r.videoId === c.videoId), { max, replies }) }));
+  }
 
   /** "Thu thập bình luận" runs, newest first, with what each collected. @param {number} [limit] */
   function collections(limit = 100) {

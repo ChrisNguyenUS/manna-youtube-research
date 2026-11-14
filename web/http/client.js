@@ -98,8 +98,10 @@ export const tiktokCommentData = {
   videos: () => api('/tiktok/comment-videos'),
   /** "Thu thập bình luận" runs, newest first. */
   collections: () => api('/tiktok/comment-collections'),
-  /** How much of each video is already collected. @param {string[]} ids */
-  coverage: (ids) => api(`/tiktok/comment-coverage?ids=${encodeURIComponent(ids.join(','))}`),
+  /** How much of each video is already collected, and whether it can be reused for `max` parent comments. @param {string[]} ids @param {{max?: number, replies?: boolean}} [want] */
+  coverage: (ids, { max = 100, replies = true } = {}) => api(`/tiktok/comment-coverage?ids=${encodeURIComponent(ids.join(','))}&max=${max}&replies=${replies}`),
+  /** "Phân tích video" runs with their videos, script status and comment counts. @param {number} [limit] */
+  analyses: (limit = 20) => api(`/tiktok/video-analyses?limit=${limit}`),
   /** All collected comments of these videos, with intents and question groups. @param {string[]} ids */
   of: (ids) => api(`/tiktok/comments?videos=${encodeURIComponent(ids.join(','))}`),
 };
