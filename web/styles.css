@@ -306,9 +306,14 @@ a.job-title:hover { color: var(--accent); text-decoration: underline; }
 
 .tip { position: fixed; pointer-events: none; background: var(--text); color: #fff; font-size: 12px; padding: 6px 9px; border-radius: 6px; max-width: 320px; z-index: 60; }
 
-.tt-cover { aspect-ratio: 3 / 4; background: var(--line); display: grid; place-items: center; }
+.tt-cover, .vcard .tt-cover { aspect-ratio: 3 / 4; background: var(--line); display: grid; place-items: center; }
 .tt-cover::before { content: '▶'; position: absolute; color: var(--muted); font-size: 28px; }
-.tt-cover img { position: relative; z-index: 1; }
+/* The cover sits above the ▶ placeholder and fills the 3:4 box whatever its own size; badges and the tick box sit above the cover. */
+.tt-cover img { position: absolute; inset: 0; z-index: 1; }
+.tt-card .ov { z-index: 2; }
+.tt-card .ov.sel { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; cursor: pointer; color: var(--text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); }
+.tt-card .ov.sel input { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.tt-card:has([data-sel]:checked) { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 .nav-item .tt-mark { font-weight: 700; font-size: 11px; color: var(--muted); }
 
 /* ---------- Lịch sử, Đã lưu ---------- */
