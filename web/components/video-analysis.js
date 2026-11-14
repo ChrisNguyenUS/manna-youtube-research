@@ -99,7 +99,11 @@ export function videoAnalysis(box, { exportUrl }) {
     if (!e.comments.length) return void (body.innerHTML = `<div class="card-pad">${emptyState('Chưa đọc comment nào', rec.data.params.comments ? 'Video chưa có comment có chữ.' : 'Lần chạy này tắt phần comment.')}</div>`);
     // The comment browser of the insight report, fed with this one video (no record id: saved quotes must not link to an insight report).
     const ctx = insightContext({ id: undefined, title: titleOf(e), data: { comments: e.comments, videos: [{ ...e.video, rank: sel + 1 }], keywords: [] } }, e.groups);
-    offTab = commentBrowser(body, ctx, { base: ctx.all, filters: ['topic'] }).off;
+    const parents = e.comments.filter((c) => !c.parentId).length;
+    const r = e.commentsReused;
+    const head = `<div class="cx-head"><span><b>${fmt(parents)}</b> comment gốc · <b>${fmt(e.comments.length - parents)}</b> trả lời${e.video?.comments != null ? ` · video có ${fmt(e.video.comments)} bình luận trên TikTok` : ''}</span>
+      ${r ? `<span class="cx-reused" title="Không lấy lại từ TikTok">Dùng lại comment đã lấy ${new Date(r.at).toLocaleString('vi-VN')}</span>` : ''}</div>`;
+    offTab = commentBrowser(body, ctx, { base: ctx.all, filters: ['topic'], mode: 'embedded', head, openFull: `#/tiktok/comments?video=${encodeURIComponent(e.video.id)}` }).off;
   }
 
   function detail() {

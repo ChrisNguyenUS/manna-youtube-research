@@ -48,14 +48,15 @@ export const FAKE_CHANNEL_VIDEOS = [
 /** Ids with special behaviour in getVideo. */
 export const FAKE_GONE_ID = '7000000000000000009';
 
-/** @returns {import('../../ports/tiktok-source.js').TikTokSource & {state: {closed: number, searches: number, logins: number}}} */
+/** @returns {import('../../ports/tiktok-source.js').TikTokSource & {state: {closed: number, searches: number, logins: number, videoComments: number|null}}} */
 export const FAKE_RELATED = {
   suggestions: ['thi quốc tịch mỹ 2026', 'thi quốc tịch mỹ mất bao lâu', 'thi quốc tịch mỹ hết bao nhiêu tiền', 'thi quốc tịch nhật'],
   related: ['phỏng vấn quốc tịch mỹ', 'cách học 100 câu hỏi quốc tịch', 'thi quốc tịch mỹ mới nhất'],
 };
 
 export function createFakeTikTok({ videos = FAKE_VIDEOS, comments = FAKE_COMMENTS, delayMs = 0, searchReady = true, related = FAKE_RELATED } = {}) {
-  const state = { closed: 0, searches: 0, logins: 0 };
+  /** @type {{closed: number, searches: number, logins: number, videoComments: number|null}} videoComments: override the comment count getVideo reports */
+  const state = { closed: 0, searches: 0, logins: 0, videoComments: null };
   /** @type {import('../../ports/tiktok-source.js').LoginStatus} */
   let login = { loggedIn: false, savedAt: null, expiresAt: null };
   let requests = 0;
@@ -95,7 +96,7 @@ export function createFakeTikTok({ videos = FAKE_VIDEOS, comments = FAKE_COMMENT
       const v = videos.find((x) => x.id === id);
       if (id === FAKE_GONE_ID || !v) throw Object.assign(new Error('Video không còn hoặc đang để riêng tư'), { code: 'video_unavailable' });
       // Only the first fake video has subtitles, so tests cover both cases.
-      return { video: { ...v, query: '' }, transcript: id === videos[0].id ? { ...FAKE_TRANSCRIPT, segments: FAKE_TRANSCRIPT.segments.map((s) => ({ ...s })) } : null };
+      return { video: { ...v, query: '', ...(state.videoComments != null ? { comments: state.videoComments } : {}) }, transcript: id === videos[0].id ? { ...FAKE_TRANSCRIPT, segments: FAKE_TRANSCRIPT.segments.map((s) => ({ ...s })) } : null };
     },
     async getProfile(input, o = {}, onProgress) {
       if (!searchReady) throw Object.assign(new Error('Cần cài: npm run setup:tiktok'), { code: 'tiktok_setup_required' });

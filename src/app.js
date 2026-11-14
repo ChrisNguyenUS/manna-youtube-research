@@ -22,6 +22,7 @@ import { makeTikTokTopicKeywords, makeTikTokTopicScan } from './features/tiktok/
 import { makeTikTokVideoAnalysis } from './features/tiktok/video-analysis.js';
 import { makeTikTokChannelAnalysis } from './features/tiktok/channel.js';
 import { makeFollows } from './features/follows.js';
+import { makeCommentData } from './features/tiktok/comment-data.js';
 
 /**
  * @param {{config?: ReturnType<typeof loadConfig>, source?: import('./ports/youtube-source.js').YouTubeSource, store?: import('./store/sqlite/index.js').Store,
@@ -60,8 +61,9 @@ export function createApp({ config = loadConfig(), source, store, tiktok } = {})
     tiktokScrape: makeTikTokScrape({ tiktokSearch, now: base.now }),
     tiktokTopicKeywords: makeTikTokTopicKeywords({ tiktok }),
     tiktokTopicScan: makeTikTokTopicScan({ tiktok, records: base.records, now: base.now }),
-    tiktokVideoAnalysis: makeTikTokVideoAnalysis({ tiktok, records: base.records, now: base.now }),
+    tiktokVideoAnalysis: makeTikTokVideoAnalysis({ tiktok, records: base.records, now: base.now, comments: { coverage: (ids) => store.comments.coverage(ws, ids), ofVideo: (id) => store.comments.ofVideo(id) } }),
     follows: makeFollows({ ...base, tiktok }),
+    commentData: makeCommentData({ store, ws }),
     tiktokChannel: makeTikTokChannelAnalysis({ tiktok, records: base.records, now: base.now, settings }),
   };
 

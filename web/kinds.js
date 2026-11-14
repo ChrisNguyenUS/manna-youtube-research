@@ -10,7 +10,7 @@ export const KINDS = {
   tiktok_video_analysis: { label: 'Phân tích video', path: '/tiktok/video', icon: 'bars', platform: 'tiktok' },
   tiktok_channel: { label: 'Phân tích kênh', path: '/tiktok/channel', icon: 'users', platform: 'tiktok' },
   tiktok_search: { label: 'Tìm video', path: '/tiktok/search', icon: 'search', platform: 'tiktok' },
-  tiktok_comments: { label: 'Comment', path: '/tiktok/comments', icon: 'message', platform: 'tiktok' },
+  tiktok_comments: { label: 'Thu thập bình luận', path: '/tiktok/comments', icon: 'message', platform: 'tiktok' },
   research: { label: 'Nghiên cứu chủ đề', path: '/research', icon: 'compass', platform: 'youtube' },
   research_comments: { label: 'Đọc comment', path: '/research', icon: 'message', platform: 'youtube' },
   video_search: { label: 'Tìm video', path: '/videos', icon: 'search', platform: 'youtube' },
