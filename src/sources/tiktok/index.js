@@ -7,6 +7,9 @@ import { makeComments } from './comments.js';
 import { makeVideo } from './video.js';
 import { createSession } from './session.js';
 import { loginInWindow } from './login.js';
+import { usernameOf, fetchProfile, latestVideos } from './profile.js';
+import { isShortLink } from './parse.js';
+import { rethrowIfCancelled } from '../../core/cancel.js';
 
 const SETUP = 'Cần cài: npm run setup:tiktok';
 const playwrightInstalled = () => {
@@ -53,6 +56,42 @@ export function createTikTokSource({ fetch, loadPlaywright, hasPlaywright = play
         if (isMissingChromium(e)) throw setupRequired();
         throw e;
       }
+    },
+    async getProfile(input, o = {}, onProgress) {
+      let username = usernameOf(input);
+      if (!username && isShortLink(String(input).trim())) username = usernameOf((await comments.resolveVideo(String(input).trim())).url);
+      if (!username) throw Object.assign(new Error(`Không nhận ra kênh TikTok: ${input}`), { code: 'invalid_input' });
+      const profile = await fetchProfile(http, username);
+      if (profile.private || !profile.videoCount) return { profile, videos: [] };
+      if (!hasPlaywright()) throw setupRequired();
+      const max = o.max ?? 90;
+      /** @type {Map<string, any>} */
+      const all = new Map();
+      const add = (list, from) => {
+        for (const v of list) if (!all.has(v.id) && v.author.toLowerCase() === profile.username.toLowerCase()) all.set(v.id, { ...v, from });
+        onProgress?.(all.size);
+      };
+      try {
+        // TikTok sometimes sends the profile's list empty; a second page load usually gets it.
+        for (let attempt = 0; attempt < 2 && !all.size; attempt++) add(await latestVideos(browser, profile.username, sleep ? { sleep } : {}), 'profile');
+        if (o.search === 'fallback' && all.size) return { profile, videos: [...all.values()] };
+        // Search finds more of the creator's videos (mostly their popular ones); needs the user's sign-in.
+        for (const q of [`@${profile.username}`, profile.username]) {
+          if (all.size >= max) break;
+          try {
+            add(await searchKeyword(browser, q, { ...searchOpts, ...(sleep ? { sleep } : {}), signedIn: session.has, max: 90 }), 'search');
+          } catch (e) {
+            rethrowIfCancelled(e);
+            if (isMissingChromium(e) || !all.size) throw e; // the newest videos alone are still a result
+            break;
+          }
+        }
+      } catch (e) {
+        if (isMissingChromium(e)) throw setupRequired();
+        throw e;
+      }
+      if (!all.size) throw Object.assign(new Error('TikTok không cho tải video của kênh này, thử lại sau ít phút'), { code: 'tiktok_blocked' });
+      return { profile, videos: [...all.values()] };
     },
     login() {
       if (!hasPlaywright()) return Promise.reject(setupRequired());

@@ -14,7 +14,7 @@ test('search page: videos only, normalized, paging fields', () => {
     caption: 'Đậu rồi! #thiquoctichmy #n400', hashtags: ['thiquoctichmy', 'n400'], createdAt: '2024-10-19T12:00:00.000Z',
     durationSec: 45, plays: 1000, likes: 100, comments: 20, shares: 5, saves: 15, author: 'creator1',
     authorName: 'Creator One', authorVerified: true, musicTitle: 'original sound - creator1',
-    cover: 'https://p16.tiktokcdn.com/cover.jpg', query: 'thi quốc tịch mỹ',
+    cover: 'https://p16.tiktokcdn.com/cover.jpg', query: 'thi quốc tịch mỹ', pinned: false,
   });
   assert.equal(p.videos[1].createdAt, null);
   assert.deepEqual([p.videos[1].authorName, p.videos[1].authorVerified, p.videos[1].musicTitle], ['', false, ''], 'missing creator fields default to empty');

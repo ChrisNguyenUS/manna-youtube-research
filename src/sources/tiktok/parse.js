@@ -8,7 +8,7 @@ export function searchApiPath(keyword, offset, searchId) {
   return `/api/search/general/full/?${p}`;
 }
 
-function parseVideo(item, query) {
+export function parseVideo(item, query) {
   if (!item?.id || !item?.author) return null;
   const s = item.stats ?? {};
   const author = String(item.author.uniqueId ?? '');
@@ -30,6 +30,7 @@ function parseVideo(item, query) {
     musicTitle: String(item.music?.title ?? ''),
     cover: item.video?.cover ? String(item.video.cover) : null,
     query,
+    pinned: Boolean(item.isPinnedItem),
   };
 }
 
@@ -130,3 +131,40 @@ export function parseVideoPage(html) {
  * @template {{source: string}} S @param {S[]} subtitles @returns {S|null}
  */
 export const pickSubtitle = (subtitles) => subtitles.find((s) => s.source === 'ASR') ?? subtitles.find((s) => s.source !== 'MT') ?? null;
+
+/**
+ * A creator's profile page: the JSON TikTok embeds has the account and its totals (not its videos).
+ * @param {any} data  parsed __UNIVERSAL_DATA_FOR_REHYDRATION__
+ * @returns {{ok: true, profile: import('../../ports/tiktok-source.js').TikTokProfile} | {ok: false, reason: 'blocked'|'not_found'}}
+ */
+export function parseProfileData(data) {
+  const detail = data?.__DEFAULT_SCOPE__?.['webapp.user-detail'];
+  if (!detail) return { ok: false, reason: 'blocked' };
+  const u = detail.userInfo?.user;
+  const st = detail.userInfo?.stats ?? detail.userInfo?.statsV2 ?? {};
+  if (!u?.uniqueId) return { ok: false, reason: 'not_found' };
+  return {
+    ok: true,
+    profile: {
+      id: String(u.id ?? ''),
+      username: String(u.uniqueId),
+      nickname: String(u.nickname ?? ''),
+      avatar: u.avatarMedium || u.avatarThumb || null,
+      bio: String(u.signature ?? ''),
+      verified: Boolean(u.verified),
+      private: Boolean(u.privateAccount),
+      followers: Number(st.followerCount ?? 0),
+      following: Number(st.followingCount ?? 0),
+      likes: Number(st.heartCount ?? st.heart ?? 0),
+      videoCount: Number(st.videoCount ?? 0),
+      url: `https://www.tiktok.com/@${u.uniqueId}`,
+    },
+  };
+}
+
+/** One page of /api/post/item_list (a profile's videos, newest first, pinned ones on the first page). */
+export function parseItemList(body) {
+  if (!body || typeof body !== 'object') return { ok: false, videos: [], hasMore: false };
+  const videos = (Array.isArray(body.itemList) ? body.itemList : []).map((it) => parseVideo(it, '')).filter(Boolean);
+  return { ok: true, videos, hasMore: Boolean(body.hasMore) };
+}

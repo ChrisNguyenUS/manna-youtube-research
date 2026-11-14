@@ -14,6 +14,9 @@
  * @property {{list: (ws: string, kind?: string) => any[], put: (ws: string, kind: string, ref: string, title: string, data: any, note?: string) => void,
  *   note: (ws: string, kind: string, ref: string, note: string) => void, remove: (ws: string, kind: string, ref: string) => void, keys: (ws: string) => string[]}} saved
  * @property {{all: (ws: string) => Record<string, any>, set: (ws: string, o: Record<string, any>) => Record<string, any>}} settings
+ * @property {{list: (ws: string, platform?: string) => any[], get: (ws: string, platform: string, ref: string) => any, put: (ws: string, platform: string, ref: string, title: string, data: any) => void,
+ *   note: (ws: string, platform: string, ref: string, note: string) => void, remove: (ws: string, platform: string, ref: string) => void,
+ *   saveScan: (ws: string, platform: string, ref: string, o: {title?: string, data?: any, seen?: string[], lastScan: any}) => void, keys: (ws: string) => string[]}} follows  Followed YouTube/TikTok channels.
  * @property {any} jobs  Persistent jobs; only the job runner uses it.
  */
 

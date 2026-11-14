@@ -30,6 +30,21 @@ export const FAKE_TRANSCRIPT = {
     { start: 6, end: 40, text: 'câu đầu tiên là về tên và ngày sinh' },
   ],
 };
+/** A creator for getProfile: 12 newest videos (one pinned old hit, one recent outlier) + 2 found by search. */
+export const FAKE_PROFILE = {
+  id: '6800000000000000001', username: 'creator', nickname: 'Creator', avatar: null, bio: 'Chia sẻ kinh nghiệm thi quốc tịch', verified: false, private: false,
+  followers: 50_000, following: 10, likes: 2_000_000, videoCount: 140, url: 'https://www.tiktok.com/@creator',
+};
+/** @type {import('../../ports/tiktok-source.js').TikTokVideo[]} */
+export const FAKE_CHANNEL_VIDEOS = [
+  { ...video('7100000000000000000', 'Video ghim: đậu quốc tịch sau 3 tháng #quoctich', { plays: 900_000, age: 200, hashtags: ['quoctich'] }), pinned: true, from: /** @type {const} */ ('profile') },
+  ...[10_000, 120_000, 9_000, 11_000, 8_000, 12_000, 10_500, 9_500, 13_000, 7_000, 10_000].map((plays, i) => ({
+    ...video(`71000000000000000${String(i + 1).padStart(2, '0')}`, `Mẹo thi quốc tịch số ${i + 1}${i % 2 ? ' #quoctich' : ' #thiquoctich'}`, { plays, age: 1 + i * 3, hashtags: [i % 2 ? 'quoctich' : 'thiquoctich'] }),
+    durationSec: 20 + i * 10, pinned: false, from: /** @type {const} */ ('profile'),
+  })),
+  { ...video('7100000000000000090', 'Câu hỏi phỏng vấn hay gặp nhất', { plays: 400_000, age: 90 }), pinned: false, from: /** @type {const} */ ('search') },
+  { ...video('7100000000000000091', 'Hồ sơ N-400 cần những gì', { plays: 250_000, age: 60 }), pinned: false, from: /** @type {const} */ ('search') },
+];
 /** Ids with special behaviour in getVideo. */
 export const FAKE_GONE_ID = '7000000000000000009';
 
@@ -81,6 +96,16 @@ export function createFakeTikTok({ videos = FAKE_VIDEOS, comments = FAKE_COMMENT
       if (id === FAKE_GONE_ID || !v) throw Object.assign(new Error('Video không còn hoặc đang để riêng tư'), { code: 'video_unavailable' });
       // Only the first fake video has subtitles, so tests cover both cases.
       return { video: { ...v, query: '' }, transcript: id === videos[0].id ? { ...FAKE_TRANSCRIPT, segments: FAKE_TRANSCRIPT.segments.map((s) => ({ ...s })) } : null };
+    },
+    async getProfile(input, o = {}, onProgress) {
+      if (!searchReady) throw Object.assign(new Error('Cần cài: npm run setup:tiktok'), { code: 'tiktok_setup_required' });
+      requests++;
+      await wait();
+      const name = String(input).match(/@([\w.]+)/)?.[1] ?? String(input).trim();
+      if (name !== FAKE_PROFILE.username) throw Object.assign(new Error(`Không thấy kênh TikTok @${name}`), { code: 'channel_not_found' });
+      const list = (o.search === 'fallback' ? FAKE_CHANNEL_VIDEOS.filter((v) => v.from === 'profile') : FAKE_CHANNEL_VIDEOS).slice(0, o.max ?? 90).map((v) => ({ ...v }));
+      onProgress?.(list.length);
+      return { profile: { ...FAKE_PROFILE }, videos: list };
     },
     async login() {
       if (!searchReady) throw Object.assign(new Error('Cần cài: npm run setup:tiktok'), { code: 'tiktok_setup_required' });

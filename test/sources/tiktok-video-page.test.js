@@ -14,7 +14,7 @@ test('video page: the video with its numbers, and only WebVTT subtitles', () => 
     caption: 'Kết hôn giả sẽ không còn dễ #ditrumy #thexanh', hashtags: ['ditrumy', 'thexanh'], createdAt: '2024-10-19T12:00:00.000Z',
     durationSec: 47, plays: 251000, likes: 6300, comments: 412, shares: 980, saves: 1500,
     author: 'creator1', authorName: 'Creator Một', authorVerified: true, musicTitle: 'nhạc nền - Creator Một',
-    cover: 'https://p16.example/cover.jpeg', query: '',
+    cover: 'https://p16.example/cover.jpeg', query: '', pinned: false,
   });
   assert.deepEqual(p.subtitles, [
     { url: 'https://v16.example/sub-en.vtt', language: 'eng-US', source: 'MT' },

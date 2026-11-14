@@ -99,7 +99,7 @@ test('searches start from the saved sign-in and keep its refreshed cookies', asy
   const b = createBrowser({ loadPlaywright: pw.load, session });
   const vids = await searchKeyword(b, 'x', { sleep: noSleep, signedIn: session.has });
   assert.equal(vids.length, 1);
-  assert.deepEqual(pw.state.launches, [{ headless: true }]);
+  assert.deepEqual(pw.state.launches, [{ headless: true, args: ['--disable-blink-features=AutomationControlled'] }]);
   assert.equal(pw.state.contexts[0].storageState, session.file);
   assert.equal(pw.state.stored, 1, 'state saved back after the search');
   await b.close();

@@ -99,3 +99,22 @@ export function tiktokTopicSheets(d) {
     },
   ];
 }
+
+/** "Phân tích kênh" TikTok as Markdown: numbers, then the outliers worth studying, then every video. @param {any} d */
+export function tiktokChannelMarkdown(d) {
+  const { profile: p, stats: s } = d;
+  const row = (v) => `| ${cell(v.caption).slice(0, 90) || '(không caption)'} | ${n(v.plays)} | ×${v.outlierScore ?? '–'}${v.pinned ? ' (ghim)' : ''} | ${n(v.likes)} | ${n(v.comments)} | ${n(v.shares)} | ${day(v.createdAt)} | ${v.url} |`;
+  const head = '| Caption | View | So với trung vị | Tim | Comment | Share | Đăng | Link |\n|---|---|---|---|---|---|---|---|';
+  const top = d.videos.filter((v) => v.standout).sort((a, b) => b.outlierScore - a.outlierScore);
+  return [
+    `# Phân tích kênh TikTok @${p.username}${p.nickname ? ` (${cell(p.nickname)})` : ''}`, '', BANNER, '',
+    `- ${p.url}`, `- ${n(s.followers)} follower · ${n(s.likes)} tim · ${n(s.videoCount)} video`,
+    `- View trung vị mỗi video: ${n(s.medianPlays)} (từ ${s.baselineSample} video${s.baselineBiased ? ', có video lấy qua tìm kiếm nên có thể cao hơn thực tế' : ' mới nhất, bỏ video ghim'})`,
+    `- Tương tác trung vị: ${s.medianEngagement != null ? (s.medianEngagement * 100).toFixed(1) + '%' : '–'} · nhịp đăng ${s.postsPerWeek ?? '–'} video/tuần`,
+    `- Video nổi bật (≥ ${s.outlierMultiple}× trung vị): ${s.standoutCount}`,
+    `- Đã lấy ${s.sampleSize} video (${s.newestCount} mới nhất từ trang kênh, ${s.searchCount} qua tìm kiếm), phân tích lúc ${day(d.analyzedAt)}`, '',
+    `## Video nổi bật (${top.length})`, '', top.length ? `${head}\n${top.map(row).join('\n')}` : 'Không có.', '',
+    `## Hashtag kéo view`, '', d.hashtags.length ? d.hashtags.map((h) => `- ${h.label}: ${h.count} video, trung vị ×${h.medianScore ?? '–'}`).join('\n') : 'Không có hashtag lặp lại.', '',
+    `## Tất cả video (mới → cũ)`, '', `${head}\n${d.videos.map(row).join('\n')}`, '',
+  ].join('\n');
+}
