@@ -4,6 +4,7 @@ import { createBrowser } from './browser.js';
 import { searchKeyword, relatedKeywords } from './search.js';
 import { createTikTokHttp } from './http.js';
 import { makeComments } from './comments.js';
+import { makeVideo } from './video.js';
 import { createSession } from './session.js';
 import { loginInWindow } from './login.js';
 
@@ -30,6 +31,7 @@ const isMissingChromium = (e) => /Executable doesn't exist|playwright install|Ca
 export function createTikTokSource({ fetch, loadPlaywright, hasPlaywright = playwrightInstalled, sleep, searchOpts = {}, sessionFile, loginOpts = {} } = {}) {
   const http = createTikTokHttp({ fetch, sleep });
   const comments = makeComments(http);
+  const getVideo = makeVideo(http, comments.resolveVideo);
   const session = createSession(sessionFile);
   const browser = createBrowser({ loadPlaywright, session });
   let loggingIn = null;
@@ -66,6 +68,7 @@ export function createTikTokSource({ fetch, loadPlaywright, hasPlaywright = play
     logout: async () => session.clear(),
     resolveVideo: comments.resolveVideo,
     getComments: comments.getComments,
+    getVideo,
     capabilities: () => (hasPlaywright() ? { searchReady: true } : { searchReady: false, reason: SETUP }),
     close: () => browser.close(),
     stats: http.stats,

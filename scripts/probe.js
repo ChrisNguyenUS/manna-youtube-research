@@ -7,6 +7,7 @@ const src = createInnertubeSource({ gl: 'US', concurrency: 2, delayMs: 300 });
 const tt = createTikTokSource();
 const checks = [
   ['tiktok-comments', async () => (await tt.getComments('7376610463154572560', { max: 5, replies: false })).comments.length > 0],
+  ['tiktok-video', async () => { const r = await tt.getVideo('https://www.tiktok.com/@monica.chuyengiaditru/video/7662369308550401287'); return r.video.plays > 0 && !!r.video.author && (r.transcript === null || r.transcript.segments.length > 0); }],
   ['tiktok-search', async () => (tt.capabilities().searchReady ? (await tt.searchVideos('quốc tịch mỹ', { max: 5 })).length > 0 : (console.log('  (bỏ qua: chưa cài Playwright)'), true))],
   ['search', async () => (await src.searchVideos('storytelling', { max: 5, upload: 'year' })).every((v) => v.id && v.views != null && v.durationSec != null)],
   ['channel', async () => { const c = await src.getChannel(await src.resolveChannelId('@BlackJournals'), { about: true }); return c.subs > 0 && !!c.joined; }],

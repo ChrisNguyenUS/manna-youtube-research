@@ -4,8 +4,9 @@ import * as videoSearch from './video_search.js';
 import * as research from './research.js';
 import * as channelAnalysis from './channel_analysis.js';
 import * as ideaCheck from './idea_check.js';
+import * as videoAnalysis from './video_analysis.js';
 
-const KINDS = { video_search: videoSearch, research, channel_analysis: channelAnalysis, idea_check: ideaCheck };
+const KINDS = { video_search: videoSearch, research, channel_analysis: channelAnalysis, idea_check: ideaCheck, tiktok_video_analysis: videoAnalysis, video_analysis: videoAnalysis };
 
 /** @type {Record<string, number>} */
 export const LATEST = Object.fromEntries(Object.entries(KINDS).map(([k, m]) => [k, m.latest]));

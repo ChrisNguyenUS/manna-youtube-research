@@ -33,6 +33,7 @@ export const METRICS = {
   },
   hotScore: { label: { vi: 'Hot score', en: 'Hot score' }, unit: 'per_day', version: 1, formula: '(like + comment + share + save) ÷ (số ngày từ lúc đăng + 2)' },
   engagementRate: { label: { vi: 'Tỉ lệ tương tác', en: 'Engagement rate' }, unit: 'x', version: 1, formula: '(like + comment + share + save) ÷ lượt xem' },
+  wordsPerMinute: { label: { vi: 'Tốc độ nói', en: 'Words per minute' }, unit: 'count', version: 1, formula: 'số từ trong script ÷ số phút từ câu đầu tới câu cuối; để trống khi nói dưới 10 giây' },
   attentionPerDay: { label: { vi: 'Attention/ngày', en: 'Attention/day' }, unit: 'per_day', version: 1, formula: '(like + trả lời của comment) ÷ (số ngày từ lúc comment + 2)' },
   playsPerDay: { label: { vi: 'View/ngày (TikTok)', en: 'Plays/day (TikTok)' }, unit: 'per_day', version: 1, formula: 'lượt xem TikTok ÷ (số ngày từ lúc đăng + 2), cùng mẫu số với Hot score' },
   trendingScore: { label: { vi: 'Điểm trending', en: 'Trending score' }, unit: 'score', version: 1, formula: 'bách phân vị của View/ngày (TikTok) trong cùng lượt tìm, 0–100' },

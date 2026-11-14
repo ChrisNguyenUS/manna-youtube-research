@@ -16,6 +16,7 @@ const GROUPS = [
     items: [
       { icon: 'compass', label: 'Tìm theo chủ đề', tabs: [['/tiktok/topic', 'Tìm theo chủ đề', () => import('./views/tiktok/topic.js')]] },
       { icon: 'message', label: 'Insight khách hàng', tabs: [['/tiktok/insight', 'Insight khách hàng', () => import('./views/tiktok/insight.js')]] },
+      { icon: 'bars', label: 'Phân tích video', tabs: [['/tiktok/video', 'Phân tích video', () => import('./views/tiktok/video.js')]] },
       {
         icon: 'play', label: 'Video & comment',
         tabs: [

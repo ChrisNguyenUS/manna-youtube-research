@@ -28,6 +28,7 @@ Gọi API nội bộ mà chính youtube.com dùng (`youtubei/v1`), không đăng
 | Ngày đăng chính xác, like | `player`, `next` | Chỉ cho top N video vì tốn request |
 | Comment + trả lời | `next` continuation | Nổi bật hoặc Mới nhất |
 | Gợi ý tìm kiếm | `suggestqueries-clients6.youtube.com` | |
+| Thông số + script một video TikTok | trang của video (JSON nhúng) + file phụ đề WebVTT | Không đăng nhập. Script là phụ đề tự động của TikTok; video không có phụ đề thì không có script |
 
 Mặc định 4 request song song, nghỉ ~200 ms, tự thử lại khi gặp 429/5xx. Chỉnh trong **Cài đặt**.
 

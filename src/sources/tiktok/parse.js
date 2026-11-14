@@ -99,3 +99,34 @@ export function takeNew(comments, seen, room) {
   }
   return fresh;
 }
+
+/**
+ * A video's own page (no login): the JSON TikTok embeds for its web app has the video and its subtitle files.
+ * @param {string} html
+ * @returns {{ok: true, video: NonNullable<ReturnType<typeof parseVideo>>, subtitles: {url: string, language: string, source: string}[]} | {ok: false, reason: 'blocked'|'unavailable'}}
+ */
+export function parseVideoPage(html) {
+  const m = String(html ?? '').match(/<script[^>]*id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/);
+  let detail = null;
+  try {
+    detail = m ? JSON.parse(m[1])?.__DEFAULT_SCOPE__?.['webapp.video-detail'] ?? null : null;
+  } catch {
+    detail = null;
+  }
+  // No data block at all: TikTok answered with a challenge or an error page instead of the video page.
+  if (!detail) return { ok: false, reason: 'blocked' };
+  const item = detail.itemInfo?.itemStruct;
+  const video = item ? parseVideo(item, '') : null;
+  if (!video) return { ok: false, reason: 'unavailable' };
+  const subtitles = (Array.isArray(item.video?.subtitleInfos) ? item.video.subtitleInfos : [])
+    .filter((s) => s?.Url && String(s.Format ?? '').toLowerCase() === 'webvtt')
+    .map((s) => ({ url: String(s.Url), language: String(s.LanguageCodeName ?? ''), source: String(s.Source ?? '') }));
+  return { ok: true, video, subtitles };
+}
+
+/**
+ * Which subtitle file is the video's own speech: TikTok's speech recognition (ASR) first, then whatever the creator added.
+ * A machine translation (MT) is another language's guess at the words and is never used.
+ * @template {{source: string}} S @param {S[]} subtitles @returns {S|null}
+ */
+export const pickSubtitle = (subtitles) => subtitles.find((s) => s.source === 'ASR') ?? subtitles.find((s) => s.source !== 'MT') ?? null;
