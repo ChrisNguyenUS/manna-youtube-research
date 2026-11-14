@@ -21,6 +21,18 @@ export const FAKE_COMMENTS = [
   comment('r1', 'Không khó đâu bạn', 3, { parentId: 'c1' }),
 ];
 
+/** @type {import('../../ports/tiktok-source.js').Transcript} */
+export const FAKE_TRANSCRIPT = {
+  language: 'vie-VN', kind: 'auto',
+  segments: [
+    { start: 0, end: 3, text: 'Phỏng vấn quốc tịch Mỹ đậu rồi' },
+    { start: 3, end: 6, text: 'hôm nay mình kể lại từng câu hỏi' },
+    { start: 6, end: 40, text: 'câu đầu tiên là về tên và ngày sinh' },
+  ],
+};
+/** Ids with special behaviour in getVideo. */
+export const FAKE_GONE_ID = '7000000000000000009';
+
 /** @returns {import('../../ports/tiktok-source.js').TikTokSource & {state: {closed: number, searches: number, logins: number}}} */
 export const FAKE_RELATED = {
   suggestions: ['thi quốc tịch mỹ 2026', 'thi quốc tịch mỹ mất bao lâu', 'thi quốc tịch mỹ hết bao nhiêu tiền', 'thi quốc tịch nhật'],
@@ -59,6 +71,16 @@ export function createFakeTikTok({ videos = FAKE_VIDEOS, comments = FAKE_COMMENT
       const list = comments.filter((c) => o.replies !== false || !c.isReply).slice(0, (o.max ?? 300) + 50);
       onProgress?.(list.length);
       return { comments: list.map((c) => ({ ...c })), total: list.length };
+    },
+    async getVideo(u) {
+      const id = String(u).match(/(\d{15,25})/)?.[1];
+      if (!id) throw new Error(`Không phải link video TikTok: ${u}`);
+      requests++;
+      await wait();
+      const v = videos.find((x) => x.id === id);
+      if (id === FAKE_GONE_ID || !v) throw Object.assign(new Error('Video không còn hoặc đang để riêng tư'), { code: 'video_unavailable' });
+      // Only the first fake video has subtitles, so tests cover both cases.
+      return { video: { ...v, query: '' }, transcript: id === videos[0].id ? { ...FAKE_TRANSCRIPT, segments: FAKE_TRANSCRIPT.segments.map((s) => ({ ...s })) } : null };
     },
     async login() {
       if (!searchReady) throw Object.assign(new Error('Cần cài: npm run setup:tiktok'), { code: 'tiktok_setup_required' });

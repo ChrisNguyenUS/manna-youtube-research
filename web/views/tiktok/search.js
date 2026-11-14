@@ -65,7 +65,8 @@ export async function mount(root, params) {
       </div>
       <div class="card" style="margin-top:14px"><div class="row" style="padding:12px 16px;border-bottom:1px solid var(--line)"><b data-count></b><span class="muted">video</span><span class="spacer"></span>
         <label class="small muted">Xếp theo</label><select class="select input sm" style="width:auto" data-sort>${Object.entries({ hot: 'Hot', plays: 'View', likes: 'Like', shares: 'Share', saves: 'Save', new: 'Mới nhất' }).map(([k, l]) => `<option value="${k}" ${f.sort === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
-        <button class="btn sm primary" data-cm disabled>${icon('message')} Lấy comment</button>
+        <button type="button" class="btn sm" data-selall>Chọn tất cả</button>
+        <button class="btn sm primary" data-cm disabled title="Tích “Chọn” ở góc video trước">${icon('message')} Lấy comment</button>
         <a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div><div class="vgrid" data-list></div></div>`;
     const filters = out.querySelector('[data-filters]');
     filters.querySelectorAll('[data-chips]').forEach((g) => (g.dataset.allowOff = ''));
@@ -81,9 +82,26 @@ export async function mount(root, params) {
     });
     shown.on(out, 'change', '[data-sel]', (e, el) => {
       el.checked ? selected.add(el.dataset.sel) : selected.delete(el.dataset.sel);
-      out.querySelector('[data-cm]').disabled = !selected.size;
+      syncPick();
     });
     out.querySelector('[data-cm]').addEventListener('click', () => window.__go('/tiktok/comments', { videos: d.videos.filter((v) => selected.has(v.id)).map((v) => v.url).join('\n') }));
+    // The button says how many videos it will read; "Chọn tất cả" works on the videos passing the filters, and flips to "Bỏ chọn".
+    function syncPick() {
+      const cm = out.querySelector('[data-cm]');
+      cm.disabled = !selected.size;
+      cm.innerHTML = `${icon('message')} Lấy comment${selected.size ? ` (${selected.size})` : ''}`;
+      const boxes = [...out.querySelectorAll('[data-sel]')];
+      out.querySelector('[data-selall]').textContent = boxes.length && boxes.every((b) => b.checked) ? 'Bỏ chọn' : 'Chọn tất cả';
+    }
+    shown.on(out, 'click', '[data-selall]', () => {
+      const boxes = [...out.querySelectorAll('[data-sel]')];
+      const on = !(boxes.length && boxes.every((b) => b.checked));
+      for (const b of boxes) {
+        b.checked = on;
+        on ? selected.add(b.dataset.sel) : selected.delete(b.dataset.sel);
+      }
+      syncPick();
+    });
     function render() {
       const key = SORTS[f.sort] || 'hotScore';
       const list = d.videos
@@ -91,6 +109,7 @@ export async function mount(root, params) {
         .sort((a, b) => (f.sort === 'new' ? (a.ageDays ?? 1e9) - (b.ageDays ?? 1e9) : (b[key] ?? -1) - (a[key] ?? -1)));
       out.querySelector('[data-count]').textContent = list.length;
       out.querySelector('[data-list]').innerHTML = list.length ? list.map((v) => tiktokVideoCard(v, { selected })).join('') : emptyState('Không có video khớp bộ lọc');
+      syncPick();
     }
     render();
   }

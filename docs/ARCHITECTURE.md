@@ -49,9 +49,10 @@ src/
       outlier.js            # channelBaseline, outlierScore
       channel.js            # channelStats
     analysis/               # titles.js, comments.js, durations.js, keyword-score.js, topic.js (lọc đúng chủ đề, bỏ dấu), customer-voice.js (câu hỏi theo nhóm, nỗi sợ, người sắp mua)
+    video/                  # transcript.js (đọc WebVTT, hook, số từ, từ/phút), metrics.js (dòng số liệu một video); dùng chung TikTok và YouTube
     tiktok/metrics.js       # videoMetrics (Hot score, tương tác, tuổi), attentionPerDay; rank.js (trending → tương tác → hợp thời); keywords.js (từ khoá liên quan: gộp, bỏ nước khác, ý định); on-topic.js (luật lọc đúng chủ đề dùng chung, đo trên test/fixtures/tiktok-on-topic.json)
     tracking/diff.js        # so snapshot: video mới, tốc độ, đổi tiêu đề/thumbnail (v1.1)
-    report/                 # markdown.js, csv.js, tiktok.js (Markdown insight, comment, chủ đề TikTok), xlsx.js (file Excel không cần thư viện)
+    report/                 # markdown.js, csv.js, tiktok.js (Markdown insight, comment, chủ đề TikTok), xlsx.js (file Excel không cần thư viện), video-analysis.js (Markdown/CSV của Phân tích video)
   ports/                    # HỢP ĐỒNG (JSDoc interface + test hợp đồng dùng chung)
     youtube-source.js       # searchVideos, searchChannels, getChannel, getChannelVideos, getShorts,
                             # getVideo, getComments, suggest, capabilities()
@@ -64,7 +65,7 @@ src/
       fixtures/             # phản hồi YouTube ghi sẵn (đã lược) cho test
     data-api/               # (v1.2) YouTube Data API v3, BYOK, quota tracker
     tiktok/                 # index.js (createTikTokSource), browser.js (Chromium ẩn, đóng khi rảnh), search.js,
-                            # http.js (retry, giới hạn song song), comments.js, parse.js, fixtures/
+                            # http.js (retry, giới hạn song song), comments.js, parse.js, fixtures/, video.js (một video theo link: thông số + phụ đề, không trình duyệt)
     fake/                   # nguồn giả trả fixture — dùng cho test features (tiktok.js cho TikTok)
   store/
     sqlite/
@@ -85,7 +86,8 @@ src/
     keyword-score.js
     keyword-ideas.js
     tracking.js             # (v1.1)
-    tiktok/                 # search.js, comments.js, insight.js, scrape.js (API scrape, xếp hạng core/tiktok/rank.js), topic.js (Tìm theo chủ đề, quét lại so view)
+    shared-video-analysis.js # khung chạy lô của Phân tích video, dùng chung hai nền tảng
+    tiktok/                 # search.js, comments.js, insight.js, scrape.js (API scrape, xếp hạng core/tiktok/rank.js), topic.js (Tìm theo chủ đề, quét lại so view), video-analysis.js (Phân tích video)
   http/
     server.js               # node:http, static, error → JSON {error:{code,message}}
     router.js               # bảng route khai báo + validate
@@ -100,7 +102,7 @@ web/                        # frontend (đổi tên từ public/)
   saved-items.js            # hình dạng một mục "Đã lưu" (video TikTok, câu chữ khách, từ khoá); comment không bao giờ kèm tên người viết
   components/               # video-table.js, video-grid.js, filters.js, score-card.js, charts.js…
   views/                    # một màn một file, export mount(root, params) → trả về unmount()
-    tiktok/                 # topic.js, search.js, insight.js, comments.js
+    tiktok/                 # topic.js, search.js, insight.js, comments.js, video.js
   i18n/vi.js, en.js         # (v1.2)
 test/
   core/  sources/  features/  http/  arch.test.js

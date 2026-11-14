@@ -7,6 +7,7 @@
 export const KINDS = {
   tiktok_topic: { label: 'Tìm theo chủ đề', path: '/tiktok/topic', icon: 'compass', platform: 'tiktok' },
   tiktok_insight: { label: 'Insight khách hàng', path: '/tiktok/insight', icon: 'message', platform: 'tiktok' },
+  tiktok_video_analysis: { label: 'Phân tích video', path: '/tiktok/video', icon: 'bars', platform: 'tiktok' },
   tiktok_search: { label: 'Tìm video', path: '/tiktok/search', icon: 'search', platform: 'tiktok' },
   tiktok_comments: { label: 'Comment', path: '/tiktok/comments', icon: 'message', platform: 'tiktok' },
   research: { label: 'Nghiên cứu chủ đề', path: '/research', icon: 'compass', platform: 'youtube' },

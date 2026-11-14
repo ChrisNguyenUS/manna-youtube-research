@@ -4,7 +4,7 @@ import { throwIfCancelled, sleep as cancellableSleep } from '../../core/cancel.j
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
 
 /** Only the parts of fetch/Response this module uses, so tests can pass a small fake.
- * @typedef {(url: string, init?: any) => Promise<{status: number, url?: string, json: () => Promise<any>}>} FetchLike */
+ * @typedef {(url: string, init?: any) => Promise<{status: number, url?: string, json: () => Promise<any>, text?: () => Promise<string>}>} FetchLike */
 /** @param {{fetch?: FetchLike, concurrency?: number, delayMs?: number, retries?: number, sleep?: (ms: number) => Promise<void>}} [o] */
 export function createTikTokHttp({ fetch: doFetch = /** @type {FetchLike} */ (globalThis.fetch), concurrency = 3, delayMs = 300, retries = 4, sleep = cancellableSleep } = {}) {
   let active = 0;
@@ -51,6 +51,13 @@ export function createTikTokHttp({ fetch: doFetch = /** @type {FetchLike} */ (gl
       const res = await request(url);
       const body = await res.json().catch(() => null);
       if (body == null) throw new Error('TikTok trả về dữ liệu không đọc được');
+      return body;
+    },
+    /** Body as text (a video's page, a subtitle file). An empty body counts as a failed request. @param {string} url */
+    async getText(url) {
+      const res = await request(url);
+      const body = res.text ? await res.text().catch(() => '') : '';
+      if (!body) throw new Error('TikTok trả về dữ liệu không đọc được');
       return body;
     },
     /** Final URL after redirects (vm.tiktok.com short links). @param {string} url */

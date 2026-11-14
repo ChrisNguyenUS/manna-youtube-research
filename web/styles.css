@@ -306,10 +306,38 @@ a.job-title:hover { color: var(--accent); text-decoration: underline; }
 
 .tip { position: fixed; pointer-events: none; background: var(--text); color: #fff; font-size: 12px; padding: 6px 9px; border-radius: 6px; max-width: 320px; z-index: 60; }
 
-.tt-cover { aspect-ratio: 3 / 4; background: var(--line); display: grid; place-items: center; }
+.tt-cover, .vcard .tt-cover { aspect-ratio: 3 / 4; background: var(--line); display: grid; place-items: center; }
 .tt-cover::before { content: '▶'; position: absolute; color: var(--muted); font-size: 28px; }
-.tt-cover img { position: relative; z-index: 1; }
+/* The cover sits above the ▶ placeholder and fills the 3:4 box whatever its own size; badges and the tick box sit above the cover. */
+.tt-cover img { position: absolute; inset: 0; z-index: 1; }
+.tt-card .ov { z-index: 2; }
+.tt-card .ov.sel { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; cursor: pointer; color: var(--text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); }
+.tt-card .ov.sel input { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.tt-card:has([data-sel]:checked) { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 .nav-item .tt-mark { font-weight: 700; font-size: 11px; color: var(--muted); }
+
+/* ---------- Phân tích video ---------- */
+textarea.input { width: 100%; resize: vertical; font: inherit; line-height: 1.5; }
+.va-warn { color: var(--bad); font-weight: 600; }
+.va-table th[data-sort] { cursor: pointer; white-space: nowrap; user-select: none; }
+.va-table th[data-sort]:focus-visible { outline: 2px solid var(--accent-line); outline-offset: -2px; }
+.va-row { cursor: pointer; }
+.va-row:hover td { background: var(--surface-2); }
+.va-row.on td { background: var(--accent-soft); }
+.va-row.on td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.va-vid { display: flex; gap: 10px; align-items: center; min-width: 220px; max-width: 320px; }
+.va-cover { width: 36px; height: 48px; flex: none; border-radius: 5px; background: var(--line); overflow: hidden; position: relative; }
+.va-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.va-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 600; }
+.va-hook { min-width: 220px; max-width: 360px; font-size: 13px; }
+.va-err { color: var(--bad); }
+.va-dtitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 52ch; display: inline-block; vertical-align: bottom; }
+.va-tools { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.va-script { padding: 10px 16px 16px; max-height: 560px; overflow-y: auto; }
+.va-seg { display: flex; gap: 12px; align-items: baseline; padding: 5px 8px; border-radius: 6px; line-height: 1.5; }
+.va-seg.hook { background: var(--accent-soft); }
+.va-t { flex: none; width: 48px; font: 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.va-desc { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 10px; }
 
 /* ---------- Lịch sử, Đã lưu ---------- */
 .hist-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line); }
