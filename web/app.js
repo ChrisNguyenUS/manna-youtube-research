@@ -30,7 +30,7 @@ const GROUPS = [
       },
       { icon: 'bars', label: 'Phân tích video', tabs: [['/tiktok/video', 'Phân tích video', () => import('./views/tiktok/video.js')]] },
       { icon: 'users', label: 'Phân tích kênh', tabs: [['/tiktok/channel', 'Phân tích kênh', () => import('./views/tiktok/channel.js')]] },
-      { icon: 'message', label: 'Thu thập bình luận', tabs: [['/tiktok/comments', 'Thu thập bình luận', () => import('./views/tiktok/comments.js')]] },
+      { icon: 'message', label: 'Thu thập bình luận', tabs: [['/tiktok/comments', 'Thu thập bình luận', () => import('./views/tiktok/comments.js')], ['/tiktok/5w1h', '5W1H (AI)', () => import('./views/tiktok/five-w.js')]] },
     ],
   },
   {

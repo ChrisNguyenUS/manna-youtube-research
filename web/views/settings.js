@@ -15,12 +15,14 @@ export async function mount(root) {
         <div class="field"><label>Các nước dùng khi chọn 🌐 Toàn cầu</label><input class="input" data-k="globalRegions" value="${esc(s.globalRegions)}" placeholder="US,GB,IN,CA,AU,PH,VN,ID"><div class="help">Mã 2 chữ, cách nhau bằng dấu phẩy. Mỗi nước thêm 1 lượt tìm cho mỗi từ khoá.</div></div>
         <div class="field"><label>Video nổi bật = view ≥ bao nhiêu lần trung vị kênh</label><input class="input" type="number" min="1.5" step="0.5" data-k="outlierMultiple" value="${s.outlierMultiple}"></div>
       </div>
-      <div class="section-label">AI phân tích (sắp có)</div>
+      <div class="section-label">AI phân tích (OpenRouter)</div>
       <div class="grid grid-2">
-        <div class="field"><label>Nhà cung cấp</label><select class="select input" data-k="aiProvider"><option value="">Chưa dùng</option><option value="anthropic" ${s.aiProvider === 'anthropic' ? 'selected' : ''}>Claude (Anthropic)</option></select></div>
-        <div class="field"><label>API key</label><input class="input" type="password" data-k="aiKey" value="${esc(s.aiKey)}" placeholder="sk-ant-…"></div>
+        <div class="field"><label>API key OpenRouter</label><input class="input" type="password" data-k="aiKey" value="${esc(s.aiKey)}" placeholder="sk-or-…"><div class="help">Lấy ở openrouter.ai, mục Keys. Lưu trên máy này.</div></div>
+        <div class="field"></div>
+        <div class="field"><label>Model gắn mã (việc nhiều, đơn giản)</label><input class="input" data-k="aiTagModel" value="${esc(s.aiTagModel)}" placeholder="deepseek/deepseek-v4.1-flash-1017"><div class="help">Mã model đúng như trên OpenRouter, có số phiên bản. Không dùng tên kiểu "latest".</div></div>
+        <div class="field"><label>Model tổng hợp (việc ít, cần viết tốt)</label><input class="input" data-k="aiWriteModel" value="${esc(s.aiWriteModel)}" placeholder="deepseek/deepseek-v4.1-flash-1017"></div>
       </div>
-      <div class="callout info" style="margin-top:10px">Hiện tại app tự tính mọi số liệu. Muốn AI viết báo cáo: bấm <b>Markdown</b> ở báo cáo rồi đưa cho Claude, hoặc dùng skill <b>nghien-cuu-youtube</b> trong Claude Code.</div>
+      <div class="callout info" style="margin-top:10px">AI chỉ chạy khi bạn bấm (ví dụ <b>Phân tích 5W1H</b> ở mục Thu thập bình luận). Bình luận được gửi lên OpenRouter, không kèm tên người bình luận. Muốn AI viết bài: bấm <b>Markdown</b> ở báo cáo rồi đưa cho Claude.</div>
       <div class="row" style="margin-top:16px"><button class="btn primary" data-save>${icon('check')} Lưu</button></div></div>`;
   root.querySelector('[data-save]').addEventListener('click', async () => {
     const body = {};

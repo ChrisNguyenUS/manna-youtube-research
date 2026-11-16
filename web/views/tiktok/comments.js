@@ -37,7 +37,7 @@ export async function mount(root, params) {
   const st = store('tt-comments-form', FORM);
   if (params.videos) st.videos = params.videos;
   root.innerHTML = `
-    <div class="page-head"><div><h1>${icon('message')} Thu thập bình luận</h1><p>Lấy bình luận công khai của video TikTok rồi lọc theo câu hỏi, ý định mua, lo ngại… Không lưu tên người bình luận.</p></div></div>
+    <div class="page-head"><div><h1>${icon('message')} Thu thập bình luận</h1><p>Lấy bình luận công khai của video TikTok rồi lọc theo câu hỏi, ý định mua, lo ngại… Không lưu tên người bình luận.</p></div><a class="btn" href="#/tiktok/5w1h">${icon('target')} Phân tích 5W1H (AI)</a></div>
     <div class="card card-pad cc-form" data-form>
       <div class="cc-input"><textarea class="input" rows="2" data-videos placeholder="Dán link video TikTok, mỗi dòng một link (kể cả vm.tiktok.com)" aria-label="Link video">${esc(st.videos)}</textarea>
         <button type="button" class="icon-btn" data-clear title="Xoá hết" aria-label="Xoá hết link">${icon('x')}</button></div>

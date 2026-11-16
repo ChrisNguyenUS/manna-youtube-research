@@ -11,6 +11,7 @@ export const KINDS = {
   tiktok_channel: { label: 'Phân tích kênh', path: '/tiktok/channel', icon: 'users', platform: 'tiktok' },
   tiktok_search: { label: 'Tìm video', path: '/tiktok/search', icon: 'search', platform: 'tiktok' },
   tiktok_comments: { label: 'Thu thập bình luận', path: '/tiktok/comments', icon: 'message', platform: 'tiktok' },
+  comment_5w1h: { label: '5W1H comment (AI)', path: '/tiktok/5w1h', icon: 'target', platform: 'tiktok' },
   research: { label: 'Nghiên cứu chủ đề', path: '/research', icon: 'compass', platform: 'youtube' },
   research_comments: { label: 'Đọc comment', path: '/research', icon: 'message', platform: 'youtube' },
   video_search: { label: 'Tìm video', path: '/videos', icon: 'search', platform: 'youtube' },

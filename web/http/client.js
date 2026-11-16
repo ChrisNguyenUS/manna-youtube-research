@@ -105,3 +105,11 @@ export const tiktokCommentData = {
   /** All collected comments of these videos, with intents and question groups. @param {string[]} ids */
   of: (ids) => api(`/tiktok/comments?videos=${encodeURIComponent(ids.join(','))}`),
 };
+
+/** 5W1H report over collected TikTok comments (AI). The run itself is the job `comment_5w1h`. */
+export const tiktokFiveW = {
+  /** How many comments and tokens a run would send, and whether an API key is set. @param {string[]} ids */
+  estimate: (ids) => api(`/tiktok/5w1h/estimate?videos=${encodeURIComponent(ids.join(','))}`),
+  /** A saved report with its comments and the counted table. @param {number|string} id */
+  report: (id) => api(`/tiktok/5w1h/${id}`),
+};
