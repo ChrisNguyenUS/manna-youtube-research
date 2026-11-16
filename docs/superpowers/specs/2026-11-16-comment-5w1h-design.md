@@ -155,6 +155,8 @@ Record lưu id comment, không lưu chữ. Màn kết quả đọc chữ từ b�
 
 `src/features/ai/knowledge/`: `viral-concepts.md` (40 concept: tên, một dòng mô tả, mẫu tiêu đề), `dick.md`, `funnel.md`. `app.js` đọc lúc khởi động và truyền vào dạng chuỗi. Sửa file rồi khởi động lại là prompt đổi. Nội dung lấy từ tài liệu khoá học chủ app đã mua; thư mục này nằm trong `.gitignore` để không lên remote.
 
+Thiếu file kiến thức (ví dụ sau khi clone lại repo) thì app vẫn chạy: bước 3 bỏ các trường concept, DICK và phễu trong gợi ý content, và màn kết quả ghi "chưa có file kiến thức".
+
 ### 6.5 Cài đặt
 
 Bỏ ô `aiProvider`. Giữ `aiKey` (nay là key OpenRouter), thêm `aiTagModel` và `aiWriteModel`. Mặc định tạm của cả hai là `deepseek/deepseek-v4.1-flash-1017`, sẽ đổi theo kết quả chạy thử ở §9. Luôn ghi mã phiên bản cụ thể, không dùng tên kiểu `latest`.
