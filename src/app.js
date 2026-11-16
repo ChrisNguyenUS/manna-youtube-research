@@ -1,6 +1,7 @@
 // Composition root: the only place that picks concrete adapters (docs/ARCHITECTURE.md §2.3).
+import fs from 'node:fs';
 import path from 'node:path';
-import { loadConfig } from './config.js';
+import { loadConfig, ROOT } from './config.js';
 import { openDatabase } from './store/sqlite/db.js';
 import { createSqliteStore } from './store/sqlite/index.js';
 import { createInnertubeSource } from './sources/innertube/index.js';
@@ -23,18 +24,33 @@ import { makeTikTokVideoAnalysis, makeVideoAnalysisHistory } from './features/ti
 import { makeTikTokChannelAnalysis } from './features/tiktok/channel.js';
 import { makeFollows } from './features/follows.js';
 import { makeCommentData } from './features/tiktok/comment-data.js';
+import { createOpenRouter } from './llm/openrouter.js';
+import { makeComment5w1h } from './features/ai/comment-5w1h.js';
+
+const KNOWLEDGE_DIR = path.join(ROOT, 'src', 'features', 'ai', 'knowledge');
+/** The owner's course notes for AI prompts: every .md in the folder, or '' when there is none (the folder is not in git). */
+function readKnowledge(dir = KNOWLEDGE_DIR) {
+  try {
+    return fs.readdirSync(dir).filter((f) => f.endsWith('.md')).sort().map((f) => fs.readFileSync(path.join(dir, f), 'utf8').trim()).filter(Boolean).join('\n\n---\n\n');
+  } catch {
+    return '';
+  }
+}
 
 /**
  * @param {{config?: ReturnType<typeof loadConfig>, source?: import('./ports/youtube-source.js').YouTubeSource, store?: import('./store/sqlite/index.js').Store,
- *   tiktok?: import('./ports/tiktok-source.js').TikTokSource}} [o]
+ *   tiktok?: import('./ports/tiktok-source.js').TikTokSource, llm?: import('./ports/llm.js').LlmClient, knowledge?: string}} [o]
  */
-export function createApp({ config = loadConfig(), source, store, tiktok } = {}) {
+export function createApp({ config = loadConfig(), source, store, tiktok, llm, knowledge } = {}) {
   store ??= createSqliteStore(openDatabase({ dataDir: config.dataDir }));
   const ws = 'local'; // workspace; becomes the signed-in workspace when the app goes multi-user
   const settings = () => store.settings.all(ws);
   source ??= createInnertubeSource(settings());
   // The user's own TikTok sign-in (cookies only, never a password), next to the database.
   tiktok ??= createTikTokSource({ sessionFile: path.join(config.dataDir, 'tiktok-session.json') });
+  // The owner's own OpenRouter key from Settings; read on every call so a new key works without a restart.
+  llm ??= createOpenRouter({ getKey: () => String(settings().aiKey || '') });
+  knowledge ??= readKnowledge();
   const base = { source, store, ws, settings, now: Date.now, records: recordsFor(store, ws) };
   const enrich = makeEnrich(base);
   const tiktokSearch = makeTikTokSearch({ tiktok, records: base.records, now: base.now });
@@ -66,6 +82,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok } = {})
     commentData: makeCommentData({ store, ws }),
     videoAnalysisHistory: makeVideoAnalysisHistory({ store, ws }),
     tiktokChannel: makeTikTokChannelAnalysis({ tiktok, records: base.records, now: base.now, settings }),
+    comment5w1h: makeComment5w1h({ llm, records: base.records, settings, knowledge, readComments: (ids) => features.commentData.comments(ids) }),
   };
 
   /** Job kind → handler. ctx.progress throws after cancel, which is how jobs stop. */
@@ -89,10 +106,11 @@ export function createApp({ config = loadConfig(), source, store, tiktok } = {})
   handlers.tiktok_topic = (p, ctx) => features.tiktokTopicScan(p, ctx.progress);
   handlers.tiktok_video_analysis = (p, ctx) => features.tiktokVideoAnalysis(p, ctx.progress);
   handlers.tiktok_channel = (p, ctx) => features.tiktokChannel(p, ctx.progress);
+  handlers.comment_5w1h = (p, ctx) => features.comment5w1h.run(p, ctx.progress);
   handlers.follow_refresh = (p, ctx) => features.follows.refresh(p, ctx.progress);
   const runner = createRunner({ jobsRepo: store.jobs, handlers, onCancelled: (job) => store.records.removeByJob(job.id) });
   return {
-    config, store, source, tiktok, features, runner, ws, settings, close: () => tiktok.close(),
+    config, store, source, tiktok, llm, features, runner, ws, settings, close: () => tiktok.close(),
     /** Set by the entry point (src/main.js): stops jobs, closes Chromium and exits. Null when nothing owns the process (tests, CLI). */
     shutdown: /** @type {null | (() => void)} */ (null),
   };

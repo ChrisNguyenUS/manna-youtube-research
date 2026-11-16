@@ -4,3 +4,4 @@ output/
 .DS_Store
 reports/
 .superpowers/
+src/features/ai/knowledge/

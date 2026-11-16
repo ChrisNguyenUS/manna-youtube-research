@@ -54,6 +54,9 @@ export const tiktokRoutes = [
     handler: ({ app, query }) => app.features.commentData.coverage(String(query.get('ids') || '').split(',').filter((x) => /^\d{15,25}$/.test(x)),
       { max: Number(query.get('max')) === 300 ? 300 : 100, replies: query.get('replies') !== 'false' }),
   },
+  // 5W1H report over collected comments (AI). The job itself is POST /jobs/comment_5w1h.
+  { method: 'GET', path: '/api/v1/tiktok/5w1h/estimate', handler: ({ app, query }) => app.features.comment5w1h.estimate(String(query.get('videos') || '')) },
+  { method: 'GET', path: '/api/v1/tiktok/5w1h/:id', handler: ({ app, params }) => app.features.comment5w1h.report(Number(params.id)) },
   {
     method: 'GET', path: '/api/v1/tiktok/comments',
     handler: ({ app, query }) => {

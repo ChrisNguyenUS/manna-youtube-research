@@ -5,6 +5,7 @@ import { researchMarkdown, channelMarkdown, commentsMarkdown } from '../../core/
 import { toCsv } from '../../core/report/csv.js';
 import { tiktokInsightMarkdown, tiktokCommentsMarkdown, tiktokTopicMarkdown, tiktokTopicSheets, tiktokChannelMarkdown } from '../../core/report/tiktok.js';
 import { toXlsx } from '../../core/report/xlsx.js';
+import { fiveWMarkdown } from '../../core/report/five-w.js';
 import { videoAnalysisMarkdown, VIDEO_ANALYSIS_COLS } from '../../core/report/video-analysis.js';
 import { classifyComment } from '../../core/analysis/text.js';
 import { foldWords } from '../../core/tiktok/keywords.js';
@@ -86,6 +87,10 @@ function exportRecord({ app, ws, params, query }) {
       return query.get('inline') ? raw(md, 'text/markdown; charset=utf-8') : raw(md, 'text/markdown; charset=utf-8', attachment(`${name}${only ? `-video-${only}` : ''}.md`));
     }
     if (params.ext === 'md') {
+      if (r.kind === 'comment_5w1h') {
+        const md5 = fiveWMarkdown(app.features.comment5w1h.report(r.id));
+        return query.get('inline') ? raw(md5, 'text/markdown; charset=utf-8') : raw(md5, 'text/markdown; charset=utf-8', attachment(`${name}.md`));
+      }
       const md = r.kind === 'research' ? researchMarkdown(r.data) : r.kind === 'channel_analysis' ? channelMarkdown(r.data) : r.kind === 'comments' ? commentsMarkdown(r.data) : r.kind === 'tiktok_insight' ? tiktokInsightMarkdown(r.data) : r.kind === 'tiktok_comments' ? tiktokCommentsMarkdown(r.data) : r.kind === 'tiktok_topic' ? tiktokTopicMarkdown(r.data) : r.kind === 'tiktok_channel' ? tiktokChannelMarkdown(r.data) : '```json\n' + JSON.stringify(r.data, null, 2) + '\n```\n';
       return query.get('inline') ? raw(md, 'text/markdown; charset=utf-8') : raw(md, 'text/markdown; charset=utf-8', attachment(`${name}.md`));
     }
