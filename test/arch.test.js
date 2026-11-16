@@ -6,16 +6,17 @@ import path from 'node:path';
 const SRC = path.resolve('src');
 // layer → prefixes it may NOT import (relative to src/)
 const RULES = {
-  'core/': ['ports/', 'sources/', 'store/', 'features/', 'http/', 'jobs/', 'cli/', 'app.js', 'config.js'],
-  'ports/': ['sources/', 'store/', 'features/', 'http/', 'jobs/'],
-  'features/': ['sources/', 'store/', 'http/', 'cli/', 'app.js'],
-  'sources/': ['features/', 'http/', 'store/', 'jobs/'],
-  'store/': ['features/', 'http/', 'sources/', 'jobs/'],
-  'http/': ['sources/', 'store/'],
-  'cli/': ['sources/', 'store/'],
-  'sources/tiktok/': ['sources/innertube/', 'features/', 'http/', 'store/', 'jobs/'],
-  'sources/innertube/': ['sources/tiktok/', 'features/', 'http/', 'store/', 'jobs/'],
-  'features/tiktok/': ['sources/', 'store/', 'http/', 'cli/', 'app.js', 'features/video-search.js', 'features/channel-search.js', 'features/channel-analysis.js', 'features/comments.js', 'features/topic-research.js', 'features/keyword-ideas.js', 'features/keyword-score.js'],
+  'core/': ['ports/', 'sources/', 'store/', 'features/', 'http/', 'jobs/', 'cli/', 'llm/', 'app.js', 'config.js'],
+  'ports/': ['sources/', 'store/', 'features/', 'http/', 'jobs/', 'llm/'],
+  'features/': ['sources/', 'store/', 'http/', 'cli/', 'llm/', 'app.js'],
+  'sources/': ['features/', 'http/', 'store/', 'jobs/', 'llm/'],
+  'store/': ['features/', 'http/', 'sources/', 'jobs/', 'llm/'],
+  'http/': ['sources/', 'store/', 'llm/'],
+  'cli/': ['sources/', 'store/', 'llm/'],
+  'llm/': ['features/', 'http/', 'store/', 'jobs/', 'sources/', 'cli/', 'app.js'],
+  'sources/tiktok/': ['sources/innertube/', 'features/', 'http/', 'store/', 'jobs/', 'llm/'],
+  'sources/innertube/': ['sources/tiktok/', 'features/', 'http/', 'store/', 'jobs/', 'llm/'],
+  'features/tiktok/': ['sources/', 'store/', 'http/', 'cli/', 'llm/', 'app.js', 'features/video-search.js', 'features/channel-search.js', 'features/channel-analysis.js', 'features/comments.js', 'features/topic-research.js', 'features/keyword-ideas.js', 'features/keyword-score.js'],
 };
 const IO_MODULES = ['node:fs', 'node:http', 'node:sqlite', 'node:child_process', 'node:net'];
 
