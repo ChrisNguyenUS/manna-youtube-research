@@ -29,3 +29,9 @@ test('the report screen says who wrote what, and labels every idea as lacking an
   assert.match(src, /không đủ dữ liệu/i);
   assert.match(src, /Chưa nhập API key OpenRouter/);
 });
+
+test('the report is a tab strip with one panel and uppercase field labels', () => {
+  const src = fs.readFileSync('web/views/tiktok/five-w.js', 'utf8');
+  for (const s of ['fw-tabs', 'role="tablist"', 'data-panel', 'CÂU HỎI', 'NHẬN ĐỊNH', 'NHÓM', 'BÌNH LUẬN CỦA NHÓM', 'DÀNH CHO', 'NỖI ĐAU', 'ĐANG TIN', 'CONCEPT', 'PHỄU', 'BẰNG CHỨNG']) assert.ok(src.includes(s), s);
+  assert.ok(!src.includes('fw-grid'));
+});

@@ -11,6 +11,7 @@ const DIMS = [
   ['when', 'When', 'Lúc nào'], ['where', 'Where', 'Ở đâu'], ['how', 'How', 'Đang xoay xở ra sao'],
 ];
 const FUNNEL = { biet: 'Biết', thich: 'Thích', tin: 'Tin', yeu: 'Yêu' };
+const TAB_ICONS = { who: 'users', what: 'message', why: 'bulb', when: 'clock', where: 'compass', how: 'bolt', ideas: 'flame' };
 const NO_KEY = 'Chưa nhập API key OpenRouter';
 const usd = (n) => (n == null ? '' : `, $${Number(n).toFixed(4)}`);
 
@@ -86,7 +87,8 @@ function renderHistory(box, list) {
     : `<div class="card-pad muted">Chưa có báo cáo nào.</div>`}`;
 }
 
-async function showReport(root, id) {
+async function showReport(root, id, tab = 'who') {
+  let shownTab = tab;
   root.innerHTML = `<div class="card card-pad muted">Đang tải…</div>`;
   let r;
   try {
@@ -99,23 +101,33 @@ async function showReport(root, id) {
   const byId = new Map(r.comments.map((c) => [String(c.id), c]));
   const videos = new Map(r.videos.map((v) => [String(v.id), v]));
   const label = (dim, key) => d.codebook[dim].find((g) => g.key === key)?.label ?? key;
-  const quote = (cid) => (byId.has(cid) ? `<li>"${esc(byId.get(cid).text)}" <span class="muted small">${fmt(byId.get(cid).likes)} tim</span></li>` : '');
+  const quote = (cid) => (byId.has(cid) ? `<div class="fw-quote"><i>"${esc(byId.get(cid).text)}"</i> <span class="muted small">${fmt(byId.get(cid).likes)} tim</span></div>` : '');
   const u = d.usage;
+  const field = (cap, body) => `<div class="fw-field"><div class="fw-cap">${cap}</div>${body}</div>`;
+  const TABS = [...DIMS.map(([k, title, sub]) => ({ key: k, title, sub, icon: TAB_ICONS[k] })), ...(d.ideas?.length ? [{ key: 'ideas', title: 'Gợi ý content', icon: TAB_ICONS.ideas }] : [])];
 
-  const dimCard = ([dim, title, sub]) => {
+  const dimPanel = ([dim, , sub]) => {
     const t = r.table.dims[dim];
-    const top = t.groups[0]?.count || 1;
-    const notes = (d.notes?.[dim] ?? []).map((n) => `<li>${esc(n.text)}</li>`).join('');
-    return `<div class="card fw-dim"><div class="card-head"><b>${title}</b><span class="muted small">${sub}</span></div><div class="card-pad">${!t.enough
-      ? `<div class="muted">Không đủ dữ liệu: bình luận gần như không nói về chiều này.</div>`
-      : `${notes ? `<ul class="fw-notes">${notes}</ul>` : ''}${t.groups.map((g) => `<button type="button" class="fw-group" data-dim="${dim}" data-key="${esc(g.key)}" title="${esc(g.description)}">
-          <span class="fw-label">${esc(g.label)}</span><span class="fw-count">${fmt(g.count)}</span><span class="bar"><i style="width:${Math.max(3, Math.round((g.count / top) * 100))}%"></i></span></button>`).join('')}`}</div></div>`;
+    const q = field('CÂU HỎI', `<div class="fw-value">${esc(sub)}</div>`);
+    if (!t.enough) return q + field('KẾT QUẢ', `<div class="fw-value">Không đủ dữ liệu: bình luận gần như không nói về chiều này.</div>`);
+    const notes = (d.notes?.[dim] ?? []).map((n) => `<div class="fw-value">${esc(n.text)}</div>`).join('');
+    const groups = t.groups.map((g) => `<button type="button" class="fw-group" data-dim="${dim}" data-key="${esc(g.key)}" title="${esc(g.description)}">
+        <span class="fw-chip">${esc(g.label)}</span><span class="muted">${fmt(g.count)} bình luận</span>${g.description ? `<span class="muted small fw-desc">${esc(g.description)}</span>` : ''}</button>`).join('');
+    return q + (notes ? field('NHẬN ĐỊNH', notes) : '') + field('NHÓM', `<div class="fw-groups">${groups}</div>`) + `<div data-explorer></div>`;
   };
-  const idea = (x, i) => `<div class="fw-idea"><b>${i + 1}. ${esc(x.title)}</b><span class="tag">Chưa có tiền lệ outlier</span>
-    <ul>${x.who ? `<li>Ai: ${esc(label('who', x.who))}</li>` : ''}${x.pain ? `<li>Nỗi đau: ${esc(x.pain)}</li>` : ''}
-    ${x.belief ? `<li>Đang tin: ${esc(x.belief.text)}<ul>${x.belief.evidence.map(quote).join('')}</ul></li>` : ''}
-    ${x.concept ? `<li>Concept: ${esc(x.concept)}${x.extraConcepts.length ? ` <span class="muted">(phụ: ${esc(x.extraConcepts.join(', '))})</span>` : ''}</li>` : ''}
-    ${x.funnel ? `<li>Phễu: ${FUNNEL[x.funnel]}</li>` : ''}<li>Bằng chứng:<ul>${x.evidence.map(quote).join('')}</ul></li></ul></div>`;
+  const idea = (x, i) => `<div class="fw-idea"><div><b>${i + 1}. ${esc(x.title)}</b> <span class="fw-chip outline">Chưa có tiền lệ outlier</span></div>
+    ${x.who ? field('DÀNH CHO', `<div class="fw-value">${esc(label('who', x.who))}</div>`) : ''}
+    ${x.pain ? field('NỖI ĐAU', `<div class="fw-value">${esc(x.pain)}</div>`) : ''}
+    ${x.belief ? field('ĐANG TIN', `<div class="fw-value"><i>${esc(x.belief.text)}</i></div>${x.belief.evidence.map(quote).join('')}`) : ''}
+    ${x.concept ? field('CONCEPT', `<span class="fw-chip">${esc(x.concept)}</span>${(x.extraConcepts ?? []).map((c) => ` <span class="fw-chip soft">${esc(c)}</span>`).join('')}`) : ''}
+    ${x.funnel ? field('PHỄU', `<span class="fw-chip">${esc(FUNNEL[x.funnel] ?? x.funnel)}</span>`) : ''}
+    ${x.evidence?.length ? field('BẰNG CHỨNG', x.evidence.map(quote).join('')) : ''}</div>`;
+  const panelHtml = (tab) => {
+    const t = TABS.find((x) => x.key === tab);
+    const head = `<div class="fw-panel-head">${icon(t.icon)}<b>${esc(t.title)}</b></div>`;
+    if (tab === 'ideas') return `${head}<div class="fw-body"><div class="muted small">Dựa trên nỗi đau trong comment, chưa đối chiếu với video đã thắng</div>${d.ideas.map(idea).join('')}</div>`;
+    return `${head}<div class="fw-body">${dimPanel(DIMS.find((x) => x[0] === tab))}</div>`;
+  };
 
   root.innerHTML = `
     <div class="page-head"><div><h1>${icon('target')} 5W1H: ${esc(r.title)}</h1>
@@ -125,25 +137,42 @@ async function showReport(root, id) {
       ${d.hasKnowledge ? '' : ' Chưa có file kiến thức nên gợi ý content không kèm concept, DICK và phễu.'}</div>
     ${d.notes ? '' : `<div class="callout" style="margin-top:10px">AI chưa viết được phần nhận định và gợi ý (${esc(d.summaryError || 'không rõ lỗi')}). Các nhóm và số đếm bên dưới vẫn đúng. <button class="btn sm" data-rewrite>${icon('refresh')} Viết lại phần này</button></div>`}
     <div data-prog></div>
-    <div class="fw-grid">${DIMS.map(dimCard).join('')}</div>
-    <div data-explorer></div>
-    ${d.ideas?.length ? `<div class="card"><div class="card-head"><b>Gợi ý content</b><span class="muted small">Dựa trên nỗi đau trong comment, chưa đối chiếu với video đã thắng</span></div><div class="card-pad">${d.ideas.map(idea).join('')}</div></div>` : ''}`;
+    <div class="fw-tabs" role="tablist">${TABS.map((t) => `<button type="button" class="fw-tab" role="tab" data-tab="${t.key}">${icon(t.icon)}<span>${esc(t.title)}</span></button>`).join('')}</div>
+    <div class="card fw-panel" data-panel></div>`;
 
   // The explorer's listeners sit on elements inside `root`, which the router replaces, so nothing needs cleanup on leave.
-  const box = /** @type {HTMLElement} */ (root.querySelector('[data-explorer]'));
+  const panel = /** @type {HTMLElement} */ (root.querySelector('[data-panel]'));
   let explorer = null;
-  root.querySelector('.fw-grid').addEventListener('click', (e) => {
+  const show = (tab) => {
+    explorer?.off();
+    explorer = null;
+    shownTab = tab;
+    root.querySelectorAll('.fw-tab').forEach((b) => {
+      const on = /** @type {HTMLElement} */ (b).dataset.tab === tab;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-selected', String(on));
+    });
+    panel.innerHTML = panelHtml(tab);
+  };
+  root.querySelector('.fw-tabs').addEventListener('click', (e) => {
+    const b = /** @type {HTMLElement} */ (e.target).closest('.fw-tab');
+    if (b) show(b.dataset.tab);
+  });
+  panel.addEventListener('click', (e) => {
     const b = /** @type {HTMLElement} */ (e.target).closest('.fw-group');
     if (!b) return;
     const { dim, key } = b.dataset;
-    root.querySelectorAll('.fw-group.on').forEach((x) => x.classList.remove('on'));
+    panel.querySelectorAll('.fw-group.on').forEach((x) => x.classList.remove('on'));
     b.classList.add('on');
     const ids = r.table.dims[dim].groups.find((g) => g.key === key)?.ids ?? [];
     explorer?.off();
-    box.innerHTML = '';
-    explorer = commentExplorer(box, { comments: ids.map((cid) => byId.get(cid)).filter(Boolean), videos, mode: 'embedded', head: `<h3 class="small">${esc(`${DIMS.find((x) => x[0] === dim)[1]}: ${label(dim, key)}`)}</h3>` });
+    const box = /** @type {HTMLElement} */ (panel.querySelector('[data-explorer]'));
+    box.innerHTML = `<div class="fw-field"><div class="fw-cap">BÌNH LUẬN CỦA NHÓM</div><div data-ex></div></div>`;
+    const exBox = /** @type {HTMLElement} */ (box.querySelector('[data-ex]'));
+    explorer = commentExplorer(exBox, { comments: ids.map((cid) => byId.get(cid)).filter(Boolean), videos, mode: 'embedded', head: `<h3 class="small">${esc(`${DIMS.find((x) => x[0] === dim)[1]}: ${label(dim, key)}`)}</h3>` });
     box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
+  show(shownTab);
   root.querySelector('[data-rewrite]')?.addEventListener('click', async (e) => {
     /** @type {HTMLButtonElement} */ (e.currentTarget).disabled = true;
     const prog = root.querySelector('[data-prog]');
@@ -151,7 +180,7 @@ async function showReport(root, id) {
     try {
       await runJob(KIND, { onlyStep3: Number(r.id) }, (p) => updateProgress(prog, p));
       toast('Đã viết lại');
-      showReport(root, id);
+      showReport(root, id, shownTab);
     } catch (err) {
       prog.innerHTML = errorCallout(err);
     }
