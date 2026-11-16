@@ -1,6 +1,6 @@
 # Nền LLM và phân tích comment 5W1H (TikTok): thiết kế
 
-> Ngày: 2026-11-16 · Trạng thái: chờ duyệt · Phạm vi: phần 1 trong 4 phần của tính năng AI
+> Ngày: 2026-11-16 · Trạng thái: đã duyệt · Phạm vi: phần 1 trong 4 phần của tính năng AI
 > Tài liệu liên quan: [ARCHITECTURE.md](../../ARCHITECTURE.md) (luật lớp, job, record) · [jobs-and-scraping-L4.md](../../jobs-and-scraping-L4.md) · [2026-11-13-video-analysis-design.md](2026-11-13-video-analysis-design.md)
 
 ## 1. Mục đích
@@ -67,7 +67,7 @@ Thẻ tiến độ như các job khác, ba bước: "Lập bảng mã", "Gắn m
 - Đầu trang: các video đã phân tích, số comment đã gắn mã, số comment chưa phân loại, model, token, số tiền, dòng "Nhận định do AI viết, số đếm do app tính".
 - Sáu thẻ Who, What, Why, When, Where, How. Mỗi thẻ: 1 đến 3 nhận định, rồi các nhóm xếp theo số comment, có thanh tỉ lệ.
 - Bấm một nhóm: mở danh sách comment của nhóm đó bằng component `comment-explorer` sẵn có (sắp theo like, reply, mới nhất).
-- **Gợi ý content**: tối đa 10 dòng. Mỗi dòng có tiêu đề nháp theo DICK, nhóm Who, nỗi đau, concept chính và tối đa 2 concept phụ, giai đoạn phễu (Biết, Thích, Tin, Yêu), và các comment làm bằng chứng.
+- **Gợi ý content**: tối đa 10 dòng. Mỗi dòng có tiêu đề nháp theo DICK, nhóm Who, nỗi đau, điều người ta đang tin (lấy từ comment), concept chính và tối đa 2 concept phụ, giai đoạn phễu (Biết, Thích, Tin, Yêu), và các comment làm bằng chứng. Mọi gợi ý mang nhãn "chưa có tiền lệ outlier": phần này chỉ biết nỗi đau từ comment, chưa đối chiếu với video đã thắng (việc của phần 4).
 - Nút **Markdown**: toàn bộ báo cáo kèm comment tiêu biểu, để đưa cho Claude.
 
 ## 5. Cách chạy bên trong
@@ -96,7 +96,7 @@ Chế độ suy luận của model được tắt hoặc đặt mức thấp nh�
 
 Code đếm số comment mỗi nhóm và chọn 5 comment tiêu biểu mỗi nhóm theo điểm chú ý. Sau đó gửi cho model tổng hợp: bảng đếm, comment tiêu biểu, và các file kiến thức (§6.4). Model trả về:
 - `notes`: mỗi chiều 1 đến 3 nhận định, mỗi nhận định dẫn `key` của nhóm làm căn cứ.
-- `ideas`: tối đa 10 gợi ý content với các trường ở §4.3, bằng chứng là số thứ tự comment.
+- `ideas`: tối đa 10 gợi ý content với các trường ở §4.3, bằng chứng là số thứ tự comment. Trường `belief` (điều người ta đang tin) phải có ít nhất một comment làm bằng chứng riêng; không có thì để `null`.
 
 Code bỏ mọi `key` và số thứ tự không tồn tại. Nhận định hoặc gợi ý không còn bằng chứng nào thì bị bỏ.
 
@@ -145,7 +145,7 @@ Record `comment_5w1h`, `schema_version` 1:
   codebook: {who: [{key, label, description}], …},
   tags: {[commentId]: {who, what, why, when, where, how}},
   notes: {who: [{text, keys}], …} | null,
-  ideas: [{title, who, pain, concept, extraConcepts, funnel, evidence: [commentId]}] | null,
+  ideas: [{title, who, pain, belief: {text, evidence: [commentId]} | null, concept, extraConcepts, funnel, evidence: [commentId]}] | null,
   usage: {tagModel, writeModel, calls, tokensIn, tokensOut, costUsd} }
 ```
 
@@ -153,7 +153,7 @@ Record lưu id comment, không lưu chữ. Màn kết quả đọc chữ từ b�
 
 ### 6.4 Kiến thức
 
-`src/features/ai/knowledge/`: `viral-concepts.md` (40 concept: tên, một dòng mô tả, mẫu tiêu đề), `dick.md`, `funnel.md`. `app.js` đọc lúc khởi động và truyền vào dạng chuỗi. Sửa file rồi khởi động lại là prompt đổi. Nội dung lấy từ tài liệu khoá học chủ app đã mua; thư mục này nằm trong `.gitignore` để không lên remote.
+`src/features/ai/knowledge/`: `viral-concepts.md` (40 concept: tên, một dòng mô tả, mẫu tiêu đề), `dick.md`, `funnel.md`, `kallaway.md` (chỉ các khung thuộc mức "dạy lặp lại"; phần 1 chỉ dùng mục chấm ý tưởng, các mục khác để cho phần 2 và 4). `app.js` đọc lúc khởi động và truyền vào dạng chuỗi. Sửa file rồi khởi động lại là prompt đổi. Nội dung lấy từ tài liệu khoá học chủ app đã mua; thư mục này nằm trong `.gitignore` để không lên remote.
 
 Thiếu file kiến thức (ví dụ sau khi clone lại repo) thì app vẫn chạy: bước 3 bỏ các trường concept, DICK và phễu trong gợi ý content, và màn kết quả ghi "chưa có file kiến thức".
 
