@@ -53,7 +53,7 @@ Một comment có thể không thuộc nhóm nào ở một chiều. Một chi�
 
 ### 4.1 Bắt đầu
 
-Ở màn Thu thập bình luận (`#/tiktok/comments`), danh sách video đã có comment có ô tick. Khi tick ít nhất một video, hiện nút **Phân tích 5W1H (AI)** kèm dòng: số comment sẽ gửi và số token ước tính (số ký tự chia 3).
+Màn Thu thập bình luận (`#/tiktok/comments`) có nút **Phân tích 5W1H (AI)** dẫn sang màn `#/tiktok/5w1h`. Màn này liệt kê các video đã có comment, mỗi video một ô tick. Khi tick ít nhất một video, hiện nút chạy kèm dòng: số comment sẽ gửi và số token ước tính (số ký tự chia 3). Bên dưới là các báo cáo 5W1H đã chạy.
 
 - Chưa nhập API key: nút vẫn hiện, bấm vào ra thông báo "Chưa nhập API key OpenRouter" và link sang Cài đặt.
 - Quá 5.000 comment sau khi lọc (§5.1): app lấy 5.000 comment có điểm chú ý cao nhất (like cộng reply) và ghi rõ đã bỏ bao nhiêu.
@@ -165,8 +165,8 @@ Key lưu dạng chữ thường trong SQLite trên máy, như ô `aiKey` hiện 
 
 ### 6.6 Web
 
-- `web/views/tiktok/comments.js`: ô tick, nút, dòng ước tính.
-- `web/views/tiktok/five-w.js`: màn kết quả.
+- `web/views/tiktok/comments.js`: nút dẫn sang màn 5W1H.
+- `web/views/tiktok/five-w.js`: chọn video (ô tick, dòng ước tính, nút chạy) khi không có `id`; màn kết quả khi có `id`.
 - `web/kinds.js`: thêm `comment_5w1h` ("5W1H comment (AI)", `/tiktok/5w1h`).
 - `web/views/settings.js`: ba ô ở §6.5, bỏ dòng "sắp có".
 - `src/http/routes/jobs.js`: schema tham số của job. `routes/records.js`: Markdown cho kind mới.
