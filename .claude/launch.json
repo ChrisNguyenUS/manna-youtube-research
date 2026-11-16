@@ -4,8 +4,19 @@
     {
       "name": "youtube-research",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["start"],
+      "runtimeArgs": [
+        "start"
+      ],
       "port": 5178
+    },
+    {
+      "name": "preview-5w1h",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "YTR_DATA_DIR=/tmp/ytr-5w1h-preview PORT=5199 node --disable-warning=ExperimentalWarning src/main.js"
+      ],
+      "port": 5199
     }
   ]
 }

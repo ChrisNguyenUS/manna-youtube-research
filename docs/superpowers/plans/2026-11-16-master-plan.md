@@ -21,7 +21,8 @@ App chỉ chạy trên máy chủ app. Không thiết kế cho bán hay nhiều 
 6. **Kiến thức là file.** Tài liệu khoá học nằm trong `src/features/ai/knowledge/*.md`, không lên git. Chỉ phần "dạy lặp lại" của Kallaway được dùng làm luật; các ngưỡng số là ô chỉnh được.
 7. **Bảy viên gạch là xương sống.** 40 concept là từ vựng cho gạch Angle, 6 archetype cho gạch Hook Structure, DICK để viết tiêu đề, 8 bước phân tích là phần đào sâu một video.
 8. **Soulprint là gốc.** Mọi tính năng AI đọc hồ sơ Soulprint để biết game, avatar và pillars.
-9. **Luật code giữ nguyên:** `docs/ARCHITECTURE.md`, test đi trước, không thêm thư viện, không chạy server thử trên thư mục `data` thật.
+9. **Giao diện kết quả theo ảnh mẫu của chủ app.** Mỗi màn kết quả phân tích có một thanh tab (biểu tượng và tên; tab đang chọn nền xanh nhạt, viền xanh), bên dưới là một khung duy nhất cho tab đang chọn. Trong khung: nhãn chữ hoa nhỏ màu xám, giá trị ở dòng dưới, phân loại hiện thành chip, công thức và câu trích in nghiêng, nhiều khoảng trắng. Màn 5W1H đã làm theo cách này. Thư viện gạch dùng đúng bộ tab của ảnh mẫu: Transcript, Idea Analysis, Hook, Storytelling Format, Visual Layout.
+10. **Luật code giữ nguyên:** `docs/ARCHITECTURE.md`, test đi trước, không thêm thư viện, không chạy server thử trên thư mục `data` thật.
 
 ## 3. Bản đồ các giai đoạn
 
