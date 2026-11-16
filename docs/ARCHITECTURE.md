@@ -26,7 +26,7 @@
 ## 2. Nguyên tắc
 
 1. **Ports & adapters (hexagonal).** Lõi nghiệp vụ không biết YouTube trả JSON ra sao, không biết SQLite, không biết HTTP.
-2. **Phụ thuộc chỉ đi vào trong**: `http/cli/desktop → features → core`; `features → ports`; `adapters → ports`. Không bao giờ ngược lại.
+2. **Phụ thuộc chỉ đi vào trong**: `http/cli/desktop → features → core`; `features → ports`; `adapters → ports`. Không bao giờ ngược lại. `llm/` (OpenRouter, bản giả cho test) là một lớp adapter như `sources/` và `store/`.
 3. **Composition root duy nhất** (`src/app.js`) quyết định dùng adapter nào. Không file nào khác `new`/import adapter cụ thể.
 4. **Dữ liệu có phiên bản.** Schema DB qua migration đánh số; mỗi record có `schema_version` và được nâng cấp khi đọc.
 5. **Chỉ số định nghĩa một lần** trong registry; giao diện, CSV, Markdown, tooltip đọc từ đó.
@@ -52,7 +52,8 @@ src/
     video/                  # transcript.js (đọc WebVTT, hook, số từ, từ/phút), metrics.js (dòng số liệu một video); dùng chung TikTok và YouTube
     tiktok/metrics.js       # videoMetrics (Hot score, tương tác, tuổi), attentionPerDay; rank.js (trending → tương tác → hợp thời); keywords.js (từ khoá liên quan: gộp, bỏ nước khác, ý định); on-topic.js (luật lọc đúng chủ đề dùng chung, đo trên test/fixtures/tiktok-on-topic.json)
     tracking/diff.js        # so snapshot: video mới, tốc độ, đổi tiêu đề/thumbnail (v1.1)
-    report/                 # markdown.js, csv.js, tiktok.js (Markdown insight, comment, chủ đề TikTok), xlsx.js (file Excel không cần thư viện), video-analysis.js (Markdown/CSV của Phân tích video)
+    ai/                     # base.js (aiError, DEFAULT_MODEL), five-w.js (5W1H comment: prepare, prompts, checks, counting)
+    report/                 # markdown.js, csv.js, tiktok.js (Markdown insight, comment, chủ đề TikTok), xlsx.js (file Excel không cần thư viện), video-analysis.js (Markdown/CSV của Phân tích video), five-w.js (Markdown báo cáo 5W1H comment)
   ports/                    # HỢP ĐỒNG (JSDoc interface + test hợp đồng dùng chung)
     youtube-source.js       # searchVideos, searchChannels, getChannel, getChannelVideos, getShorts,
                             # getVideo, getComments, suggest, capabilities()
@@ -60,6 +61,7 @@ src/
     store.js                # repos: cache, records, saved, settings, jobs, tracking, license
     job-queue.js            # enqueue, get, list, cancel, onProgress
     clock.js                # now() — để test lịch quét
+    llm.js                  # complete({task, model, system, user, schema}) → JSON, ready()
   sources/
     innertube/              # client.js (rate limit, retry), parse.js, search.js, channel.js, comments.js, suggest.js
       fixtures/             # phản hồi YouTube ghi sẵn (đã lược) cho test
@@ -67,6 +69,7 @@ src/
     tiktok/                 # index.js (createTikTokSource), browser.js (Chromium ẩn, đóng khi rảnh), search.js,
                             # http.js (retry, giới hạn song song), comments.js, parse.js, fixtures/, video.js (một video theo link: thông số + phụ đề, không trình duyệt)
     fake/                   # nguồn giả trả fixture — dùng cho test features (tiktok.js cho TikTok)
+  llm/                      # openrouter.js (real), fake.js (tests)
   store/
     sqlite/
       db.js                 # mở DB, WAL, chạy migration, backup trước migration
@@ -87,6 +90,7 @@ src/
     keyword-ideas.js
     tracking.js             # (v1.1)
     shared-video-analysis.js # khung chạy lô của Phân tích video, dùng chung hai nền tảng
+    ai/comment-5w1h.js      # job comment_5w1h; ai/knowledge/*.md là ghi chú khoá học của chủ sản phẩm, không nằm trong git
     tiktok/                 # search.js, comments.js, insight.js, scrape.js (API scrape, xếp hạng core/tiktok/rank.js), topic.js (Tìm theo chủ đề, quét lại so view), video-analysis.js (Phân tích video)
   http/
     server.js               # node:http, static, error → JSON {error:{code,message}}
