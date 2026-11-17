@@ -1,6 +1,6 @@
 # Gộp app cho gọn: thiết kế
 
-> Ngày: 2026-11-16 · Trạng thái: chờ duyệt · Phạm vi: giai đoạn 3 trong [kế hoạch tổng](../plans/2026-11-16-master-plan.md)
+> Ngày: 2026-11-16 · Trạng thái: đã duyệt · Phạm vi: giai đoạn 3 trong [kế hoạch tổng](../plans/2026-11-16-master-plan.md)
 > Tài liệu liên quan: [ARCHITECTURE.md](../../ARCHITECTURE.md) · [2026-11-13-video-analysis-design.md](2026-11-13-video-analysis-design.md) (phần YouTube chưa làm)
 
 ## 1. Mục đích
@@ -58,7 +58,7 @@ Hệ quả: "một màn phân tích video cho cả hai nền tảng" đòi phả
 
 Nhóm **Làm** (Bảng ý tưởng, Dàn ý, Chấm lô) và mục **Thư viện gạch** được thêm ở các giai đoạn sau, vào đúng cấu trúc này.
 
-Menu giảm từ 13 mục xuống 11, và không còn mục nào trùng việc. Trạng thái gập mở từng nhóm vẫn được nhớ như hiện nay.
+Menu giảm từ 15 mục xuống 13 (tính cả Tổng quan và Soulprint), và không còn mục nào trùng việc. Trạng thái gập mở từng nhóm vẫn được nhớ như hiện nay.
 
 ## 5. Công tắc nền tảng
 
@@ -84,7 +84,7 @@ Về code: cấu trúc `Item` trong `web/app.js` thêm dạng `platforms: {tikto
 
 - Mỗi nền tảng là một job riêng (`tiktok_video_analysis`, `video_analysis`), chạy lần lượt. Mỗi job một báo cáo, một bảng so sánh.
 - Kết quả hiện bằng component `video-analysis` sẵn có; khác nhau ở vài cột theo nền tảng.
-- `#/tiktok/video` chuyển sang `#/video` và giữ nguyên tham số. Báo cáo cũ mở tại màn mới.
+- `#/tiktok/video` là tên cũ của `#/video`: router chuyển sang và giữ nguyên tham số. Báo cáo cũ mở tại màn mới.
 
 ### 6.3 YouTube, bước 1: thông số và comment
 
@@ -92,16 +92,17 @@ Job `video_analysis` dùng vòng lặp dùng chung (`features/shared-video-analy
 
 ### 6.4 YouTube, bước 2: lời thoại
 
-Theo cách đã kiểm chứng trong spec 2026-11-13: Chromium ẩn mở trang xem, mở mô tả, bấm "Show transcript", đọc bảng lời thoại (20 đến 30 giây mỗi video). Thêm `getTranscript(id)` vào port YouTube, có phép thử sống trong `npm run probe`.
+Theo cách đã kiểm chứng trong spec 2026-11-13: Chromium ẩn mở trang xem, mở mô tả, bấm "Show transcript", đọc bảng lời thoại (20 đến 30 giây mỗi video). Thêm `getTranscript(id)` vào port YouTube, có phép thử sống trong `npm run probe`. Trình đọc lời thoại YouTube dùng một Chromium riêng (chỉ bật khi cần, tự đóng sau 2 phút rảnh), vì Chromium của nguồn TikTok gắn với phiên đăng nhập TikTok.
 
 Đây là phần dễ gãy nhất vì phụ thuộc giao diện trang xem. Nó là bước riêng, làm sau cùng, và màn hình chạy được khi bước này lỗi: video không lấy được lời thoại vẫn có thông số và comment, kèm lý do.
 
 ## 7. Thành phần
 
 - `web/app.js`: nhóm menu mới, dạng mục có `platforms`, công tắc, nhớ lựa chọn.
-- `web/views/video.js` (mới): màn gộp, viết từ `web/views/tiktok/video.js`. `web/views/tiktok/video.js` còn lại một dòng chuyển hướng.
+- `web/nav.js` (mới): dữ liệu menu và bảng tên cũ, tách khỏi `web/app.js` để test được.
+- `web/views/video.js` (mới): màn gộp, viết từ `web/views/tiktok/video.js`; file cũ bị xoá, đường dẫn cũ do router chuyển.
+- `web/video-links.js` (mới): nhận nền tảng từ link.
 - `web/kinds.js`: `tiktok_video_analysis` và `video_analysis` cùng trỏ `/video`.
-- `web/views/dashboard.js`: các lối tắt và bốn bước hướng dẫn dùng tên mục mới.
 - `src/features/video-analysis.js` (mới): job `video_analysis` cho YouTube.
 - `src/ports/youtube-source.js`, `src/sources/innertube/`: `getTranscript` (bước §6.4).
 - `src/http/routes/jobs.js`: schema `video_analysis`.
