@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { testApp } from './helpers.js';
 import { createFakeLlm } from '../../src/llm/fake.js';
+import { createFakeTikTok } from '../../src/sources/fake/tiktok.js';
 
 const seg = (start, text, end) => ({ start, end, text });
 const A = '7000000000000000001';
@@ -172,4 +173,40 @@ test('deep dive: nothing to rewrite means one call; a failed rewrite keeps the f
   await broken.f.extract({ recordId: broken.recordId });
   await broken.f.deepDive({ platform: 'tiktok', videoId: A });
   assert.deepEqual([broken.f.get('tiktok', A).deepDive.core[0].what, broken.f.get('tiktok', A).deepDive.flagged], ['Tạo engagement', ['core.0.what']]);
+});
+
+test('a re-extract keeps the score and channel it had when the channel\'s latest check no longer lists the video', async () => {
+  const { a, f } = setup();
+  const vids = await a.tiktok.searchVideos('x', { max: 2 });
+  a.store.follows.put(a.ws, 'tiktok', 'monica', 'Monica', {});
+  a.store.follows.saveScan(a.ws, 'tiktok', 'monica', { lastScan: { at: '1', newIds: [], outlierIds: [], videos: [scan(vids[0].id, 'Thắng', 6)] } });
+  await f.extract({ follows: 'tiktok:monica' });
+  a.store.follows.saveScan(a.ws, 'tiktok', 'monica', { lastScan: { at: '2', newIds: [], outlierIds: [], videos: [scan(vids[1].id, 'Mới', 1)] } });
+  await f.extract({ links: f.get('tiktok', vids[0].id).meta.url, redo: true });
+  const r = f.get('tiktok', vids[0].id);
+  assert.deepEqual([r.meta.score, r.meta.ageDays, r.meta.channelTitle, r.channelRef], [6, 10, 'Monica', 'tiktok:monica']);
+  a.store.follows.saveScan(a.ws, 'tiktok', 'monica', { lastScan: { at: '3', newIds: [], outlierIds: [], videos: [scan(vids[0].id, 'Thắng', 9)] } });
+  await f.extract({ links: r.meta.url, redo: true });
+  assert.equal(f.get('tiktok', vids[0].id).meta.score, 9, 'a newer check wins');
+});
+
+test('a short link to a video already in the library is skipped after loading, without a model call', async () => {
+  const fake = createFakeTikTok();
+  const first = (await fake.searchVideos('x', { max: 1 }))[0].id;
+  const tiktok = { ...fake, getVideo: (u) => fake.getVideo(/vm\.tiktok\.com/.test(u) ? `https://www.tiktok.com/@x/video/${first}` : u) };
+  const llm = createFakeLlm(() => answer());
+  const a = testApp(undefined, tiktok, { llm, knowledgeFiles: {} });
+  await a.features.bricks.extract({ links: `https://www.tiktok.com/@x/video/${first}` });
+  const steps = [];
+  const r = await a.features.bricks.extract({ links: 'https://vm.tiktok.com/ZSabc/' }, (p) => steps.push(p.step));
+  assert.deepEqual([r.done, r.skipped, llm.calls.length], [0, 1, 1]);
+  assert.equal(steps.at(-1), 'Bóc gạch 1/1');
+});
+
+test('a stored row missing fields still opens, with the missing ones empty', () => {
+  const { a, f } = setup();
+  a.store.bricks.put(a.ws, { platform: 'tiktok', videoId: 'old', channelRef: '', meta: { title: 'cũ' }, source: { segments: [], comments: [] }, model: 'm', data: { topic: 'Chỉ có topic' } });
+  const r = f.get('tiktok', 'old');
+  assert.deepEqual([r.bricks.topic, r.bricks.evidence.topic, r.bricks.hook.spoken, r.bricks.story.blocks, r.bricks.flags.unsupported], ['Chỉ có topic', [], '', [], []]);
+  assert.equal(f.list().find((x) => x.videoId === 'old').bricks.audience.total, 0);
 });

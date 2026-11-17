@@ -4,7 +4,7 @@
 import { noop, splitList } from './shared.js';
 import { rethrowIfCancelled } from '../core/cancel.js';
 import { aiError } from '../core/ai/base.js';
-import { LIMITS, EDITABLE, cleanEdit, applyEdits } from '../core/bricks/schema.js';
+import { LIMITS, EDITABLE, cleanEdit, applyEdits, emptyBricks } from '../core/bricks/schema.js';
 import { prepareVideo, extractRequest, checkBricks } from '../core/bricks/extract.js';
 import { bricksMarkdown, deepDiveMarkdown } from '../core/report/bricks.js';
 import { deepDiveRequest, checkDeepDive, flaggedItems, rewriteRequest, applyRewrite } from '../core/bricks/deep-dive.js';
@@ -16,6 +16,12 @@ const ANALYSIS_KINDS = ['tiktok_video_analysis', 'video_analysis'];
 const TIKTOK_LINK = /^(https?:\/\/)?([a-z0-9-]+\.)*tiktok\.com\/|^\d{15,25}$/i;
 const invalid = (message, field) => Object.assign(new Error(message), { code: 'invalid_input', field });
 const notFound = (message) => Object.assign(new Error(message), { code: 'not_found' });
+/** Stored bricks with every field present, so a row written by an older version or by hand never breaks a screen. @param {any} d */
+function filled(d) {
+  const e = emptyBricks();
+  const x = d && typeof d === 'object' ? d : {};
+  return { ...e, ...x, hook: { ...e.hook, ...x.hook }, story: { ...e.story, ...x.story }, audience: { ...e.audience, ...x.audience }, fit: { ...e.fit, ...x.fit }, visual: { ...e.visual, ...x.visual }, evidence: { ...e.evidence, ...x.evidence }, flags: { ...e.flags, ...x.flags } };
+}
 
 /** Where a video belongs and how it is shown in lists. @param {'tiktok'|'youtube'} platform @param {any} v */
 function describe(platform, v) {
@@ -169,19 +175,32 @@ export function makeBricks({ repo, ws, llm, settings, knowledge = '', analyst = 
     let skipped = 0;
     let finished = 0;
     progress({ step: `Bóc gạch 0/${targets.length}`, done: 0, total: targets.length });
+    // Every target counts towards the progress, whichever way it ends.
+    const step = () => progress({ step: `Bóc gạch ${++finished}/${targets.length}`, done: finished, total: targets.length });
     await pool(targets, LIMITS.parallel, async (t) => {
-      const before = repo.get(ws, t.platform, t.id);
-      if (before && !params.redo) skipped++;
+      const known = repo.get(ws, t.platform, t.id);
+      if (known && !params.redo) skipped++;
       else {
         try {
           const got = await t.load();
+          // A short link (vm.tiktok.com/…) only shows its real video id once loaded: check the library again before
+          // paying for a model call.
+          const videoId = String(got.video.id ?? t.id);
+          const before = videoId === t.id ? known : repo.get(ws, t.platform, videoId);
+          if (before && !params.redo) {
+            skipped++;
+            return void step();
+          }
           const prep = prepareVideo({ platform: t.platform, video: got.video, transcript: got.transcript, comments: got.comments });
           const data = await twice(async () => checkBricks(await m.ask(extractRequest(prep, opts), model), prep, opts));
           const d = describe(/** @type {any} */ (t.platform), got.video);
-          const scan = scans.get(`${t.platform}:${t.id}`) ?? null; // set when a followed channel's last check saw this video
+          // Score, age and channel come from a followed channel's last check. That check only lists the channel's latest
+          // videos, so when it no longer has this one, what an earlier extract recorded is kept.
+          const scan = scans.get(`${t.platform}:${videoId}`) ?? null;
+          const was = before?.meta ?? {};
           repo.put(ws, {
-            platform: t.platform, videoId: String(got.video.id ?? t.id), channelRef: scan?.channelRef || d.channelRef,
-            meta: { ...d.meta, channelTitle: scan?.channelTitle || d.meta.channelTitle, score: scan?.score ?? null, ageDays: scan?.ageDays ?? null },
+            platform: t.platform, videoId, channelRef: scan?.channelRef || before?.channelRef || d.channelRef,
+            meta: { ...d.meta, channelTitle: scan?.channelTitle || was.channelTitle || d.meta.channelTitle, score: scan?.score ?? was.score ?? null, ageDays: scan?.ageDays ?? was.ageDays ?? null },
             source: { segments: prep.segments, comments: prep.comments, truncated: prep.truncated }, data, model,
           });
           done++;
@@ -191,14 +210,13 @@ export function makeBricks({ repo, ws, llm, settings, knowledge = '', analyst = 
           failed.push({ title: t.title, reason: String(e?.message || e) });
         }
       }
-      finished++;
-      progress({ step: `Bóc gạch ${finished}/${targets.length}`, done: finished, total: targets.length });
+      step();
     });
     return { inline: true, done, skipped, failed, usage: { model, ...m.usage } };
   }
 
   const view = (r, full = false) => ({
-    platform: r.platform, videoId: r.videoId, channelRef: r.channelRef, meta: r.meta, bricks: applyEdits(r.data, r.edited), editedPaths: Object.keys(r.edited).filter((k) => EDITABLE.includes(k)),
+    platform: r.platform, videoId: r.videoId, channelRef: r.channelRef, meta: r.meta, bricks: applyEdits(filled(r.data), r.edited), editedPaths: Object.keys(r.edited).filter((k) => EDITABLE.includes(k)),
     hasDeepDive: !!r.deepDive, analyzedAt: r.analyzedAt, model: r.model, ...(full ? { source: r.source, deepDive: r.deepDive } : {}),
   });
   function one(platform, videoId) {
