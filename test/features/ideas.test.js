@@ -177,3 +177,17 @@ test('a pasted script is saved with its check, measured against the outline\'s l
   assert.deepEqual(f.lint('Chỉ kể thôi.', { length: 45, leadMagnet: '' }).issues.map((x) => x.rule), ['cta']);
   assert.match(f.outlineMarkdown(c.id), /^# Dàn ý: /);
 });
+
+test('outline helpers use the outline and card on screen and the hooks file, and save nothing', async () => {
+  const reply = { hooks: [{ archetype: 'Teacher', lean: 'l', interjection: 'Nhưng', snapback: 's', text: 't', visual: 'v' }], lockin: 'Hứa', body1_point: 'Ý 1', body1_example: '', rehook1: 'r', body2_point: 'Ý 2', body2_example: '', rehook2: '', body3_point: '', body3_example: '', closing: '', cta: 'Comment để nhận', loop_stakes: '', loop_question: '', loop_headfake: '', loop_newLoop: '' };
+  const llm = createFakeLlm([reply]);
+  const a = testApp(undefined, undefined, { llm, knowledgeFiles: { hooks: 'HOOK 3 BƯỚC', dick: 'DICK' } });
+  const c = a.features.ideas.create({ from: 'self' });
+  const r = await a.features.ideas.outlineAssist('outline', { id: c.id, outline: { scenes: ['face'] }, card: { topic: 'Phỏng vấn' } });
+  assert.deepEqual([r.suggestion.hooks.length, r.suggestion.blocks.cta.point], [1, 'Comment để nhận']);
+  assert.match(llm.calls[0].system, /HOOK 3 BƯỚC/);
+  assert.ok(!llm.calls[0].system.includes('DICK'));
+  assert.match(llm.calls[0].user, /Phỏng vấn/);
+  assert.deepEqual([a.features.ideas.get(c.id).outline.scenes, a.features.ideas.get(c.id).card.topic], [[], '']);
+  await assert.rejects(a.features.ideas.outlineAssist('outline', { id: 999 }), (/** @type {any} */ e) => e.code === 'not_found');
+});

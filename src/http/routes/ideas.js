@@ -63,6 +63,11 @@ export const ideaRoutes = [
       return app.features.ideas.saveScript(id, body.text);
     },
   },
+  // AI helpers on the outline: a suggestion for what is on screen. Nothing is saved here.
+  {
+    method: 'POST', path: '/api/v1/ideas/:id/outline/assist',
+    handler: ({ app, params, body }) => app.features.ideas.outlineAssist(String(body?.action || ''), { id: idOf(params.id), outline: body?.outline, card: body?.card, archetype: typeof body?.archetype === 'string' ? body.archetype : undefined }),
+  },
   {
     method: 'GET', path: '/api/v1/ideas/:id/outline.md',
     handler: ({ app, params, query }) => {

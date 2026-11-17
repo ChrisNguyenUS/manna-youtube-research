@@ -9,6 +9,7 @@ import { ACTIONS, assistRequest, checkAssist } from '../core/ideas/assist.js';
 import { modelOf } from './ai/run.js';
 import { cleanOutline, timelineOf, outlineGaps } from '../core/outline/outline.js';
 import { lintScript } from '../core/outline/lint.js';
+import { ACTIONS as OUTLINE_ACTIONS, outlineRequest, checkOutlineAssist } from '../core/outline/assist.js';
 import { outlineMarkdown } from '../core/report/outline.js';
 
 const invalid = (message, field) => Object.assign(new Error(message), { code: 'invalid_input', field });
@@ -18,10 +19,10 @@ const FULL = `Lô đang mở đã đủ ${LIMITS.live} thẻ. Bỏ một thẻ, 
 /**
  * @param {{repo: any, ws: string, settings: () => Record<string, any>, profile: () => any,
  *   library: {list: () => any[], get: (platform: string, videoId: string) => any}, fiveW: {report: (id: number) => any}, llm: import('../ports/llm.js').LlmClient,
- *   knowledge?: string, profileText?: () => string}} deps
+ *   knowledge?: string, hookKnowledge?: string, profileText?: () => string}} deps
  *   library: the brick library (features.bricks), read for question 1 and for cards made from a video
  */
-export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm, knowledge = '', profileText = () => '' }) {
+export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm, knowledge = '', hookKnowledge = '', profileText = () => '' }) {
   /** Ways to make a new card: `from` prefix → card fields. Later tasks add sources here. @type {Record<string, (parts: string[]) => any>} */
   const sources = { self: () => emptyCard() };
 
@@ -170,8 +171,23 @@ export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm, kn
     return outlineMarkdown(v, { voice: String(profile()?.voice ?? '') });
   }
 
+  /**
+   * One outline helper. `outline` and `card` are what is on screen; the stored ones are used when missing.
+   * Returns a suggestion and saves nothing. @param {string} action @param {{id: number|string, outline?: any, card?: any, archetype?: string}} input
+   */
+  async function outlineAssist(action, { id, outline, card, archetype } = /** @type {any} */ ({})) {
+    if (!OUTLINE_ACTIONS.includes(action)) throw invalid('Không có trợ lý này', 'action');
+    const row = one(id);
+    if (!llm.ready()) throw aiError('llm_no_key', 'Chưa nhập API key OpenRouter. Vào Cài đặt để nhập.');
+    const onCard = cleanCard({ ...row.data, ...(card && typeof card === 'object' ? card : {}), origin: row.data.origin });
+    const onOutline = cleanOutline(outline && typeof outline === 'object' ? outline : row.outline);
+    const model = modelOf(settings().aiWriteModel);
+    const r = await llm.complete({ ...outlineRequest(action, { card: onCard, outline: onOutline, archetype, profileText: profileText(), knowledge: hookKnowledge }), model });
+    return { action, suggestion: checkOutlineAssist(action, r.json, onOutline), usage: { model, tokensIn: r.tokensIn, tokensOut: r.tokensOut, costUsd: r.costUsd } };
+  }
+
   return {
-    saveOutline, saveScript, outlineMarkdown: outlineMd, lint: (text, o) => lintScript(text, o),
+    outlineAssist, saveOutline, saveScript, outlineMarkdown: outlineMd, lint: (text, o) => lintScript(text, o),
     sources, assist, board, create, update, newBatch,
     get: (id) => view(one(id), context()),
     remove: (id) => void repo.removeCard(ws, one(id).id),
