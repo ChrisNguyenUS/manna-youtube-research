@@ -60,6 +60,8 @@ export function makeTikTokTopicScan({ tiktok, records, now }) {
     const topComments = params.topComments === 0 ? 0 : 3;
     const keepOffTopic = Boolean(params.keepOffTopic);
     const keepPrevious = params.keepPrevious !== false;
+    // The country the user picked ("Khu vực"); none = guessed from the topic, as before.
+    const country = params.country ? String(params.country) : null;
 
     // Keywords: the ones the user picked on screen, or TikTok's related searches when none were sent.
     let keywordList = splitList(params.keywords);
@@ -82,7 +84,7 @@ export function makeTikTokTopicScan({ tiktok, records, now }) {
 
     const scannedAt = new Date(now()).toISOString();
     const data = {
-      topic, scannedAt, status: 'running', params: { perKeyword, sort, minPlays, maxAgeDays, topComments, keepOffTopic, keepPrevious },
+      topic, scannedAt, status: 'running', params: { perKeyword, sort, minPlays, maxAgeDays, topComments, keepOffTopic, keepPrevious, ...(country ? { country } : {}) },
       keywords: discovered, columns: [], summary: null, hashtags: [],
       previous: prev ? { id: prev.id, scannedAt: prev.data.scannedAt } : null,
     };
@@ -119,7 +121,7 @@ export function makeTikTokTopicScan({ tiktok, records, now }) {
           const t = now();
           for (const v of list) pool.set(v.id, v);
           const poolList = [...pool.values()];
-          const verdicts = classifyOnTopic(poolList, [topic, kw]);
+          const verdicts = classifyOnTopic(poolList, [topic, kw], country ? { country } : {});
           const verdictOf = new Map(poolList.map((v, k) => [v.id, verdicts[k]]));
           /** @type {any[]} */
           let vids = list.map((v) => ({ ...v, ...videoMetrics(v, t), onTopic: verdictOf.get(v.id).onTopic, offTopicReason: verdictOf.get(v.id).reason }));

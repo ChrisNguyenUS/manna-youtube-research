@@ -1,12 +1,15 @@
 import { httpError } from '../router.js';
 import { validate } from '../validate.js';
 
+/** Countries the TikTok on-topic rule knows (src/core/tiktok/on-topic.js); none sent = guessed from the keyword. */
+const TIKTOK_COUNTRIES = /** @type {any} */ (['us', 'canada', 'japan', 'korea', 'australia', 'germany', 'taiwan']);
+
 /** Input schema for each job kind (kinds themselves are registered in src/app.js). */
 export const JOB_SCHEMAS = {
-  tiktok_search: { keywords: 'string!', perKeyword: 'int?', keepOffTopic: 'bool?', minPlays: 'int?', minLikes: 'int?', maxAgeDays: 'int?', minEngagement: 'int?' },
+  tiktok_search: { keywords: 'string!', perKeyword: 'int?', country: TIKTOK_COUNTRIES, keepOffTopic: 'bool?', minPlays: 'int?', minLikes: 'int?', maxAgeDays: 'int?', minEngagement: 'int?' },
   tiktok_insight: { keywords: 'string!', perKeyword: 'int?', top: /** @type {any} */ ([5, 10, 20, 30]), commentsPerVideo: /** @type {any} */ ([100, 300]), replies: 'bool?', keepOffTopic: 'bool?', minPlays: 'int?', minLikes: 'int?', maxAgeDays: 'int?', minEngagement: 'int?' },
   tiktok_comments: { videos: 'string!', max: /** @type {any} */ ([100, 300]), replies: 'bool?' },
-  tiktok_topic: { topic: 'string!', keywords: 'string?', maxKeywords: 'int?', perKeyword: 'int?', sort: /** @type {any} */ (['score', 'plays', 'trending', 'fresh']), minPlays: 'int?', maxAgeDays: 'int?', topComments: /** @type {any} */ ([0, 3]), keepOffTopic: 'bool?', keepPrevious: 'bool?' },
+  tiktok_topic: { topic: 'string!', keywords: 'string?', maxKeywords: 'int?', perKeyword: 'int?', country: TIKTOK_COUNTRIES, sort: /** @type {any} */ (['score', 'plays', 'trending', 'fresh']), minPlays: 'int?', maxAgeDays: 'int?', topComments: /** @type {any} */ ([0, 3]), keepOffTopic: 'bool?', keepPrevious: 'bool?' },
   tiktok_video_analysis: { videos: 'string!', script: 'bool?', comments: /** @type {any} */ ([0, 100, 300]), replies: 'bool?', reuse: 'bool?' },
   video_analysis: { videos: 'string!', script: 'bool?', comments: /** @type {any} */ ([0, 100, 300]), replies: 'bool?' },
   brick_extract: { recordId: 'int?', links: 'string?', follows: 'string?', contrast: 'bool?', redo: 'bool?' },

@@ -1,16 +1,19 @@
-// "Tìm theo chủ đề" (TikTok only), two screens in one view:
-// 1. Setup: topic → related keywords TikTok itself suggests (picked as cards) + scan settings on the side.
+// "Nghiên cứu chủ đề" on TikTok, two screens in one view:
+// 1. Setup: the search-screen form (topic, region, time, views, advanced) → related keywords TikTok itself suggests
+//    (picked as cards), the picked ones and the scan button on the side.
 // 2. Result: KPIs, "So sánh theo từ khoá" (one column per keyword) and "Tất cả video" (grid or list).
 //    Videos are ticked by hand on either tab; only the ticked ones go to the existing comment scraper.
 import { records, tiktokTopic } from '../../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ageText, bindTips, activeJob, watchJob, isSaved, toggleSave, saveMany, errorCallout } from '../../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ageText, bindTips, activeJob, watchJob, isSaved, toggleSave, saveMany, errorCallout } from '../../lib.js';
 import { savedTikTokVideo, savedKeyword } from '../../saved-items.js';
 import { scope } from '../../dom.js';
 import { tiktokLoginNotice } from '../../components/tiktok-login.js';
-import { tiktokCriteria } from '../../components/index.js';
+import { findHead, findBar, findRows, findAdvanced, regionSelect, bindPlatformSwitch } from '../../components/find-shell.js';
+import { findHistory, rerunRecord } from '../../components/find-history.js';
+import { TIKTOK_REGIONS, TIKTOK_COUNTRY, TIKTOK_AGE_CHIPS, TIKTOK_PLAYS_CHIPS, knownRegion } from '../../search-options.js';
 
 const FORM = {
-  topic: '', minPlays: 100000, maxAgeDays: 0, sort: 'score', maxKeywords: 10, perKeyword: 10, topComments: 3, keepOffTopic: 0, keepPrevious: 1,
+  topic: '', gl: '', minPlays: 100000, maxAgeDays: 0, sort: 'score', maxKeywords: 10, perKeyword: 10, topComments: 3, keepOffTopic: 0, keepPrevious: 1,
   // How the result is shown (never sent to the server).
   tab: 'compare', layout: 'grid', show: 10, vsort: 'rank', cmShow: 1, colw: 320,
 };
@@ -28,16 +31,16 @@ const VIEW_SORTS = {
   likes: ['Nhiều tim nhất', (v) => v.likes],
   comments: ['Nhiều bình luận nhất', (v) => v.comments],
 };
-const CFG = {
-  maxAgeDays: ['Thời gian', 'calendar', [[0, 'Mọi lúc'], [7, '7 ngày'], [30, '30 ngày'], [90, '90 ngày'], [365, '1 năm']]],
-  minPlays: ['View tối thiểu', 'eye', [[0, 'Không lọc'], [10000, '≥ 10K view'], [100000, '≥ 100K view'], [1000000, '≥ 1M view']]],
-  sort: ['Xếp hạng theo', 'trend', Object.entries(SORT_LABELS)],
-  perKeyword: ['Video/từ khoá', 'play', [[5, '5 video'], [10, '10 video'], [20, '20 video'], [30, '30 video']]],
-  topComments: ['Top comment', 'message', [[3, '3 comment nhiều tym'], [0, 'Không lấy (nhanh hơn)']]],
-  keepOffTopic: ['Video lạc đề', 'layers', [[0, 'Bỏ, chỉ giữ đúng chủ đề'], [1, 'Giữ hết']]],
-  keepPrevious: ['Video lần trước', 'clock', [[1, 'Giữ nếu lần này thiếu'], [0, 'Không giữ']]],
-  maxKeywords: ['Tự chọn sẵn', 'check', [[5, '5 từ khoá đầu'], [10, '10 từ khoá đầu'], [15, '15 từ khoá đầu'], [20, '20 từ khoá đầu']]],
+// Advanced scan settings, as chip rows: [label, options [value, label]].
+const ADV = {
+  sort: ['Xếp hạng theo', Object.entries(SORT_LABELS)],
+  perKeyword: ['Video mỗi từ khoá', [[5, '5'], [10, '10'], [20, '20'], [30, '30']]],
+  topComments: ['Top comment', [[3, '3 comment nhiều tym'], [0, 'Không lấy (nhanh hơn)']]],
+  keepOffTopic: ['<span data-tip="Đúng chủ đề = caption/hashtag có từ khoá (bỏ chữ “mỹ”, năm), hoặc có ≥ 2 hashtag của chủ đề; bỏ video về nước khác">Video lạc đề</span>', [[0, 'Bỏ, chỉ giữ đúng chủ đề'], [1, 'Giữ hết']]],
+  keepPrevious: ['<span data-tip="Mỗi lần tìm, TikTok trả về một bộ video hơi khác. Khi quét lại chủ đề cũ, video lần trước có mà lần này TikTok không trả về vẫn được giữ (nhãn “Lần trước”, view tính đến lần quét đó), tối đa 30 ngày.">Video lần trước</span>', [[1, 'Giữ nếu lần này thiếu'], [0, 'Không giữ']]],
+  maxKeywords: ['Tự chọn sẵn', [[5, '5 từ khoá đầu'], [10, '10 từ khoá đầu'], [15, '15 từ khoá đầu'], [20, '20 từ khoá đầu']]],
 };
+const COUNTRY_REGION = Object.fromEntries(Object.entries(TIKTOK_COUNTRY).map(([gl, c]) => [c, gl]));
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
 const setHash = (h) => window.history.replaceState(null, '', h);
 
@@ -82,15 +85,20 @@ export async function mount(root, params) {
   let openId = null; // video shown in the side panel
   const shown = scope();
 
+  if (knownRegion(params.gl, TIKTOK_REGIONS)) st.gl = params.gl; // carried over from the YouTube side
   root.innerHTML = `
     <section data-setup>
-      <div class="page-head"><div><h1>${icon('compass')} Tìm theo chủ đề (TikTok)</h1>
-        <p>Nhập chủ đề, chọn từ khoá mà chính TikTok gợi ý, rồi quét video top của từng từ khoá kèm 3 comment nhiều tym nhất. Quét lại chủ đề cũ để thấy video nào đang tăng view.</p></div>
-        <button class="btn" data-goto-history>${icon('clock')} Chủ đề đã quét</button></div>
+      ${findHead('compass', 'Nghiên cứu chủ đề', 'Nhập chủ đề, chọn từ khoá mà chính TikTok gợi ý, rồi quét video top của từng từ khoá. Quét lại chủ đề cũ để thấy video nào đang tăng view.')}
       <div data-ttlogin></div>
-      <div class="card card-pad tt-search">
-        <div class="tt-searchbox">${icon('search')}<input data-k="topic" placeholder="Ví dụ: di trú mỹ, bảo lãnh vợ chồng" value="${esc(st.topic)}" autocomplete="off"><button type="button" class="icon-btn" data-clear title="Xoá">${icon('x')}</button></div>
-        <button class="btn primary lg" data-find>${icon('layers')} Tìm từ khoá</button>
+      <div class="card card-pad" data-form>
+        ${findBar({ path: '/tiktok/topic', input: `<input class="input" data-k="topic" placeholder="Chủ đề. VD: di trú mỹ, bảo lãnh vợ chồng" value="${esc(st.topic)}" autocomplete="off">`, button: `<button class="btn primary lg" data-find>${icon('layers')} Tìm từ khoá</button>` })}
+        ${findRows([
+          ['Khu vực', `${regionSelect(st.gl, TIKTOK_REGIONS)}<span class="muted small" data-tip="TikTok luôn tìm như người xem ở Việt Nam. Khu vực ở đây là nước mà video phải nói tới: video về thủ tục nước khác bị bỏ.">Video nói về nước này · kết quả vẫn là TikTok Việt</span>`],
+          ['Đăng trong', chips('maxAgeDays', TIKTOK_AGE_CHIPS, st.maxAgeDays || 0)],
+          ['View tối thiểu', chips('minPlays', TIKTOK_PLAYS_CHIPS, st.minPlays || 0)],
+        ])}
+        ${findAdvanced(Object.entries(ADV).map(([k, [label, opts]]) => [label, chips(k, opts.map(([v, l]) => ({ v, label: l })), st[k] ?? '')]))}
+        <div class="find-note muted small">Miễn phí · mỗi từ khoá ≈ 12 giây, 25 giây nếu lấy comment</div>
       </div>
       <div class="tt-setup">
         <div class="card" data-kwpanel></div>
@@ -107,6 +115,22 @@ export async function mount(root, params) {
   const resBox = root.querySelector('[data-res]');
   const progBox = root.querySelector('[data-prog]');
   const topicInput = /** @type {HTMLInputElement} */ (root.querySelector('[data-k="topic"]'));
+  const form = /** @type {HTMLElement} */ (root.querySelector('[data-form]'));
+  const historyList = findHistory(root.querySelector('[data-history]'), 'topic');
+  shown.add(bindTips(form));
+  bindPlatformSwitch(root, () => ({ q: topicInput.value.trim(), gl: st.gl }));
+  form.querySelector('[data-k="gl"]').addEventListener('change', (e) => ((st.gl = e.target.value), persist('tt-topic-form', st)));
+  bindChips(form, (k, v) => {
+    st[k] = k === 'sort' ? v : Number(v) || 0;
+    persist('tt-topic-form', st);
+    if (k === 'maxKeywords' && kws.length) return preselect();
+    if (k === 'topComments') renderSide();
+  });
+  /** The form shows `st` again (after "Chỉnh sửa từ khoá" loaded an old scan's settings). */
+  const syncForm = () => {
+    form.querySelectorAll('[data-chips]').forEach((g) => g.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.dataset.v === String(st[g.dataset.chips] ?? ''))));
+    /** @type {HTMLSelectElement} */ (form.querySelector('[data-k="gl"]')).value = st.gl;
+  };
   shown.add(tiktokLoginNotice(root.querySelector('[data-ttlogin]')));
 
   function mode(m) {
@@ -121,8 +145,6 @@ export async function mount(root, params) {
   // ---------------- setup ----------------
   root.querySelector('[data-find]').addEventListener('click', findKeywords);
   topicInput.addEventListener('keydown', (e) => e.key === 'Enter' && findKeywords());
-  root.querySelector('[data-clear]').addEventListener('click', () => ((topicInput.value = ''), topicInput.focus()));
-  root.querySelector('[data-goto-history]').addEventListener('click', () => root.querySelector('[data-history]').scrollIntoView({ behavior: 'smooth' }));
 
   async function findKeywords() {
     st.topic = topicInput.value.trim();
@@ -173,11 +195,6 @@ export async function mount(root, params) {
     renderSide();
   }
 
-  const cfgSelect = (k) => {
-    const [label, ic, options] = CFG[k];
-    return `<div class="tt-cfg-row"><span>${label}</span><label class="tt-pill">${icon(ic)}<select data-cfg="${k}">${options.map(([v, l]) => `<option value="${v}" ${String(v) === String(st[k] ?? '') ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label></div>`;
-  };
-
   function renderSide() {
     const picked = kws.filter((k) => k.selected);
     const n = picked.length;
@@ -187,9 +204,6 @@ export async function mount(root, params) {
       <div class="card-pad">
         <div class="tt-selkws">${n ? picked.map((k) => `<span class="tt-selkw">${esc(k.keyword)}<button type="button" data-unpick="${kws.indexOf(k)}" title="Bỏ từ khoá này">${icon('x')}</button></span>`).join('') : '<span class="small muted">Chưa chọn từ khoá nào.</span>'}</div>
         ${n ? `<button type="button" class="btn sm ghost" data-kwsave style="margin-top:8px" title="Giữ các từ khoá này trong Đã lưu">${icon('bookmark')} Lưu ${n} từ khoá</button>` : ''}
-        <div class="tt-cfg-title">${icon('settings')} Cấu hình quét</div>
-        ${['maxAgeDays', 'minPlays', 'sort', 'perKeyword', 'topComments', 'keepOffTopic', 'keepPrevious', 'maxKeywords'].map(cfgSelect).join('')}
-        <div class="small muted" style="margin-top:6px"><span data-tip="Đúng chủ đề = caption/hashtag có từ khoá (bỏ chữ “mỹ”, năm), hoặc có ≥ 2 hashtag của chủ đề; bỏ video về nước khác">Video lạc đề là gì?</span> · <span data-tip="Mỗi lần tìm, TikTok trả về một bộ video hơi khác. Khi quét lại chủ đề cũ, video lần trước có mà lần này TikTok không trả về vẫn được giữ (nhãn “Lần trước”, view tính đến lần quét đó), tối đa 30 ngày.">Video lần trước là gì?</span></div>
         <button class="btn primary lg tt-scan" data-scan ${n ? '' : 'disabled'}>${icon('play')} Quét ${n} từ khoá</button>
         <div class="small muted" style="text-align:center;margin-top:6px">${n ? `Dự kiến khoảng ${minutes} phút` : 'Chọn ít nhất một từ khoá'}</div>
       </div>`;
@@ -218,13 +232,6 @@ export async function mount(root, params) {
   });
   shown.on(setupEl, 'click', '[data-add-btn]', addKeyword);
   shown.on(setupEl, 'keydown', '[data-add]', (e) => e.key === 'Enter' && addKeyword());
-  shown.on(setupEl, 'change', '[data-cfg]', (e, el) => {
-    const k = el.dataset.cfg;
-    st[k] = k === 'sort' ? el.value : Number(el.value) || 0;
-    persist('tt-topic-form', st);
-    if (k === 'maxKeywords' && kws.length) return preselect();
-    if (k === 'topComments') renderSide();
-  });
   shown.on(setupEl, 'click', '[data-scan]', () => scan(kws.filter((k) => k.selected).map((k) => k.keyword)));
 
   function addKeyword() {
@@ -247,7 +254,8 @@ export async function mount(root, params) {
     if (!keywords.length) return toast('Chọn ít nhất một từ khoá', 'error');
     st.topic = topic;
     persist('tt-topic-form', st);
-    const body = { topic, keywords: keywords.join('\n'), perKeyword: o.perKeyword, sort: o.sort, minPlays: o.minPlays || 0, maxAgeDays: o.maxAgeDays || 0, topComments: o.topComments ? 3 : 0, keepOffTopic: Boolean(o.keepOffTopic), keepPrevious: o.keepPrevious !== 0 && o.keepPrevious !== false };
+    const country = 'country' in o ? o.country : TIKTOK_COUNTRY[o.gl];
+    const body = { topic, keywords: keywords.join('\n'), ...(country ? { country } : {}), perKeyword: o.perKeyword, sort: o.sort, minPlays: o.minPlays || 0, maxAgeDays: o.maxAgeDays || 0, topComments: o.topComments ? 3 : 0, keepOffTopic: Boolean(o.keepOffTopic), keepPrevious: o.keepPrevious !== 0 && o.keepPrevious !== false };
     await follow(topic, (onProgress) => runJob('tiktok_topic', body, onProgress));
   }
 
@@ -335,7 +343,7 @@ export async function mount(root, params) {
     const kpi = (ic, value, label, hint = '') => `<div class="tt-kpi"><span class="tt-kpi-ic">${icon(ic)}</span><div><div class="tt-kpi-v">${value}</div><div class="tt-kpi-l">${label}</div>${hint ? `<div class="tt-kpi-h">${hint}</div>` : ''}</div></div>`;
     const fresh30 = all.filter((v) => v.ageDays != null && v.ageDays <= 30).length;
     resBox.innerHTML = `
-      <div class="tt-crumb"><button type="button" class="btn ghost sm" data-back>${icon('back')} Tìm theo chủ đề</button><span class="muted">/</span><b>Kết quả nghiên cứu</b></div>
+      <div class="tt-crumb"><button type="button" class="btn ghost sm" data-back>${icon('back')} Nghiên cứu chủ đề</button><span class="muted">/</span><b>Kết quả nghiên cứu</b></div>
       <div class="page-head" style="margin-bottom:14px"><div><h1>Kết quả nghiên cứu: ${esc(d.topic)}</h1>
           <p class="small">${esc(criteria)}<span class="muted"> · ${when}${d.previous ? ` · so với lần quét ${ago(Date.parse(d.previous.scannedAt))}` : ''}</span></p></div>
         ${done ? `<div class="head-actions">
@@ -747,7 +755,7 @@ export async function mount(root, params) {
   /** Same topic, same keywords and filters as that scan. @param {any} rec */
   function rescan(rec) {
     const p = rec.data.params;
-    scan(rec.data.columns.map((c) => c.keyword), { topic: rec.data.topic, perKeyword: p.perKeyword, sort: p.sort, minPlays: p.minPlays, maxAgeDays: p.maxAgeDays, topComments: p.topComments, keepOffTopic: p.keepOffTopic ? 1 : 0, keepPrevious: p.keepPrevious === false ? 0 : 1 });
+    scan(rec.data.columns.map((c) => c.keyword), { topic: rec.data.topic, country: p.country, perKeyword: p.perKeyword, sort: p.sort, minPlays: p.minPlays, maxAgeDays: p.maxAgeDays, topComments: p.topComments, keepOffTopic: p.keepOffTopic ? 1 : 0, keepPrevious: p.keepPrevious === false ? 0 : 1 });
   }
 
   /** Back to setup with this scan's topic, keywords and settings, to add or drop keywords. @param {any} rec */
@@ -758,8 +766,9 @@ export async function mount(root, params) {
     for (const c of d.columns) if (!kws.some((k) => fold(k.keyword) === fold(c.keyword))) kws.push({ keyword: c.keyword, intent: c.intent || 'related', selected: true, sources: ['manual'] });
     kwTopic = d.topic;
     topicInput.value = d.topic;
-    Object.assign(st, { topic: d.topic, perKeyword: d.params.perKeyword, sort: d.params.sort, minPlays: d.params.minPlays, maxAgeDays: d.params.maxAgeDays, topComments: d.params.topComments, keepOffTopic: d.params.keepOffTopic ? 1 : 0, keepPrevious: d.params.keepPrevious === false ? 0 : 1 });
+    Object.assign(st, { topic: d.topic, gl: COUNTRY_REGION[d.params.country] ?? '', perKeyword: d.params.perKeyword, sort: d.params.sort, minPlays: d.params.minPlays, maxAgeDays: d.params.maxAgeDays, topComments: d.params.topComments, keepOffTopic: d.params.keepOffTopic ? 1 : 0, keepPrevious: d.params.keepPrevious === false ? 0 : 1 });
     persist('tt-topic-form', st);
+    syncForm();
     intentFilter = 'all';
     renderKeywords();
     setHash('#/tiktok/topic');
@@ -767,24 +776,11 @@ export async function mount(root, params) {
     if (!d.keywords?.length) toast('Bấm “Tìm từ khoá” để xem thêm gợi ý của TikTok');
   }
 
-  async function historyList() {
-    const list = await records.list('tiktok_topic', 60);
-    // One line per topic (latest scan), with how many times it was scanned.
-    const byRef = new Map();
-    for (const r of list) {
-      const cur = byRef.get(r.ref);
-      if (cur) cur.count++;
-      else byRef.set(r.ref, { ...r, count: 1 });
-    }
-    const el = root.querySelector('[data-history]');
-    el.innerHTML = `<div class="card-head"><h3>${icon('clock')} Chủ đề đã quét</h3><span class="sub">Quét lại để thấy video nào đang tăng view</span><a class="btn sm" href="#/history?kind=tiktok_topic" style="margin-left:auto">Xem tất cả</a></div>${byRef.size ? [...byRef.values()].map((r) => `<div class="list-row"><a class="name" href="#/tiktok/topic?id=${r.id}">${esc(r.title)}</a>${tiktokCriteria(r.params) ? `<span class="small muted">${esc(tiktokCriteria(r.params))}</span>` : ''}<span class="when">${ago(r.created_at)}${r.count > 1 ? ` · ${r.count} lần quét` : ''}</span><button class="btn sm" data-re="${r.id}">${icon('refresh')} Quét lại</button><button class="icon-btn" data-del="${r.id}" title="Xoá lần quét này">${icon('trash')}</button></div>`).join('') : emptyState('Chưa quét chủ đề nào')}`;
-    el.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => (await records.remove(b.getAttribute('data-del')), historyList())));
-    el.querySelectorAll('[data-re]').forEach((b) => b.addEventListener('click', async () => rescan(await records.get(b.getAttribute('data-re')))));
-  }
-
   renderKeywords();
   historyList();
-  if (params.id) show(params.id).catch((e) => toast(e.message, 'error'));
+  const again = await rerunRecord(params, '/tiktok/topic');
+  if (again) rescan(again);
+  else if (params.id) show(params.id).catch((e) => toast(e.message, 'error'));
   else if (params.q) {
     // Sent from the dashboard's topic box: ask TikTok for keywords at once, once (a reload must not ask again).
     topicInput.value = params.q;

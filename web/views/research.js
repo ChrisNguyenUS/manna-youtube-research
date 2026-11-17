@@ -1,9 +1,10 @@
 import { scope } from '../dom.js';
-import { historyList } from '../components/history-list.js';
+import { findHead, findBar, findRows, findAdvanced, regionSelect, bindPlatformSwitch } from '../components/find-shell.js';
+import { findHistory, rerunRecord } from '../components/find-history.js';
 import { records } from '../http/client.js';
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, mult, ago, emptyState, thumb, ytVideo, dur, ageText, bindTips, setUrl, resumeJob, errorCallout } from '../lib.js';
 import { mountVideoResults, hbars, patternList, phraseChips, oscoreBadge, outlierTip } from '../components/index.js';
-import { DUR_CHIPS, UPLOAD_CHIPS, REGIONS, durToSeconds } from './videos.js';
+import { DUR_CHIPS, UPLOAD_CHIPS, REGIONS, durToSeconds, knownRegion } from '../search-options.js';
 
 const FORM = { topic: '', keywords: '', competitors: '', gl: '', direction: 'top', upload: 'year', dur: '4-20', minDur: '', maxDur: '', perKeyword: 40, readComments: true, commentTop: 5, commentMax: 50 };
 const DIRS = [
@@ -14,48 +15,58 @@ const DIRS = [
 
 export async function mount(root, params) {
   const st = store('research-form', FORM);
-  if (params.q) st.topic = params.q; // sent from the dashboard's topic box
+  if (params.q) st.topic = params.q; // sent from the dashboard's topic box, or typed on the TikTok side
+  if (knownRegion(params.gl, REGIONS)) st.gl = params.gl;
+  const dirHint = () => DIRS.find((d) => d.v === st.direction)?.s ?? '';
   root.innerHTML = `
-    <div class="page-head"><div><h1>${icon('compass')} Nghiên cứu chủ đề</h1>
-      <p>Trả lời 4 câu: video nào đang thắng nhờ nội dung (không nhờ kênh to) · tiêu đề viết theo mẫu nào · khán giả hỏi gì, than gì · khoảng trống nào chưa ai làm tốt.</p></div></div>
+    ${findHead('compass', 'Nghiên cứu chủ đề', 'Video nào đang thắng nhờ nội dung (không nhờ kênh to) · tiêu đề viết theo mẫu nào · khán giả hỏi gì, than gì · khoảng trống nào chưa ai làm tốt.')}
     <div class="card card-pad" data-form>
-      <div class="form-grid">
-        <div class="field"><label>Bạn làm kênh về gì?</label><input class="input" data-k="topic" placeholder="VD: kể chuyện lịch sử Việt Nam" value="${esc(st.topic)}"></div>
-        <div class="field"><label>Khu vực tìm</label><select class="select input" data-k="gl">${REGIONS.map(([v, l]) => `<option value="${v}" ${st.gl === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
-        <div class="field"><label>Từ khoá tìm (không bắt buộc, cách nhau bằng dấu phẩy)</label><input class="input" data-k="keywords" placeholder="Để trống = dùng chủ đề. VD: lịch sử việt nam, chuyện xưa" value="${esc(st.keywords)}">
-          <div class="help">Nghiên cứu thị trường Việt thì dùng từ khoá tiếng Việt; từ khoá tiếng Anh trả về kênh nước ngoài triệu sub.</div></div>
-        <div class="field"><label>Kênh đối thủ đã biết (không bắt buộc)</label><input class="input" data-k="competitors" placeholder="@kenh1, @kenh2" value="${esc(st.competitors)}"></div>
-      </div>
-      <div class="section-label">Tìm theo hướng</div>
-      <div class="direction">${DIRS.map((d) => `<button type="button" class="dir-card ${st.direction === d.v ? 'on' : ''}" data-dir="${d.v}"><b>${d.t}</b><span>${d.s}</span></button>`).join('')}</div>
-      <div class="grid grid-2" style="margin-top:6px">
-        <div><div class="section-label">Chỉ lấy video đăng trong</div>${chips('upload', UPLOAD_CHIPS, st.upload)}
-          <div class="section-label">Độ dài video</div>${chips('dur', DUR_CHIPS, st.dur)}</div>
-        <div><div class="section-label">Tuỳ chọn</div>
-          <label class="check"><input type="checkbox" data-k="readComments" ${st.readComments ? 'checked' : ''}> Đọc comment của <input class="input sm" style="width:52px;display:inline" data-k="commentTop" value="${st.commentTop}"> video vượt kênh nhất, <input class="input sm" style="width:60px;display:inline" data-k="commentMax" value="${st.commentMax}"> comment mỗi video</label>
-          <div class="row" style="margin-top:8px"><span class="small muted">Số video mỗi từ khoá</span>${chips('perKeyword', [{ v: 30, label: '30' }, { v: 40, label: '40' }, { v: 80, label: '80' }, { v: 150, label: '150' }], st.perKeyword)}</div>
-          <div class="help muted small" style="margin-top:8px">Miễn phí · dữ liệu công khai của YouTube · 2 từ khoá + 5 video comment ≈ 30–60 giây.</div></div>
-      </div>
-      <div class="row" style="margin-top:16px"><button class="btn primary lg" data-run>${icon('doc')} Lập báo cáo</button></div>
+      ${findBar({ path: '/research', input: `<input class="input" data-k="topic" placeholder="Bạn làm kênh về gì? VD: kể chuyện lịch sử Việt Nam" value="${esc(st.topic)}">`, button: `<button class="btn primary lg" data-run>${icon('doc')} Lập báo cáo</button>` })}
+      ${findRows([
+        ['Khu vực', regionSelect(st.gl, REGIONS)],
+        ['Tìm theo hướng', `${chips('direction', DIRS.map((d) => ({ v: d.v, label: d.t })), st.direction)}<span class="muted small" data-dirhint>${esc(dirHint())}</span>`],
+        ['Đăng trong', chips('upload', UPLOAD_CHIPS, st.upload)],
+        ['Độ dài', `${chips('dur', DUR_CHIPS, st.dur)}<span class="muted small">hoặc</span>
+          <input class="input sm" style="width:80px" data-k="minDur" placeholder="Từ (phút)" value="${esc(st.minDur)}"> – <input class="input sm" style="width:80px" data-k="maxDur" placeholder="Đến" value="${esc(st.maxDur)}">`],
+      ])}
+      ${findAdvanced([
+        ['Từ khoá tìm', `<input class="input sm find-wide" data-k="keywords" placeholder="Để trống = dùng chủ đề. VD: lịch sử việt nam, chuyện xưa" value="${esc(st.keywords)}">
+          <span class="muted small">Thị trường Việt thì dùng từ khoá tiếng Việt; từ khoá tiếng Anh trả về kênh nước ngoài triệu sub.</span>`],
+        ['Kênh đối thủ', `<input class="input sm find-wide" data-k="competitors" placeholder="@kenh1, @kenh2 (không bắt buộc)" value="${esc(st.competitors)}">`],
+        ['Đọc comment', `<label class="check"><input type="checkbox" data-k="readComments" ${st.readComments ? 'checked' : ''}> Có</label>
+          <span class="muted small">của</span><input class="input sm" style="width:56px" data-k="commentTop" value="${esc(st.commentTop)}"><span class="muted small">video vượt kênh nhất ·</span>
+          <input class="input sm" style="width:64px" data-k="commentMax" value="${esc(st.commentMax)}"><span class="muted small">comment mỗi video</span>`],
+        ['Video mỗi từ khoá', chips('perKeyword', [{ v: 30, label: '30' }, { v: 40, label: '40' }, { v: 80, label: '80' }, { v: 150, label: '150' }], st.perKeyword)],
+      ])}
+      <div class="find-note muted small">Miễn phí · dữ liệu công khai của YouTube · 2 từ khoá + 5 video comment ≈ 30–60 giây</div>
     </div>
     <div data-out style="margin-top:14px"></div>
     <div class="card" data-history style="margin-top:14px"></div>`;
 
   const form = root.querySelector('[data-form]');
+  bindPlatformSwitch(root, () => ({ q: /** @type {HTMLInputElement} */ (form.querySelector('[data-k="topic"]')).value.trim(), gl: st.gl }));
   bindChips(form, (name, v) => {
     st[name] = name === 'perKeyword' ? Number(v) : v;
+    if (name === 'direction') {
+      // Each direction has its own time window (trend = this week); the chip below follows.
+      st.upload = DIRS.find((d) => d.v === st.direction)?.upload ?? st.upload;
+      form.querySelectorAll('[data-chips="upload"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === st.upload));
+      form.querySelector('[data-dirhint]').textContent = dirHint();
+    }
+    if (name === 'dur') (st.minDur = ''), (st.maxDur = ''), form.querySelectorAll('[data-k="minDur"],[data-k="maxDur"]').forEach((i) => (i.value = ''));
     persist('research-form', st);
   });
-  form.querySelectorAll('[data-dir]').forEach((b) =>
-    b.addEventListener('click', () => {
-      st.direction = b.dataset.dir;
-      st.upload = DIRS.find((d) => d.v === st.direction).upload;
-      form.querySelectorAll('[data-dir]').forEach((x) => x.classList.toggle('on', x === b));
-      form.querySelectorAll('[data-chips="upload"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === st.upload));
+  form.querySelectorAll('[data-k]').forEach((el) =>
+    el.addEventListener('change', () => {
+      st[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value;
+      if (el.dataset.k === 'minDur' || el.dataset.k === 'maxDur') {
+        st.dur = '';
+        form.querySelectorAll('[data-chips="dur"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === ''));
+      }
       persist('research-form', st);
     }),
   );
-  form.querySelectorAll('[data-k]').forEach((el) => el.addEventListener('change', () => ((st[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value), persist('research-form', st))));
+  form.querySelector('[data-k="topic"]').addEventListener('keydown', (e) => e.key === 'Enter' && run());
   form.querySelector('[data-run]').addEventListener('click', run);
   const out = root.querySelector('[data-out]');
   const shown = scope();
@@ -64,10 +75,14 @@ export async function mount(root, params) {
     form.querySelectorAll('input.input[data-k]').forEach((el) => (st[el.dataset.k] = el.value.trim()));
     persist('research-form', st);
     if (!st.topic && !st.keywords) return toast('Nhập chủ đề', 'error');
-    out.innerHTML = progressCard(`Đang nghiên cứu: ${st.topic || st.keywords}`);
+    await start({ topic: st.topic, keywords: st.keywords, competitors: st.competitors, gl: st.gl, direction: st.direction, upload: st.upload, perKeyword: st.perKeyword, ...durToSeconds(st), comments: st.readComments ? { top: Number(st.commentTop) || 5, max: Number(st.commentMax) || 50 } : null });
+  }
+
+  /** @param {Record<string, any>} body */
+  async function start(body) {
+    out.innerHTML = progressCard(`Đang nghiên cứu: ${body.topic || body.keywords}`);
     out.scrollIntoView({ behavior: 'smooth', block: 'start' });
     try {
-      const body = { topic: st.topic, keywords: st.keywords, competitors: st.competitors, gl: st.gl, direction: st.direction, upload: st.upload, perKeyword: st.perKeyword, ...durToSeconds(st), comments: st.readComments ? { top: Number(st.commentTop) || 5, max: Number(st.commentMax) || 50 } : null };
       const res = await runJob('research', body, (p) => updateProgress(out, p));
       history();
       await show(res.id);
@@ -198,9 +213,11 @@ export async function mount(root, params) {
     renderTab(tab);
   }
 
-  const history = historyList(root.querySelector('[data-history]'), { kind: 'research', path: '/research', title: `${icon('doc')} Báo cáo đã lập`, empty: 'Chưa có báo cáo nào' });
+  const history = findHistory(root.querySelector('[data-history]'), 'topic');
   history();
-  if (params.id) show(params.id);
+  const again = await rerunRecord(params, '/research');
+  if (again) start(again.params);
+  else if (params.id) show(params.id);
   else resumeJob('research', out, (j) => `Đang nghiên cứu: ${j.title}`, async (res) => (history(), await show(res.id)));
   return () => {
     shown.off();
