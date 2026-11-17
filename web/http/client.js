@@ -126,3 +126,16 @@ export const soulprint = {
   importText: (text) => api('/soulprint/import', { method: 'POST', body: { text } }),
   exportUrl: (inline = false) => `${BASE}/soulprint/export.md${inline ? '?inline=1' : ''}`,
 };
+
+/** The brick library: videos broken into bricks by AI. Extraction is the job `brick_extract`. */
+export const bricks = {
+  /** Rows plus the fixed lists the filters and editors use. */
+  list: () => api('/bricks'),
+  /** @param {string} platform @param {string} id */
+  get: (platform, id) => api(`/bricks/${platform}/${encodeURIComponent(id)}`),
+  /** @param {string} platform @param {string} id @param {Record<string, any>} edits path → value */
+  update: (platform, id, edits) => api(`/bricks/${platform}/${encodeURIComponent(id)}`, { method: 'POST', body: { edits } }),
+  remove: (platform, id) => api(`/bricks/${platform}/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  /** @param {string[]} keys "platform:id"; none: the whole library */
+  exportUrl: (keys = []) => `${BASE}/bricks/export.md${q({ keys: keys.join(',') })}`,
+};

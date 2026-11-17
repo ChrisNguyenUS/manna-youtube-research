@@ -5,18 +5,18 @@ import assert from 'node:assert/strict';
 const { HOME, SOULPRINT, GROUPS, ITEMS, ALIASES, allTabs, has, platformOf, tabsFor, firstPath, findItem } = await import(new URL('../web/nav.js', import.meta.url).href);
 
 const LEGACY = ['/', '/soulprint', '/tiktok/topic', '/tiktok/search', '/tiktok/insight', '/tiktok/insight/collected', '/video', '/tiktok/channel', '/tiktok/comments', '/tiktok/5w1h',
-  '/research', '/videos', '/comments', '/channels', '/channel', '/compare', '/keywords', '/ideas', '/follows', '/history', '/saved', '/settings'];
+  '/research', '/videos', '/comments', '/channels', '/channel', '/compare', '/keywords', '/ideas', '/follows', '/history', '/saved', '/settings', '/bricks'];
 const item = (label) => ITEMS.find((it) => it.label === label);
 
-test('groups are jobs, in this order, and the sidebar has thirteen entries', () => {
+test('groups are jobs, in this order, and the sidebar has fourteen entries', () => {
   assert.deepEqual(GROUPS.map((g) => [g.key, g.title, g.items.map((it) => it.label)]), [
     ['find', 'Tìm', ['Chủ đề', 'Từ khoá', 'Theo dõi']],
-    ['dissect', 'Mổ xẻ', ['Phân tích video', 'Phân tích kênh']],
+    ['dissect', 'Mổ xẻ', ['Phân tích video', 'Phân tích kênh', 'Thư viện gạch']],
     ['audience', 'Khán giả', ['Bình luận', 'Insight', '5W1H']],
     ['library', 'Lưu trữ', ['Lịch sử', 'Đã lưu', 'Cài đặt']],
   ]);
   assert.deepEqual(ITEMS.slice(0, 2), [HOME, SOULPRINT]);
-  assert.equal(ITEMS.length, 13);
+  assert.equal(ITEMS.length, 14);
 });
 
 test('every old path still belongs to exactly one entry, and no path is listed twice (Review Focus #1)', () => {

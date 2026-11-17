@@ -219,7 +219,7 @@ export async function refreshJobs() {
     /* server restarting */
   }
 }
-const LABELS = { tiktok_channel: 'Phân tích kênh TikTok', follow_refresh: 'Kiểm tra kênh theo dõi', tiktok_topic: 'Tìm theo chủ đề TikTok', tiktok_video_analysis: 'Phân tích video TikTok', video_analysis: 'Phân tích video YouTube', tiktok_search: 'Tìm video TikTok', tiktok_insight: 'Insight TikTok', tiktok_comments: 'Thu thập bình luận', comment_5w1h: 'Phân tích 5W1H (AI)', video_search: 'Tìm video', channel_search: 'Tìm kênh', channel_analysis: 'Phân tích kênh', research: 'Nghiên cứu chủ đề', research_comments: 'Đọc comment', comments: 'Lấy comment', idea_check: 'Chấm điểm từ khoá', keyword_score: 'Chấm điểm từ khoá liên quan', keywords: 'Từ khoá' };
+const LABELS = { tiktok_channel: 'Phân tích kênh TikTok', follow_refresh: 'Kiểm tra kênh theo dõi', tiktok_topic: 'Tìm theo chủ đề TikTok', tiktok_video_analysis: 'Phân tích video TikTok', video_analysis: 'Phân tích video YouTube', tiktok_search: 'Tìm video TikTok', brick_extract: 'Bóc gạch video', tiktok_insight: 'Insight TikTok', tiktok_comments: 'Thu thập bình luận', comment_5w1h: 'Phân tích 5W1H (AI)', video_search: 'Tìm video', channel_search: 'Tìm kênh', channel_analysis: 'Phân tích kênh', research: 'Nghiên cứu chủ đề', research_comments: 'Đọc comment', comments: 'Lấy comment', idea_check: 'Chấm điểm từ khoá', keyword_score: 'Chấm điểm từ khoá liên quan', keywords: 'Từ khoá' };
 
 /**
  * An error and the ways out of it: sign in to TikTok when that is what is missing, run the job again when there was one.

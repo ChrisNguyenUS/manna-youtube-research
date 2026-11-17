@@ -204,7 +204,7 @@ export function videoAnalysis(box, { exportUrl }) {
     // One video: its header says everything the table would, so the table is left out.
     box.innerHTML = `${n > 1 ? `<div class="card va-compare"><div class="card-head"><h3>${icon('columns')} So sánh ${n} video</h3>
         <div class="row"><span class="small muted">${ok < n ? `${n - ok} video lỗi · ` : ''}Bấm một dòng để xem chi tiết</span>${colMenu()}
-          <a class="btn sm" href="${exportUrl('md')}">${icon('download')} Markdown cả lô</a><a class="btn sm" href="${exportUrl('csv')}">${icon('download')} CSV</a></div></div>${table()}</div>` : ''}${detail()}`;
+          <a class="btn sm" href="${exportUrl('md')}">${icon('download')} Markdown cả lô</a><a class="btn sm" href="${exportUrl('csv')}">${icon('download')} CSV</a><a class="btn sm" href="#/bricks?record=${esc(rec.id)}">${icon('target')} Bóc gạch</a></div></div>${table()}</div>` : ''}${detail()}`;
     fillTab();
   }
 
