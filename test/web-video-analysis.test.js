@@ -13,7 +13,7 @@ test('video analysis is a known result kind that opens on its own screen', () =>
 });
 
 test('the screen is in the TikTok group of the sidebar and has a job label', () => {
-  const app = fs.readFileSync('web/app.js', 'utf8');
+  const app = fs.readFileSync('web/nav.js', 'utf8');
   assert.match(app, /label: 'Phân tích video', tabs: \[\['\/tiktok\/video', 'Phân tích video', \(\) => import\('\.\/views\/tiktok\/video\.js'\)\]\]/);
   assert.match(fs.readFileSync('web/lib.js', 'utf8'), /tiktok_video_analysis: 'Phân tích video TikTok'/);
 });

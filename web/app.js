@@ -1,80 +1,6 @@
 import { status as statusApi, shutdown, jobs as jobsApi } from './http/client.js';
 import { icon, refreshJobs, loadSaved, loadFollows, loadMetrics, esc, toast, store, persist, leaveView } from './lib.js';
-
-/**
- * The sidebar. One entry per job to be done; screens that work on the same thing share an entry and show as tabs
- * above the page (Tìm kênh · Phân tích · So sánh under "Kênh"). A tab is [path, tab label, loader of its screen].
- * @typedef {[string, string, () => Promise<any>]} Tab
- * @typedef {{icon: string, label: string, tabs: Tab[]}} Item
- */
-/** @type {Item} */
-const HOME = { icon: 'home', label: 'Tổng quan', tabs: [['/', 'Tổng quan', () => import('./views/dashboard.js')]] };
-/** @type {Item} */
-const SOULPRINT = { icon: 'target', label: 'Soulprint', tabs: [['/soulprint', 'Soulprint', () => import('./views/soulprint.js')]] };
-/** @type {{key: string, title: string, items: Item[]}[]} */
-const GROUPS = [
-  {
-    key: 'tiktok', title: 'TikTok',
-    items: [
-      {
-        icon: 'compass', label: 'Tìm theo chủ đề',
-        tabs: [
-          ['/tiktok/topic', 'Tìm theo chủ đề', () => import('./views/tiktok/topic.js')],
-          ['/tiktok/search', 'Tìm video', () => import('./views/tiktok/search.js')],
-        ],
-      },
-      {
-        icon: 'target', label: 'Insight khách hàng',
-        tabs: [
-          ['/tiktok/insight', 'Theo từ khoá', () => import('./views/tiktok/insight.js')],
-          ['/tiktok/insight/collected', 'Từ comment đã có', () => import('./views/tiktok/insight-collected.js')],
-        ],
-      },
-      { icon: 'bars', label: 'Phân tích video', tabs: [['/tiktok/video', 'Phân tích video', () => import('./views/tiktok/video.js')]] },
-      { icon: 'users', label: 'Phân tích kênh', tabs: [['/tiktok/channel', 'Phân tích kênh', () => import('./views/tiktok/channel.js')]] },
-      { icon: 'message', label: 'Thu thập bình luận', tabs: [['/tiktok/comments', 'Thu thập bình luận', () => import('./views/tiktok/comments.js')], ['/tiktok/5w1h', '5W1H (AI)', () => import('./views/tiktok/five-w.js')]] },
-    ],
-  },
-  {
-    key: 'youtube', title: 'YouTube',
-    items: [
-      { icon: 'compass', label: 'Nghiên cứu chủ đề', tabs: [['/research', 'Nghiên cứu chủ đề', () => import('./views/research.js')]] },
-      {
-        icon: 'play', label: 'Video & comment',
-        tabs: [
-          ['/videos', 'Tìm video', () => import('./views/videos.js')],
-          ['/comments', 'Lấy comment', () => import('./views/comments.js')],
-        ],
-      },
-      {
-        icon: 'users', label: 'Kênh',
-        tabs: [
-          ['/channels', 'Tìm kênh', () => import('./views/channels.js')],
-          ['/channel', 'Phân tích kênh', () => import('./views/channel.js')],
-          ['/compare', 'So sánh kênh', () => import('./views/compare.js')],
-        ],
-      },
-      {
-        icon: 'key', label: 'Từ khoá',
-        tabs: [
-          ['/keywords', 'Gợi ý từ khoá', () => import('./views/keywords.js')],
-          ['/ideas', 'Chấm điểm từ khoá', () => import('./views/ideas.js')],
-        ],
-      },
-    ],
-  },
-  {
-    key: 'library', title: 'Lưu trữ',
-    items: [
-      { icon: 'eye', label: 'Theo dõi', tabs: [['/follows', 'Kênh đang theo dõi', () => import('./views/follows.js')]] },
-      { icon: 'clock', label: 'Lịch sử', tabs: [['/history', 'Lịch sử', () => import('./views/history.js')]] },
-      { icon: 'bookmark', label: 'Đã lưu', tabs: [['/saved', 'Đã lưu', () => import('./views/saved.js')]] },
-      { icon: 'settings', label: 'Cài đặt', tabs: [['/settings', 'Cài đặt', () => import('./views/settings.js')]] },
-    ],
-  },
-];
-const ITEMS = [HOME, SOULPRINT, ...GROUPS.flatMap((g) => g.items)];
-const has = (item, path) => item.tabs.some((t) => t[0] === path);
+import { HOME, SOULPRINT, GROUPS, ALIASES, PLATFORM_LABELS, has, platformOf, tabsFor, firstPath, findItem } from './nav.js';
 
 function parseHash() {
   const h = location.hash.replace(/^#/, '') || '/';
@@ -82,8 +8,8 @@ function parseHash() {
   return { path, params: Object.fromEntries(new URLSearchParams(qs || '')) };
 }
 
-const NAV_STATE = { collapsed: {} };
-const navItem = (it, path) => `<a class="nav-item ${has(it, path) ? 'active' : ''}" href="#${it.tabs[0][0]}" ${has(it, path) ? 'aria-current="page"' : ''}>${icon(it.icon)}<span>${esc(it.label)}</span></a>`;
+const NAV_STATE = { collapsed: {}, platform: {} };
+const navItem = (it, path) => `<a class="nav-item ${has(it, path) ? 'active' : ''}" href="#${firstPath(it, store('nav', NAV_STATE).platform?.[it.label])}" ${has(it, path) ? 'aria-current="page"' : ''}>${icon(it.icon)}<span>${esc(it.label)}</span></a>`;
 let navPath = '/';
 function renderNav(path = navPath) {
   navPath = path;
@@ -111,16 +37,31 @@ let unmount = null;
 let routeSeq = 0;
 async function route() {
   const { path, params } = parseHash();
-  const item = ITEMS.find((it) => has(it, path)) || HOME;
-  const tab = item.tabs.find((t) => t[0] === path) || item.tabs[0];
+  if (ALIASES[path]) {
+    const qs = new URLSearchParams(params).toString();
+    return void location.replace('#' + ALIASES[path] + (qs ? '?' + qs : ''));
+  }
+  const item = findItem(path);
+  const shown = tabsFor(item, path);
+  const tab = shown.find((t) => t[0] === path) || shown[0];
+  const platform = platformOf(item, tab[0]);
+  if (platform) {
+    const st = store('nav', NAV_STATE);
+    if (st.platform?.[item.label] !== platform) persist('nav', { ...st, platform: { ...st.platform, [item.label]: platform } });
+  }
   renderNav(tab[0]);
   const main = document.getElementById('main');
   unmount?.(); // let the previous view remove its listeners
   leaveView(); // its job watchers stop; the jobs themselves keep running
   unmount = null;
   main.scrollTop = 0;
-  // Screens that share a sidebar entry: their tabs sit above the page and switch between them.
-  const tabs = item.tabs.length > 1 ? `<div class="page-tabs-wrap"><nav class="page-tabs" aria-label="${esc(item.label)}">${item.tabs.map((t) => `<a href="#${t[0]}" class="${t === tab ? 'on' : ''}" ${t === tab ? 'aria-current="page"' : ''}>${esc(t[1])}</a>`).join('')}</nav></div>` : '';
+  // Above the page: the TikTok | YouTube switch of an entry that exists on both, then the tabs of the screens that
+  // share the entry. An entry that exists on one platform says which.
+  const platformSwitch = platform
+    ? `<div class="page-plat" role="group" aria-label="Nền tảng">${Object.entries(PLATFORM_LABELS).map(([k, l]) => `<a href="#${firstPath(item, k)}" class="${k === platform ? 'on' : ''}" ${k === platform ? 'aria-current="true"' : ''}>${l}</a>`).join('')}</div>`
+    : item.only ? `<span class="page-plat-only">${PLATFORM_LABELS[item.only]}</span>` : '';
+  const tabLinks = shown.length > 1 ? `<nav class="page-tabs" aria-label="${esc(item.label)}">${shown.map((t) => `<a href="#${t[0]}" class="${t === tab ? 'on' : ''}" ${t === tab ? 'aria-current="page"' : ''}>${esc(t[1])}</a>`).join('')}</nav>` : '';
+  const tabs = platformSwitch || tabLinks ? `<div class="page-tabs-wrap">${platformSwitch}${tabLinks}</div>` : '';
   main.innerHTML = `${tabs}<div class="page"></div>`;
   const page = /** @type {HTMLElement} */ (main.querySelector('.page'));
   const mine = ++routeSeq;

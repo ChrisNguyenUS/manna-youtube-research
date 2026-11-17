@@ -11,7 +11,7 @@ test('5W1H is a known result kind that opens on its own screen', () => {
 });
 
 test('the screen is a tab next to Thu thập bình luận, has a job label and a way in from the comment screen', () => {
-  assert.match(fs.readFileSync('web/app.js', 'utf8'), /\['\/tiktok\/5w1h', '5W1H \(AI\)', \(\) => import\('\.\/views\/tiktok\/five-w\.js'\)\]/);
+  assert.match(fs.readFileSync('web/nav.js', 'utf8'), /\['\/tiktok\/5w1h', '5W1H \(AI\)', \(\) => import\('\.\/views\/tiktok\/five-w\.js'\)\]/);
   assert.match(fs.readFileSync('web/lib.js', 'utf8'), /comment_5w1h: 'Phân tích 5W1H \(AI\)'/);
   assert.match(fs.readFileSync('web/views/tiktok/comments.js', 'utf8'), /href="#\/tiktok\/5w1h"/);
 });
