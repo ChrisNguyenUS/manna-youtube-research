@@ -29,6 +29,7 @@ import { createOpenRouter } from './llm/openrouter.js';
 import { makeComment5w1h } from './features/ai/comment-5w1h.js';
 import { makeSoulprint } from './features/soulprint.js';
 import { makeBricks } from './features/bricks.js';
+import { makeIdeas } from './features/ideas.js';
 
 const KNOWLEDGE_DIR = path.join(ROOT, 'src', 'features', 'ai', 'knowledge');
 /** The owner's course notes for AI prompts, by file name without ".md" ({} when the folder is missing: it is not in git). */
@@ -93,6 +94,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
     comment5w1h: makeComment5w1h({ llm, records: base.records, settings, knowledge, profileText: () => features.soulprint.context(), readComments: (ids) => features.commentData.comments(ids) }),
     bricks: makeBricks({ repo: store.bricks, ws, llm, settings, knowledge: knowledgeOf(knowledgeFiles, ['viral-concepts']), analyst: knowledgeOf(knowledgeFiles, ['analyst']), profile: () => features.soulprint.get().profile, records: base.records, tiktok, source, commentsOf: (id) => store.comments.ofVideo(id), follows: store.follows }),
     soulprint: makeSoulprint({ repo: store.soulprint, ws, llm, settings, follows: store.follows, records: store.records, commentData: { videos: () => features.commentData.videos(), comments: (ids) => features.commentData.comments(ids) } }),
+    ideas: makeIdeas({ repo: store.ideas, ws, settings, llm, profile: () => features.soulprint.get().profile, library: { list: () => features.bricks.list(), get: (platform, videoId) => features.bricks.get(platform, videoId) } }),
   };
 
   /** Job kind → handler. ctx.progress throws after cancel, which is how jobs stop. */
