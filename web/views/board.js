@@ -45,7 +45,7 @@ export async function mount(root, params) {
   function ideaTab() {
     const d = state.draft;
     const lego = b.lists.lego;
-    const bricks = (key) => `<div class="bd-lego">${lego.map(([k, l]) => `<label class="check"><input type="checkbox" data-lego="${key}:${k}" ${d[key].includes(k) ? 'checked' : ''}> ${esc(l)}</label>`).join('')}</div>`;
+    const bricks = (key) => `<div class="bd-lego">${lego.map(([k, l]) => `<label class="check"><input type="checkbox" data-lego="${key}:${k}" ${d.card[key].includes(k) ? 'checked' : ''}> ${esc(l)}</label>`).join('')}</div>`;
     return `<div class="row">${aiBtn('draft', state.open.card.origin.kind === 'brick' ? 'Dựng thẻ từ video gốc' : 'Nháp các ô còn thiếu')}${aiBtn('titles', 'Gợi ý tiêu đề')}${b.ai ? '' : '<span class="muted small">Có API key OpenRouter thì AI nháp giúp được.</span>'}</div>
       ${suggestionHtml()}
       <div class="fw-field">${cap('TRẠNG THÁI')}<select class="select input" data-path="status">${b.lists.statuses.map(([k, l]) => `<option value="${k}" ${d.status === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
