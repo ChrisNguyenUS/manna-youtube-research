@@ -28,3 +28,9 @@ test('other screens link to the board, and never call its API themselves', () =>
   assert.match(fs.readFileSync('web/views/tiktok/five-w.js', 'utf8'), /#\/board\?from=5w1h:/);
   for (const f of ['web/views/bricks.js', 'web/views/soulprint.js', 'web/views/tiktok/five-w.js']) assert.ok(!/import \{[^}]*\bideas\b[^}]*\} from '[./]*http\/client\.js'/.test(fs.readFileSync(f, 'utf8')), f);
 });
+
+test('two AI helpers on the card, drawn only with a key, offered with Nhận and Bỏ', () => {
+  const src = view();
+  for (const s of ["aiBtn('draft'", "aiBtn('titles'", 'data-accept', 'data-reject', 'AI đề xuất']) assert.ok(src.includes(s), s);
+  assert.match(src, /const aiBtn = \(action, text\) => \(b\.ai \? /);
+});

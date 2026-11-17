@@ -157,4 +157,6 @@ export const ideas = {
   /** @param {string} [title] */
   newBatch: (title) => api('/ideas/batches', { method: 'POST', body: { title } }),
   exportUrl: (batch) => `${BASE}/ideas/export.md${q({ batch })}`,
+  /** One AI helper on the card on screen; returns a suggestion and saves nothing. @param {'draft'|'titles'} action @param {number} id @param {any} card */
+  assist: (action, id, card) => api('/ideas/assist', { method: 'POST', body: { action, id, card } }),
 };

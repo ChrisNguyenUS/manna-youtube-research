@@ -26,6 +26,8 @@ export const ideaRoutes = [
       return query.get('inline') ? raw(md, 'text/markdown; charset=utf-8') : raw(md, 'text/markdown; charset=utf-8', attachment('bang-y-tuong.md'));
     },
   },
+  // AI helpers: a suggestion for the card on screen. Nothing is saved here.
+  { method: 'POST', path: '/api/v1/ideas/assist', handler: ({ app, body }) => app.features.ideas.assist(String(body?.action || ''), { id: idOf(body?.id), card: body?.card }) },
   { method: 'GET', path: '/api/v1/ideas/:id', handler: ({ app, params }) => app.features.ideas.get(idOf(params.id)) },
   {
     method: 'POST', path: '/api/v1/ideas/:id',

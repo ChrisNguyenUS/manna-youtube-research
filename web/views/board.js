@@ -24,9 +24,10 @@ export async function mount(root, params) {
     root.innerHTML = errorCallout(e);
     return;
   }
-  const state = { open: /** @type {any} */ (null), draft: /** @type {any} */ (null), tab: 'idea', dirty: false };
+  const state = { open: /** @type {any} */ (null), draft: /** @type {any} */ (null), tab: 'idea', dirty: false, suggestion: /** @type {any} */ (null), busy: '' };
   const label = (pairs, k) => pairs.find((x) => x[0] === k)?.[1] ?? k;
   const chip = (t, cls = '') => (t ? `<span class="fw-chip ${cls}">${esc(t)}</span>` : '');
+  const aiBtn = (action, text) => (b.ai ? `<button type="button" class="btn sm" data-ai="${action}" ${state.busy ? 'disabled' : ''}>${icon('bolt')} ${state.busy === action ? 'Đang hỏi AI…' : text}</button>` : '');
   const cap = (t) => `<div class="fw-cap">${t}</div>`;
   const input = (path, capText, ph = '') => `<div class="fw-field">${cap(capText)}<input class="input" data-path="${path}" value="${esc(get(state.draft, path) ?? '')}" placeholder="${esc(ph)}"></div>`;
   const area = (path, capText, ph = '') => `<div class="fw-field">${cap(capText)}<textarea class="input" rows="2" data-path="${path}" placeholder="${esc(ph)}">${esc(get(state.draft, path) ?? '')}</textarea></div>`;
@@ -45,7 +46,9 @@ export async function mount(root, params) {
     const d = state.draft;
     const lego = b.lists.lego;
     const bricks = (key) => `<div class="bd-lego">${lego.map(([k, l]) => `<label class="check"><input type="checkbox" data-lego="${key}:${k}" ${d[key].includes(k) ? 'checked' : ''}> ${esc(l)}</label>`).join('')}</div>`;
-    return `<div class="fw-field">${cap('TRẠNG THÁI')}<select class="select input" data-path="status">${b.lists.statuses.map(([k, l]) => `<option value="${k}" ${d.status === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
+    return `<div class="row">${aiBtn('draft', state.open.card.origin.kind === 'brick' ? 'Dựng thẻ từ video gốc' : 'Nháp các ô còn thiếu')}${aiBtn('titles', 'Gợi ý tiêu đề')}${b.ai ? '' : '<span class="muted small">Có API key OpenRouter thì AI nháp giúp được.</span>'}</div>
+      ${suggestionHtml()}
+      <div class="fw-field">${cap('TRẠNG THÁI')}<select class="select input" data-path="status">${b.lists.statuses.map(([k, l]) => `<option value="${k}" ${d.status === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
       ${input('card.topic', 'TOPIC', 'Chủ đề video của bạn')}
       <div class="fw-field">${cap('PILLAR')}<select class="select input" data-path="card.pillar"><option value="">Chưa chọn</option>${[...new Set([...b.pillars, d.card.pillar].filter(Boolean))].map((p) => `<option ${d.card.pillar === p ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></div>
       ${area('card.pain.text', 'NỖI ĐAU', 'Nỗi đau của avatar, nói trong một câu')}
@@ -60,6 +63,18 @@ export async function mount(root, params) {
       ${d.card.origin.kind === 'self' ? '' : `<div class="fw-field">${cap('GIỮ GẠCH')}${bricks('keep')}</div><div class="fw-field">${cap('LÀM LẠI GẠCH')}${bricks('remix')}</div>`}
       ${b.hasFilter ? select('card.filterOk', 'CÂU LỌC CỦA SOULPRINT', [['yes', 'Có giá trị với avatar'], ['no', 'Không'], ['unknown', 'Chưa rõ']], 'Chưa rõ') : ''}
       ${input('card.publishDate', 'NGÀY ĐĂNG (TUỲ CHỌN)', 'YYYY-MM-DD')}`;
+  }
+
+  function suggestionHtml() {
+    const s = state.suggestion;
+    if (!s) return '';
+    const v = s.value;
+    const body = s.action === 'titles'
+      ? v.titles.map((t, i) => `<label class="check"><input type="radio" name="bd-title" value="${i}" ${i === 0 ? 'checked' : ''}> <span><b>${esc(t.text)}</b><span class="muted small"> ${esc([t.d, t.i, t.c, t.k].filter(Boolean).join(' · '))}</span></span></label>`).join('')
+      : `${[['Topic', v.topic], ['Nỗi đau', v.pain], ['Đang tin', v.belief.common], ['Video chỉ ra', v.belief.reality], ['Góc', v.angle]].filter(([, x]) => x).map(([l, x]) => `<div class="small"><b>${l}:</b> ${esc(x)}</div>`).join('')}
+        ${v.keep.length ? `<div class="small"><b>Giữ:</b> ${esc(v.keep.map((k) => label(b.lists.lego, k)).join(', '))}</div>` : ''}${v.remix.length ? `<div class="small"><b>Làm lại:</b> ${esc(v.remix.map((k) => label(b.lists.lego, k)).join(', '))}</div>` : ''}
+        ${v.why ? `<div class="small muted">${esc(v.why)}</div>` : ''}`;
+    return `<div class="callout info"><div class="fw-cap">AI đề xuất</div>${body}<div class="row" style="margin-top:8px"><button type="button" class="btn sm primary" data-accept>${icon('check')} Nhận</button><button type="button" class="btn sm" data-reject>Bỏ</button></div><div class="muted small">Nhận chỉ điền vào thẻ đang mở; bấm Lưu để giữ lại.</div></div>`;
   }
 
   function checksTab() {
@@ -126,6 +141,7 @@ export async function mount(root, params) {
     state.open = x;
     state.draft = { status: x.status, card: structuredClone(x.card) };
     state.dirty = false;
+    state.suggestion = null;
     setUrl(PATH, { batch: b.batch.id, card: x.id });
     render();
   }
@@ -163,7 +179,7 @@ export async function mount(root, params) {
     const d = t.dataset;
     try {
       if (d.open) openCard(d.open);
-      else if (d.tab) { state.tab = d.tab; render(); }
+      else if (d.tab) { state.tab = d.tab; state.suggestion = null; render(); }
       else if (d.save !== undefined) await save();
       else if (d.drop !== undefined) await save({ status: state.open.status === 'dropped' ? 'draft' : 'dropped' });
       else if (d.remove !== undefined) {
@@ -171,7 +187,28 @@ export async function mount(root, params) {
         await ideas.remove(state.open.id);
         setUrl(PATH, { batch: b.batch.id });
         await reload(b.batch.id, null);
-      } else if (d.new !== undefined) { const x = await ideas.create('self'); await reload(x.batchId, x.id); }
+      } else if (d.ai) {
+        state.busy = d.ai;
+        state.suggestion = null;
+        render();
+        try {
+          const r = await ideas.assist(d.ai, state.open.id, state.draft.card);
+          state.suggestion = { action: d.ai, value: r.suggestion };
+        } finally { state.busy = ''; render(); }
+      } else if (d.accept !== undefined) {
+        const s = state.suggestion;
+        const c = state.draft.card;
+        if (s.action === 'titles') c.title = s.value.titles[Number(/** @type {HTMLInputElement|null} */ (root.querySelector('input[name="bd-title"]:checked'))?.value ?? 0)];
+        else {
+          const v = s.value;
+          Object.assign(c, { topic: v.topic || c.topic, angle: v.angle || c.angle, belief: { common: v.belief.common || c.belief.common, reality: v.belief.reality || c.belief.reality }, keep: v.keep.length || v.remix.length ? v.keep : c.keep, remix: v.keep.length || v.remix.length ? v.remix : c.remix });
+          c.pain = { ...c.pain, text: v.pain || c.pain.text };
+        }
+        state.suggestion = null;
+        state.dirty = true;
+        render();
+      } else if (d.reject !== undefined) { state.suggestion = null; render(); }
+      else if (d.new !== undefined) { const x = await ideas.create('self'); await reload(x.batchId, x.id); }
       else if (d.newBatch !== undefined) { const nb = await ideas.newBatch(); setUrl(PATH, { batch: nb.batch.id }); b = nb; state.open = null; render(); }
     } catch (err) { fail(err); }
   });

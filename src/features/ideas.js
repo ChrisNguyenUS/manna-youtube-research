@@ -4,6 +4,9 @@ import { LEGO, STATUSES, FUNNEL, QUESTIONS, LIMITS, emptyCard, cleanCard, status
 import { precedentOf } from '../core/ideas/precedent.js';
 import { CONCEPTS } from '../core/bricks/schema.js';
 import { ideasMarkdown } from '../core/report/ideas.js';
+import { aiError } from '../core/ai/base.js';
+import { ACTIONS, assistRequest, checkAssist } from '../core/ideas/assist.js';
+import { modelOf } from './ai/run.js';
 
 const invalid = (message, field) => Object.assign(new Error(message), { code: 'invalid_input', field });
 const notFound = (message) => Object.assign(new Error(message), { code: 'not_found' });
@@ -11,10 +14,11 @@ const FULL = `Lô đang mở đã đủ ${LIMITS.live} thẻ. Bỏ một thẻ, 
 
 /**
  * @param {{repo: any, ws: string, settings: () => Record<string, any>, profile: () => any,
- *   library: {list: () => any[], get: (platform: string, videoId: string) => any}, fiveW: {report: (id: number) => any}, llm: import('../ports/llm.js').LlmClient}} deps
+ *   library: {list: () => any[], get: (platform: string, videoId: string) => any}, fiveW: {report: (id: number) => any}, llm: import('../ports/llm.js').LlmClient,
+ *   knowledge?: string, profileText?: () => string}} deps
  *   library: the brick library (features.bricks), read for question 1 and for cards made from a video
  */
-export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm }) {
+export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm, knowledge = '', profileText = () => '' }) {
   /** Ways to make a new card: `from` prefix → card fields. Later tasks add sources here. @type {Record<string, (parts: string[]) => any>} */
   const sources = { self: () => emptyCard() };
 
@@ -121,8 +125,22 @@ export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm }) 
     return board(id);
   }
 
+  /**
+   * One AI helper on a card. `card` is the unsaved card on screen; the stored one is used when it is missing.
+   * Returns a suggestion and saves nothing. @param {string} action @param {{id: number|string, card?: any}} input
+   */
+  async function assist(action, { id, card } = /** @type {any} */ ({})) {
+    if (!ACTIONS.includes(action)) throw invalid('Không có trợ lý này', 'action');
+    const row = one(id);
+    if (!llm.ready()) throw aiError('llm_no_key', 'Chưa nhập API key OpenRouter. Vào Cài đặt để nhập.');
+    const onScreen = cleanCard({ ...row.data, ...(card && typeof card === 'object' ? card : {}), origin: row.data.origin });
+    const model = modelOf(settings().aiWriteModel);
+    const r = await llm.complete({ ...assistRequest(action, { card: onScreen, profileText: profileText(), knowledge }), model });
+    return { action, suggestion: checkAssist(action, r.json), usage: { model, tokensIn: r.tokensIn, tokensOut: r.tokensOut, costUsd: r.costUsd } };
+  }
+
   return {
-    sources, board, create, update, newBatch,
+    sources, assist, board, create, update, newBatch,
     get: (id) => view(one(id), context()),
     remove: (id) => void repo.removeCard(ws, one(id).id),
     /** @param {number} [batchId] */

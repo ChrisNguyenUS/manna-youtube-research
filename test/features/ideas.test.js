@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { testApp } from './helpers.js';
+import { createFakeLlm } from '../../src/llm/fake.js';
 
 test('the board opens on a first batch, empty, with the lists the screen needs', () => {
   const f = testApp().features.ideas;
@@ -112,4 +113,23 @@ test('from a 5W1H suggestion: title, pain with the real comments as evidence, be
   assert.deepEqual(c.card.pain.evidence, [{ text: comments[0].text, likes: comments[0].likes ?? 0 }], 'a comment that is gone is skipped');
   assert.throws(() => a.features.ideas.create({ from: `5w1h:${recordId}:5` }), (/** @type {any} */ e) => e.code === 'not_found');
   assert.throws(() => a.features.ideas.create({ from: '5w1h:9999:0' }), (/** @type {any} */ e) => e.code === 'not_found');
+});
+
+test('assist uses the card on screen, Soulprint and the idea knowledge, and saves nothing', async () => {
+  const llm = createFakeLlm([{ topic: 'T', angle: 'Góc mới', pain: 'P', belief_common: 'C', belief_reality: 'R', keep: [], remix: [], why: 'w' }]);
+  const a = testApp(undefined, undefined, { llm, knowledgeFiles: { dick: 'DICK', funnel: 'PHỄU', kallaway: 'KALLAWAY', analyst: 'KHÔNG DÙNG' } });
+  a.store.settings.set(a.ws, { aiWriteModel: 'write/model' });
+  a.features.soulprint.save({ statement: { chosen: 'Tôi giúp người bảo lãnh' } });
+  const c = a.features.ideas.create({ from: 'self' });
+  const r = await a.features.ideas.assist('draft', { id: c.id, card: { ...c.card, topic: 'Chưa lưu' } });
+  assert.deepEqual([r.action, r.suggestion.angle, r.usage.model], ['draft', 'Góc mới', 'write/model']);
+  assert.match(llm.calls[0].user, /Chưa lưu/);
+  assert.match(llm.calls[0].user, /Tôi giúp người bảo lãnh/);
+  assert.match(llm.calls[0].system, /DICK[\s\S]*PHỄU[\s\S]*KALLAWAY/);
+  assert.ok(!llm.calls[0].system.includes('KHÔNG DÙNG'));
+  assert.deepEqual([a.features.ideas.get(c.id).card.topic, a.features.ideas.get(c.id).card.angle], ['', '']);
+  const off = testApp(undefined, undefined, { llm: createFakeLlm([], { ready: false }) });
+  const oc = off.features.ideas.create({ from: 'self' });
+  await assert.rejects(off.features.ideas.assist('draft', { id: oc.id, card: { topic: 'x' } }), (/** @type {any} */ e) => e.code === 'llm_no_key');
+  await assert.rejects(a.features.ideas.assist('draft', { id: 999 }), (/** @type {any} */ e) => e.code === 'not_found');
 });
