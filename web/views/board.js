@@ -22,8 +22,11 @@ const BLOCKS = [['lockin', 'Lock-in', 'Hứa cụ thể, bằng chứng sớm, h
 const FOUR_S = [['subject', 'Subject', 'Nói rõ ai hoặc cái gì?'], ['stakes', 'Stakes', 'Được mất gì?'], ['simple', 'Simple', 'Đơn giản không?'], ['superclear', 'Superclear', 'Rõ tới mức không cần nghĩ?']];
 const LOOP = [['stakes', 'Cái đang bị đe doạ'], ['question', 'Câu hỏi lớn'], ['headfake', 'Cú đánh lạc hướng'], ['newLoop', 'Chỗ mở vòng mới']];
 const clock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+/** A 4-S rating belongs to the hook it rated; it is cleared when that hook goes away. */
+const emptyFourS = () => Object.fromEntries(FOUR_S.map(([k]) => [k, { ok: null, note: '' }]));
 const emptyHook = () => ({ archetype: null, lean: '', interjection: '', snapback: '', text: '', visual: '' });
 const UNSAVED = 'Thẻ đang sửa chưa lưu. Bỏ các thay đổi?';
+const UNSAVED_SCRIPT = 'Lời thoại chưa lưu. Bỏ lời thoại vừa sửa?';
 
 const get = (o, path) => path.split('.').reduce((v, k) => v?.[k], o);
 function set(o, path, value) {
@@ -40,7 +43,7 @@ export async function mount(root, params) {
     root.innerHTML = errorCallout(e);
     return;
   }
-  const state = { open: /** @type {any} */ (null), draft: /** @type {any} */ (null), tab: 'idea', dirty: false, suggestion: /** @type {any} */ (null), busy: '', outline: /** @type {any} */ (null), script: '', lint: /** @type {any} */ (null), outlineDirty: false };
+  const state = { open: /** @type {any} */ (null), draft: /** @type {any} */ (null), tab: 'idea', dirty: false, suggestion: /** @type {any} */ (null), busy: '', outline: /** @type {any} */ (null), script: '', lint: /** @type {any} */ (null), outlineDirty: false, scriptDirty: false };
   const label = (pairs, k) => pairs.find((x) => x[0] === k)?.[1] ?? k;
   const chip = (t, cls = '') => (t ? `<span class="fw-chip ${cls}">${esc(t)}</span>` : '');
   const aiBtn = (action, text) => (b.ai ? `<button type="button" class="btn sm" data-ai="${action}" ${state.busy ? 'disabled' : ''}>${icon('bolt')} ${state.busy === action ? 'Đang hỏi AI…' : text}</button>` : '');
@@ -201,10 +204,11 @@ export async function mount(root, params) {
   const fail = (e) => { const box = root.querySelector('[data-err]'); if (box) box.innerHTML = /đủ 10 thẻ/.test(e?.message ?? '') ? `<div class="callout">${esc(e.message)} <button type="button" class="btn sm" data-new-batch>Mở lô mới</button></div>` : errorCallout(e); };
 
   /** True when nothing unsaved would be lost, or the owner agrees to drop it. */
-  const leaveOk = () => !state.dirty || window.confirm(UNSAVED);
+  // The script has its own Lưu button, so it is asked about on its own.
+  const leaveOk = () => (!state.dirty || window.confirm(UNSAVED)) && (!state.scriptDirty || window.confirm(UNSAVED_SCRIPT));
   // Closing or reloading the window with unsaved edits asks first; removed when the screen closes.
   const onUnload = (e) => {
-    if (state.dirty) e.preventDefault();
+    if (state.dirty || state.scriptDirty) e.preventDefault();
   };
   window.addEventListener('beforeunload', onUnload);
 
@@ -219,6 +223,7 @@ export async function mount(root, params) {
     state.script = x.script;
     state.lint = null;
     state.outlineDirty = false;
+    state.scriptDirty = false;
     setUrl(PATH, { batch: b.batch.id, card: x.id });
     render();
   }
@@ -229,9 +234,9 @@ export async function mount(root, params) {
     else render();
   }
   const touchOutline = () => {
-      state.outlineDirty = true;
-      if (!state.dirty) { state.dirty = true; const s = root.querySelector('[data-save]'); if (s) s.append(' *'); }
-    };
+    state.outlineDirty = true;
+    if (!state.dirty) { state.dirty = true; const s = root.querySelector('[data-save]'); if (s) s.append(' *'); }
+  };
   async function save(patch) {
     try {
       const x = await ideas.update(state.open.id, patch ?? { status: state.draft.status, ...state.draft.card });
@@ -259,7 +264,7 @@ export async function mount(root, params) {
       touchOutline();
       return;
     } else if (el.dataset.pickHook !== undefined) { state.outline.chosenHook = Number(el.dataset.pickHook); touchOutline(); return; }
-    else if (el.dataset.script !== undefined) { state.script = el.value; return; }
+    else if (el.dataset.script !== undefined) { state.script = el.value; state.scriptDirty = true; return; }
     else return;
     if (!state.dirty) { state.dirty = true; const s = root.querySelector('[data-save]'); if (s) s.append(' *'); }
   });
@@ -278,7 +283,7 @@ export async function mount(root, params) {
       if (d.open) { if (Number(d.open) !== state.open?.id && leaveOk()) openCard(d.open); }
       else if (d.tab) { state.tab = d.tab; state.suggestion = null; render(); }
       else if (d.save !== undefined) await save();
-      else if (d.drop !== undefined) await save({ status: state.open.status === 'dropped' ? 'draft' : 'dropped' });
+      else if (d.drop !== undefined) { if (leaveOk()) await save({ status: state.open.status === 'dropped' ? 'draft' : 'dropped' }); }
       else if (d.remove !== undefined) {
         if (!t.dataset.armed) { t.dataset.armed = '1'; t.textContent = 'Bấm lần nữa để xoá hẳn'; return; }
         await ideas.remove(state.open.id);
@@ -296,8 +301,8 @@ export async function mount(root, params) {
         const s = state.suggestion;
         const o = state.outline;
         if (s.action === 'fourS') o.fourS = s.value.fourS;
-        else if (s.action === 'hooks') { o.hooks = s.value.hooks; o.chosenHook = null; }
-        else { o.hooks = s.value.hooks; o.chosenHook = null; o.blocks = s.value.blocks; o.loop = s.value.loop; }
+        else if (s.action === 'hooks') { o.hooks = s.value.hooks; o.chosenHook = null; o.fourS = emptyFourS(); }
+        else { o.hooks = s.value.hooks; o.chosenHook = null; o.fourS = emptyFourS(); o.blocks = s.value.blocks; o.loop = s.value.loop; }
         state.suggestion = null;
         touchOutline();
         render();
@@ -321,6 +326,7 @@ export async function mount(root, params) {
         state.outline.hooks.splice(i, 1);
         const c = state.outline.chosenHook;
         state.outline.chosenHook = c == null || c === i ? null : c > i ? c - 1 : c;
+        if (c === i) state.outline.fourS = emptyFourS();
         touchOutline();
         render();
       } else if (d.outlineAi) {
@@ -338,6 +344,7 @@ export async function mount(root, params) {
       } else if (d.saveScript !== undefined) {
         const r = await ideas.saveScript(state.open.id, state.script);
         state.lint = r.lint;
+        state.scriptDirty = false;
         toast('Đã lưu lời thoại');
         render();
       }

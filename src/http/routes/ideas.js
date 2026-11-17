@@ -33,8 +33,7 @@ export const ideaRoutes = [
     method: 'POST', path: '/api/v1/ideas/lint',
     handler: ({ app, body }) => {
       if (typeof body?.text !== 'string') throw httpError('invalid_input', 'Thiếu lời thoại', 'text');
-      const length = [30, 45, 60, 90].includes(Number(body.length)) ? Number(body.length) : 45;
-      return app.features.ideas.lint(body.text, { length, leadMagnet: String(body.leadMagnet ?? '') });
+      return app.features.ideas.lint(body.text, { length: body.length, leadMagnet: body.leadMagnet });
     },
   },
   { method: 'GET', path: '/api/v1/ideas/:id', handler: ({ app, params }) => app.features.ideas.get(idOf(params.id)) },

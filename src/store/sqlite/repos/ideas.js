@@ -3,7 +3,7 @@
 /** @param {import('node:sqlite').DatabaseSync} db @param {() => number} [now] */
 export function ideasRepo(db, now = Date.now) {
   const batch = (r) => (r ? { id: r.id, title: r.title, status: r.status, learned: r.learned ? JSON.parse(r.learned) : null, createdAt: r.created_at, closedAt: r.closed_at } : null);
-const card = (r) => (r ? { id: r.id, batchId: r.batch_id, status: r.status, data: JSON.parse(r.data), outline: r.outline ? JSON.parse(r.outline) : null, script: r.script ?? '', createdAt: r.created_at, updatedAt: r.updated_at } : null);
+  const card = (r) => (r ? { id: r.id, batchId: r.batch_id, status: r.status, data: JSON.parse(r.data), outline: r.outline ? JSON.parse(r.outline) : null, script: r.script ?? '', createdAt: r.created_at, updatedAt: r.updated_at } : null);
   return {
     openBatch: (ws) => batch(db.prepare("SELECT * FROM idea_batches WHERE workspace_id = ? AND status = 'open' ORDER BY id DESC LIMIT 1").get(ws)),
     /** Newest first, with the number of live cards. @param {string} ws */
