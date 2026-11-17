@@ -81,6 +81,10 @@ export const GROUPS = [
     ],
   },
   {
+    key: 'make', title: 'Làm',
+    items: [{ icon: 'bulb', label: 'Bảng ý tưởng', tabs: [['/board', 'Bảng ý tưởng', () => import('./views/board.js')]] }],
+  },
+  {
     key: 'library', title: 'Lưu trữ',
     items: [
       { icon: 'clock', label: 'Lịch sử', tabs: [['/history', 'Lịch sử', () => import('./views/history.js')]] },

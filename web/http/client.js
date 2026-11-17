@@ -144,3 +144,17 @@ export const bricks = {
   /** @param {string[]} keys "platform:id"; none: the whole library */
   exportUrl: (keys = []) => `${BASE}/bricks/export.md${q({ keys: keys.join(',') })}`,
 };
+
+/** The idea board: batches of ten cards. Other screens link to `#/board?from=…`; only the board calls these. */
+export const ideas = {
+  /** @param {number|string} [batch] none: the open batch */
+  board: (batch) => api(`/ideas${q({ batch })}`),
+  /** @param {string} from "self", "brick:PLATFORM:ID", "pain:INDEX", "5w1h:RECORD:INDEX" */
+  create: (from) => api('/ideas', { method: 'POST', body: { from } }),
+  /** @param {number} id @param {Record<string, any>} patch */
+  update: (id, patch) => api(`/ideas/${id}`, { method: 'POST', body: { patch } }),
+  remove: (id) => api(`/ideas/${id}`, { method: 'DELETE' }),
+  /** @param {string} [title] */
+  newBatch: (title) => api('/ideas/batches', { method: 'POST', body: { title } }),
+  exportUrl: (batch) => `${BASE}/ideas/export.md${q({ batch })}`,
+};
