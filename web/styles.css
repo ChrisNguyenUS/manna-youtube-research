@@ -1263,3 +1263,13 @@ details[open] > summary .yc-t-name::before { content: '▾ '; }
 /* Bảng ý tưởng: the card panel's title stays on one line; its buttons wrap below when the panel is narrow */
 .bd-panel .fw-panel-head { flex-wrap: wrap; row-gap: 8px; }
 .bd-panel .fw-panel-head b { white-space: nowrap; }
+
+/* Bảng ý tưởng: the Dàn ý tab */
+.bd-hook { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; margin-top: 10px; }
+.bd-hook.on { border-color: var(--blue); background: var(--blue-soft); }
+.bd-hook .fw-field { margin-top: 8px; }
+.bd-four { gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.bd-four .input:last-child { flex: 1; min-width: 180px; }
+.bd-block { margin-top: 10px; display: grid; gap: 4px; }
+.bd-lint { margin-top: 10px; display: grid; gap: 8px; }
+.bd-issue { font-size: 13.5px; }

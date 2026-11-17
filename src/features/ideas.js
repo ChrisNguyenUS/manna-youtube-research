@@ -7,6 +7,10 @@ import { ideasMarkdown } from '../core/report/ideas.js';
 import { aiError } from '../core/ai/base.js';
 import { ACTIONS, assistRequest, checkAssist } from '../core/ideas/assist.js';
 import { modelOf } from './ai/run.js';
+import { cleanOutline, timelineOf, outlineGaps } from '../core/outline/outline.js';
+import { lintScript } from '../core/outline/lint.js';
+import { ACTIONS as OUTLINE_ACTIONS, outlineRequest, checkOutlineAssist } from '../core/outline/assist.js';
+import { outlineMarkdown } from '../core/report/outline.js';
 
 const invalid = (message, field) => Object.assign(new Error(message), { code: 'invalid_input', field });
 const notFound = (message) => Object.assign(new Error(message), { code: 'not_found' });
@@ -15,10 +19,10 @@ const FULL = `Lô đang mở đã đủ ${LIMITS.live} thẻ. Bỏ một thẻ, 
 /**
  * @param {{repo: any, ws: string, settings: () => Record<string, any>, profile: () => any,
  *   library: {list: () => any[], get: (platform: string, videoId: string) => any}, fiveW: {report: (id: number) => any}, llm: import('../ports/llm.js').LlmClient,
- *   knowledge?: string, profileText?: () => string}} deps
+ *   knowledge?: string, hookKnowledge?: string, profileText?: () => string}} deps
  *   library: the brick library (features.bricks), read for question 1 and for cards made from a video
  */
-export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm, knowledge = '', profileText = () => '' }) {
+export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm, knowledge = '', hookKnowledge = '', profileText = () => '' }) {
   /** Ways to make a new card: `from` prefix → card fields. Later tasks add sources here. @type {Record<string, (parts: string[]) => any>} */
   const sources = { self: () => emptyCard() };
 
@@ -65,9 +69,10 @@ export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm, kn
   /** A stored card with its checks, read against today's library and Soulprint. */
   function view(row, ctx) {
     const card = cleanCard(row.data);
+    const outline = cleanOutline(row.outline);
     const precedent = precedentOf(card, ctx.rows, { min: ctx.min });
     const { checks, ready, missing } = checksOf(card, precedent, { hasFilter: ctx.hasFilter });
-    return { id: row.id, batchId: row.batchId, status: row.status, card, checks, ready, missing, trial: card.origin.kind === 'self', fromWinner: isFromWinner(card, ctx.min), matches: precedent.matches, createdAt: row.createdAt, updatedAt: row.updatedAt };
+    return { id: row.id, batchId: row.batchId, status: row.status, card, checks, ready, missing, trial: card.origin.kind === 'self', fromWinner: isFromWinner(card, ctx.min), matches: precedent.matches, outline, script: row.script ?? '', timeline: timelineOf(outline), gaps: outlineGaps(outline, card), createdAt: row.createdAt, updatedAt: row.updatedAt };
   }
   function context() {
     const p = profile() ?? {};
@@ -146,7 +151,43 @@ export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm, kn
     return { action, suggestion: checkAssist(action, r.json), usage: { model, tokensIn: r.tokensIn, tokensOut: r.tokensOut, costUsd: r.costUsd } };
   }
 
+  /** @param {number|string} id @param {any} outline the whole outline on screen */
+  function saveOutline(id, outline) {
+    const row = one(id);
+    repo.saveOutline(ws, row.id, cleanOutline(outline));
+    return view(repo.getCard(ws, row.id), context());
+  }
+  /** The owner's own script, saved with its check. @param {number|string} id @param {string} text */
+  function saveScript(id, text) {
+    const row = one(id);
+    const script = String(text ?? '').slice(0, 20_000);
+    repo.saveScript(ws, row.id, script);
+    const v = view(repo.getCard(ws, row.id), context());
+    return { view: v, lint: lintScript(script, { length: v.outline.length, leadMagnet: v.card.leadMagnet }) };
+  }
+  /** @param {number|string} id */
+  function outlineMd(id) {
+    const v = view(one(id), context());
+    return outlineMarkdown(v, { voice: String(profile()?.voice ?? '') });
+  }
+
+  /**
+   * One outline helper. `outline` and `card` are what is on screen; the stored ones are used when missing.
+   * Returns a suggestion and saves nothing. @param {string} action @param {{id: number|string, outline?: any, card?: any, archetype?: string}} input
+   */
+  async function outlineAssist(action, { id, outline, card, archetype } = /** @type {any} */ ({})) {
+    if (!OUTLINE_ACTIONS.includes(action)) throw invalid('Không có trợ lý này', 'action');
+    const row = one(id);
+    if (!llm.ready()) throw aiError('llm_no_key', 'Chưa nhập API key OpenRouter. Vào Cài đặt để nhập.');
+    const onCard = cleanCard({ ...row.data, ...(card && typeof card === 'object' ? card : {}), origin: row.data.origin });
+    const onOutline = cleanOutline(outline && typeof outline === 'object' ? outline : row.outline);
+    const model = modelOf(settings().aiWriteModel);
+    const r = await llm.complete({ ...outlineRequest(action, { card: onCard, outline: onOutline, archetype, profileText: profileText(), knowledge: hookKnowledge }), model });
+    return { action, suggestion: checkOutlineAssist(action, r.json, onOutline), usage: { model, tokensIn: r.tokensIn, tokensOut: r.tokensOut, costUsd: r.costUsd } };
+  }
+
   return {
+    outlineAssist, saveOutline, saveScript, outlineMarkdown: outlineMd, lint: (text, o) => lintScript(text, o),
     sources, assist, board, create, update, newBatch,
     get: (id) => view(one(id), context()),
     remove: (id) => void repo.removeCard(ws, one(id).id),

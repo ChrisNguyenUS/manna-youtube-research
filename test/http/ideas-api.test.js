@@ -39,3 +39,20 @@ test('bad input is a 400, an unknown card a 404', async () => {
   assert.equal((await fetch(`${s.base}/api/v1/ideas?batch=9999`)).status, 404);
   s.close();
 });
+
+test('outline, script, lint and the hand-off over HTTP', async () => {
+  const s = await boot();
+  const c = await (await post(`${s.base}/api/v1/ideas`, { from: 'self' })).json();
+  const o = await (await post(`${s.base}/api/v1/ideas/${c.id}/outline`, { outline: { length: 60 } })).json();
+  assert.equal(o.outline.length, 60);
+  const sc = await (await post(`${s.base}/api/v1/ideas/${c.id}/script`, { text: 'Bấm theo dõi nhé.' })).json();
+  assert.deepEqual([sc.view.script, sc.lint.issues], ['Bấm theo dõi nhé.', []]);
+  const l = await (await post(`${s.base}/api/v1/ideas/lint`, { text: 'Kể thôi.' })).json();
+  assert.deepEqual([l.maxWords, l.issues.map((x) => x.rule)], [135, ['cta']]);
+  const md = await (await fetch(`${s.base}/api/v1/ideas/${c.id}/outline.md?inline=1`)).text();
+  assert.match(md, /^# Dàn ý/);
+  assert.equal((await post(`${s.base}/api/v1/ideas/${c.id}/outline`, {})).status, 400);
+  assert.equal((await post(`${s.base}/api/v1/ideas/${c.id}/script`, {})).status, 400);
+  assert.equal((await post(`${s.base}/api/v1/ideas/lint`, {})).status, 400);
+  s.close();
+});

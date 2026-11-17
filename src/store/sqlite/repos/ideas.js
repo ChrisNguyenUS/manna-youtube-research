@@ -3,7 +3,7 @@
 /** @param {import('node:sqlite').DatabaseSync} db @param {() => number} [now] */
 export function ideasRepo(db, now = Date.now) {
   const batch = (r) => (r ? { id: r.id, title: r.title, status: r.status, learned: r.learned ? JSON.parse(r.learned) : null, createdAt: r.created_at, closedAt: r.closed_at } : null);
-  const card = (r) => (r ? { id: r.id, batchId: r.batch_id, status: r.status, data: JSON.parse(r.data), createdAt: r.created_at, updatedAt: r.updated_at } : null);
+const card = (r) => (r ? { id: r.id, batchId: r.batch_id, status: r.status, data: JSON.parse(r.data), outline: r.outline ? JSON.parse(r.outline) : null, script: r.script ?? '', createdAt: r.created_at, updatedAt: r.updated_at } : null);
   return {
     openBatch: (ws) => batch(db.prepare("SELECT * FROM idea_batches WHERE workspace_id = ? AND status = 'open' ORDER BY id DESC LIMIT 1").get(ws)),
     /** Newest first, with the number of live cards. @param {string} ws */
@@ -19,6 +19,8 @@ export function ideasRepo(db, now = Date.now) {
     /** @returns {number} */
     addCard: (ws, batchId, status, data) => Number(db.prepare('INSERT INTO ideas (workspace_id, batch_id, status, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)').run(ws, batchId, status, JSON.stringify(data), now(), now()).lastInsertRowid),
     saveCard: (ws, id, status, data) => void db.prepare('UPDATE ideas SET status = ?, data = ?, updated_at = ? WHERE workspace_id = ? AND id = ?').run(status, JSON.stringify(data), now(), ws, id),
+    saveOutline: (ws, id, outline) => void db.prepare('UPDATE ideas SET outline = ?, updated_at = ? WHERE workspace_id = ? AND id = ?').run(JSON.stringify(outline), now(), ws, id),
+    saveScript: (ws, id, script) => void db.prepare('UPDATE ideas SET script = ?, updated_at = ? WHERE workspace_id = ? AND id = ?').run(script, now(), ws, id),
     removeCard: (ws, id) => void db.prepare('DELETE FROM ideas WHERE workspace_id = ? AND id = ?').run(ws, id),
   };
 }

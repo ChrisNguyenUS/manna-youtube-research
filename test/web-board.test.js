@@ -39,3 +39,11 @@ test('two AI helpers on the card, drawn only with a key, offered with Nhận and
   for (const s of ["aiBtn('draft'", "aiBtn('titles'", 'data-accept', 'data-reject', 'AI đề xuất']) assert.ok(src.includes(s), s);
   assert.match(src, /const aiBtn = \(action, text\) => \(b\.ai \? /);
 });
+
+test('the Dàn ý tab: length, scenes, three hooks in three layers, the four S, blocks with times, the script check', () => {
+  const src = view();
+  for (const s of ["['outline', 'Dàn ý'", 'DÀN Ý', 'ĐỘ DÀI', 'CẢNH QUAY ĐƯỢC', 'NGHIÊNG VỀ', 'NGẮT', 'BẬT NGƯỢC', 'CHỮ TRÊN MÀN HÌNH', 'HÌNH MỞ ĐẦU', '4 CHỮ S', 'VÒNG LẶP', 'SOÁT LỜI THOẠI',
+    'data-pick-hook', 'data-scene', 'data-o=', 'data-lint', 'data-save-script', "outlineBtn('outline'", "outlineBtn('hooks'", "outlineBtn('fourS'", 'Còn thiếu', 'không viết lời thoại']) assert.ok(src.includes(s), s);
+  const client = fs.readFileSync('web/http/client.js', 'utf8');
+  for (const name of ['saveOutline:', 'saveScript:', 'lint:', 'outlineAssist:', 'outlineUrl:']) assert.ok(client.slice(client.indexOf('export const ideas')).includes(name), name);
+});
