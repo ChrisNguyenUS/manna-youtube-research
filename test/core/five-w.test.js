@@ -127,3 +127,14 @@ test('summary check: unknown keys and numbers are removed; a note or idea left w
   assert.equal(r.bad, 11);
   assert.deepEqual(checkSummary(null, CB, refs).ideas, []);
 });
+
+test('summary request: the channel profile is included when given, with the rule to fit ideas to it; absent otherwise', () => {
+  const comments = [c('a', 'Phỏng vấn có khó không', { likes: 5 })];
+  const tags = { a: { ...none, what: 'phong_van' } };
+  const table = tally(CB, tags, comments);
+  const withProfile = summaryRequest(table, comments, '', 'HỒ SƠ KÊNH (Soulprint)\nAvatar: Lan');
+  assert.match(withProfile.request.system, /HỒ SƠ KÊNH \(Soulprint\)\nAvatar: Lan/);
+  assert.match(withProfile.request.system, /Gợi ý phải hợp với avatar và các pillars trong hồ sơ kênh/);
+  const without = summaryRequest(table, comments);
+  assert.ok(!/HỒ SƠ KÊNH|hồ sơ kênh/.test(without.request.system));
+});

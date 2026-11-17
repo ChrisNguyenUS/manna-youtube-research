@@ -83,7 +83,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
     commentData: makeCommentData({ store, ws }),
     videoAnalysisHistory: makeVideoAnalysisHistory({ store, ws }),
     tiktokChannel: makeTikTokChannelAnalysis({ tiktok, records: base.records, now: base.now, settings }),
-    comment5w1h: makeComment5w1h({ llm, records: base.records, settings, knowledge, readComments: (ids) => features.commentData.comments(ids) }),
+    comment5w1h: makeComment5w1h({ llm, records: base.records, settings, knowledge, profileText: () => features.soulprint.context(), readComments: (ids) => features.commentData.comments(ids) }),
     soulprint: makeSoulprint({ repo: store.soulprint, ws, llm, settings, follows: store.follows, records: store.records, commentData: { videos: () => features.commentData.videos(), comments: (ids) => features.commentData.comments(ids) } }),
   };
 

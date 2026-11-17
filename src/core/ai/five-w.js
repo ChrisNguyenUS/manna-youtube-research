@@ -193,8 +193,9 @@ export function tally(codebook, tags, comments) {
 /**
  * Step 3: notes and content ideas from the counted table. Example comments get short numbers; `refs[n - 1]` is the
  * comment id behind number n. @param {ReturnType<typeof tally>} table @param {any[]} comments @param {string} [knowledge]
+ * @param {string} [profileText] the Soulprint context of the channel ('' when the profile is empty)
  */
-export function summaryRequest(table, comments, knowledge = '') {
+export function summaryRequest(table, comments, knowledge = '', profileText = '') {
   const byId = new Map((comments || []).map((c) => [String(c.id), c]));
   /** @type {string[]} */
   const refs = [];
@@ -234,7 +235,8 @@ Trả về:
 - who: key của một nhóm trong chiều who, hoặc null. pain: nỗi đau nói trong một câu, dùng chữ của khán giả.
 - belief: điều khán giả đang tin (đúng hay sai) lộ ra trong bình luận, kèm số của bình luận cho thấy điều đó; không thấy thì null.
 - evidence: số trong ngoặc vuông của các bình luận làm bằng chứng, bắt buộc có ít nhất một.
-${ideaRules}`,
+${ideaRules}
+${profileText ? `\nGợi ý phải hợp với avatar và các pillars trong hồ sơ kênh dưới đây; nỗi đau nào không phải của avatar đó thì bỏ qua. Nếu bình luận cho thấy điều trái với hồ sơ, nói rõ trong nhận định.\n\n${profileText}` : ''}`,
       user: `Tổng ${table.total} bình luận đã xếp nhóm.\n\n${blocks.join('\n\n')}`,
     },
   };

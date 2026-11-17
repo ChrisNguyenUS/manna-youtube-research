@@ -26,10 +26,10 @@ async function pool(list, size, fn) {
 
 /**
  * @param {{llm: import('../../ports/llm.js').LlmClient, readComments: (ids: string[]) => {videos: any[], comments: any[]},
- *   records: {add: Function, get: Function, update: Function}, settings: () => Record<string, any>, knowledge?: string, batchSize?: number}} deps
+ *   records: {add: Function, get: Function, update: Function}, settings: () => Record<string, any>, knowledge?: string, profileText?: () => string, batchSize?: number}} deps
  *   knowledge: the course notes given to the summary step ('' when the files are missing)
  */
-export function makeComment5w1h({ llm, readComments, records, settings, knowledge = '', batchSize = LIMITS.batch }) {
+export function makeComment5w1h({ llm, readComments, records, settings, knowledge = '', profileText = () => '', batchSize = LIMITS.batch }) {
   /** Counts calls, tokens and money of one job. */
   function meter() {
     const usage = { calls: 0, tokensIn: 0, tokensOut: 0, costUsd: /** @type {number|null} */ (0) };
@@ -58,7 +58,7 @@ export function makeComment5w1h({ llm, readComments, records, settings, knowledg
   }
 
   async function write(m, codebook, tags, comments, model) {
-    const { request, refs } = summaryRequest(tally(codebook, tags, comments), comments, knowledge);
+    const { request, refs } = summaryRequest(tally(codebook, tags, comments), comments, knowledge, profileText());
     return checkSummary(await m.ask(request, model), codebook, refs);
   }
 
@@ -71,7 +71,7 @@ export function makeComment5w1h({ llm, readComments, records, settings, knowledg
     progress({ step: 'Tổng hợp', done: 0, total: 1 });
     const sum = await twice(() => write(m, d.codebook, d.tags, readComments(d.videoIds).comments, model));
     records.update(id, {
-      ...d, notes: sum.notes, ideas: sum.ideas, summaryError: null, hasKnowledge: !!knowledge, counts: { ...d.counts, badRefs: sum.bad },
+      ...d, notes: sum.notes, ideas: sum.ideas, summaryError: null, hasKnowledge: !!knowledge, hasProfile: !!profileText(), counts: { ...d.counts, badRefs: sum.bad },
       usage: { ...d.usage, writeModel: model, calls: d.usage.calls + m.usage.calls, tokensIn: d.usage.tokensIn + m.usage.tokensIn, tokensOut: d.usage.tokensOut + m.usage.tokensOut, costUsd: addCost(d.usage.costUsd, m.usage.costUsd) },
     });
     return { id };
@@ -126,7 +126,7 @@ export function makeComment5w1h({ llm, readComments, records, settings, knowledg
     }
     const data = {
       videoIds, counts: { sent: prep.sent, tagged, untagged: prep.sent - tagged, dropped: prep.dropped, failedBatches, badTags, badRefs: sum.bad },
-      codebook, tags, notes: sum.notes, ideas: sum.ideas, summaryError: sum.summaryError, hasKnowledge: !!knowledge,
+      codebook, tags, notes: sum.notes, ideas: sum.ideas, summaryError: sum.summaryError, hasKnowledge: !!knowledge, hasProfile: !!profileText(),
       usage: { tagModel, writeModel, ...m.usage },
     };
     return { id: records.add(KIND, `${videoIds.length} video · ${prep.sent} comment`, { params, data }) };

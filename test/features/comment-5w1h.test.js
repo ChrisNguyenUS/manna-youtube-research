@@ -36,7 +36,7 @@ function setup(script, o = {}) {
   const llm = createFakeLlm(script, { ready: o.ready ?? true });
   const state = { comments: COMMENTS };
   const f = makeComment5w1h({
-    llm, records, knowledge: o.knowledge ?? '', batchSize: 2,
+    llm, records, knowledge: o.knowledge ?? '', batchSize: 2, profileText: () => o.profileText ?? '',
     settings: () => ({ aiTagModel: 'tag/model', aiWriteModel: 'write/model', ...o.settings }),
     readComments: (ids) => ({ videos: ids.map((id) => ({ id, caption: 'cap' })), comments: state.comments }),
   });
@@ -148,4 +148,14 @@ test('knowledge is passed to the summary and recorded', async () => {
   const { id } = await f.run({ videos: V });
   assert.match(llm.calls.at(-1).system, /CONCEPT 1: SO SÁNH/);
   assert.equal(saved.get(id).data.hasKnowledge, true);
+});
+
+test('the channel profile reaches the summary step only, and the report records whether there was one', async () => {
+  const withP = setup(good(), { profileText: 'HỒ SƠ KÊNH (Soulprint)\nAvatar: Lan' });
+  const { id } = await withP.f.run({ videos: V });
+  assert.match(withP.llm.calls.at(-1).system, /Avatar: Lan/);
+  assert.ok(withP.llm.calls.slice(0, -1).every((c) => !/Avatar: Lan/.test(c.system + c.user)));
+  assert.equal(withP.saved.get(id).data.hasProfile, true);
+  const without = setup(good());
+  assert.equal(without.saved.get((await without.f.run({ videos: V })).id).data.hasProfile, false);
 });
