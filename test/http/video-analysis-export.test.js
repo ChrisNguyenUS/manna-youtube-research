@@ -7,6 +7,17 @@ import { FAKE_GONE_ID } from '../../src/sources/fake/tiktok.js';
 import { videoAnalysisMarkdown, transcriptNoteText } from '../../src/core/report/video-analysis.js';
 
 const L = (id) => `https://www.tiktok.com/@creator/video/${id}`;
+async function post(url, body) {
+  return fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+}
+async function waitJob(base, id) {
+  for (let i = 0; i < 200; i++) {
+    const j = await (await fetch(`${base}/api/v1/jobs/${id}`)).json();
+    if (['succeeded', 'failed', 'cancelled'].includes(j.status)) return j;
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  throw new Error('job did not finish');
+}
 async function boot() {
   const app = testApp();
   const srv = createHttpServer(app);
@@ -79,4 +90,16 @@ test('a job started from the screen is named by how many videos it has, not by i
     s.app.runner.stop();
     s.close();
   }
+});
+
+test('YouTube: the job runs over HTTP, its Markdown says YouTube, and bad input is a 400', async () => {
+  const s = await boot();
+  const job = await waitJob(s.base, (await (await post(`${s.base}/api/v1/jobs/video_analysis`, { videos: 'dQw4w9WgXcQ', comments: 100 })).json()).id);
+  assert.equal(job.status, 'succeeded', job.error);
+  const md = await (await fetch(`${s.base}/api/v1/records/${job.result.id}/export.md?inline=1`)).text();
+  assert.match(md, /# Phân tích video YouTube/);
+  assert.match(md, /YouTube chưa lấy được lời thoại/);
+  const bad = await post(`${s.base}/api/v1/jobs/video_analysis`, { videos: 'x', comments: 7 });
+  assert.equal(bad.status, 400);
+  s.close();
 });

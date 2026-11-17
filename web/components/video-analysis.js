@@ -5,7 +5,7 @@ import { esc, icon, fmt, full, dur, emptyState, toast, isSaved, toggleSave, metr
 import { insightContext, commentBrowser } from './insight-workspace.js';
 import { savedTikTokVideo } from '../saved-items.js';
 
-const NOTES = { none: 'Video không có phụ đề', off: 'Không lấy script', setup: 'Chưa cài Chromium nên chưa lấy được script', changed: 'Nền tảng đã đổi giao diện, chưa đọc được script' };
+const NOTES = { none: 'Video không có phụ đề', off: 'Không lấy script', setup: 'Chưa cài Chromium nên chưa lấy được script', changed: 'Nền tảng đã đổi giao diện, chưa đọc được script', unsupported: 'YouTube chưa lấy được lời thoại' };
 const OPENING_SECONDS = 5;
 const pct = (x) => (x == null ? '–' : `${(x * 100).toFixed(1).replace('.', ',')}%`);
 const day = (iso) => (iso ? new Date(iso).toLocaleDateString('vi-VN') : '–');

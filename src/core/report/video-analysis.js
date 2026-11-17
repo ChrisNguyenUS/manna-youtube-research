@@ -13,6 +13,7 @@ const NOTES = {
   off: 'Không lấy script',
   setup: 'Chưa cài Chromium nên chưa lấy được script',
   changed: 'Nền tảng đã đổi giao diện, chưa đọc được script',
+  unsupported: 'YouTube chưa lấy được lời thoại',
 };
 const QUOTES_PER_GROUP = 15;
 
