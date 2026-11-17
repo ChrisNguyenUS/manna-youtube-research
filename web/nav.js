@@ -57,6 +57,7 @@ export const GROUPS = [
           ],
         },
       },
+      { icon: 'target', label: 'Thư viện gạch', tabs: [['/bricks', 'Thư viện gạch', () => import('./views/bricks.js')]] },
     ],
   },
   {

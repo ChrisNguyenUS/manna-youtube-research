@@ -3,26 +3,15 @@
 // notes and content ideas. A failed batch leaves its comments "chưa phân loại"; a failed summary still saves the counts.
 import { noop } from '../shared.js';
 import { rethrowIfCancelled } from '../../core/cancel.js';
-import { aiError, DEFAULT_MODEL } from '../../core/ai/base.js';
+import { aiError } from '../../core/ai/base.js';
+import { FATAL, modelOf, addCost, makeMeter, twice, pool } from './run.js';
 import { LIMITS, prepare, estimateOf, codebookRequest, checkCodebook, tagRequest, checkTags, expandTags, tally, summaryRequest, checkSummary } from '../../core/ai/five-w.js';
 
 const KIND = 'comment_5w1h';
 const PARALLEL = 3;
-/** Errors no retry can fix: stop the whole job. */
-const FATAL = new Set(['llm_auth', 'llm_no_key']);
 const invalid = (message, field) => Object.assign(new Error(message), { code: 'invalid_input', field });
 const idsOf = (videos) => [...new Set(String(videos || '').split(/[\s,]+/).filter((x) => /^\d{15,25}$/.test(x)))].slice(0, 200);
 const chunk = (list, size) => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, (i + 1) * size));
-const modelOf = (v) => String(v || '').trim() || DEFAULT_MODEL;
-const addCost = (a, b) => (a == null || b == null ? null : a + b);
-
-/** Run fn over the list, `size` at a time. An error from fn stops everything. */
-async function pool(list, size, fn) {
-  let next = 0;
-  await Promise.all(Array.from({ length: Math.min(size, list.length) }, async () => {
-    while (next < list.length) await fn(list[next++]);
-  }));
-}
 
 /**
  * @param {{llm: import('../../ports/llm.js').LlmClient, readComments: (ids: string[]) => {videos: any[], comments: any[]},
@@ -30,33 +19,6 @@ async function pool(list, size, fn) {
  *   knowledge: the course notes given to the summary step ('' when the files are missing)
  */
 export function makeComment5w1h({ llm, readComments, records, settings, knowledge = '', profileText = () => '', batchSize = LIMITS.batch }) {
-  /** Counts calls, tokens and money of one job. */
-  function meter() {
-    const usage = { calls: 0, tokensIn: 0, tokensOut: 0, costUsd: /** @type {number|null} */ (0) };
-    return {
-      usage,
-      async ask(req, model) {
-        usage.calls++; // counted before the call: a failed call was still made
-        const r = await llm.complete({ ...req, model });
-        usage.tokensIn += r.tokensIn;
-        usage.tokensOut += r.tokensOut;
-        usage.costUsd = addCost(usage.costUsd, r.costUsd);
-        return r.json;
-      },
-    };
-  }
-
-  /** One retry for anything a second try can fix (bad output, a busy provider). */
-  async function twice(fn) {
-    try {
-      return await fn();
-    } catch (e) {
-      rethrowIfCancelled(e);
-      if (FATAL.has(e?.code)) throw e;
-      return fn();
-    }
-  }
-
   async function write(m, codebook, tags, comments, model) {
     const { request, refs } = summaryRequest(tally(codebook, tags, comments), comments, knowledge, profileText());
     return checkSummary(await m.ask(request, model), codebook, refs);
@@ -67,7 +29,7 @@ export function makeComment5w1h({ llm, readComments, records, settings, knowledg
     if (!rec || rec.kind !== KIND) throw Object.assign(new Error('Không thấy báo cáo 5W1H'), { code: 'not_found' });
     const d = rec.data;
     const model = modelOf(settings().aiWriteModel);
-    const m = meter();
+    const m = makeMeter(llm);
     progress({ step: 'Tổng hợp', done: 0, total: 1 });
     const sum = await twice(() => write(m, d.codebook, d.tags, readComments(d.videoIds).comments, model));
     records.update(id, {
@@ -88,7 +50,7 @@ export function makeComment5w1h({ llm, readComments, records, settings, knowledg
     if (!prep.items.length) throw invalid('Không có comment nào có chữ', 'videos');
     const s = settings();
     const [tagModel, writeModel] = [modelOf(s.aiTagModel), modelOf(s.aiWriteModel)];
-    const m = meter();
+    const m = makeMeter(llm);
 
     progress({ step: 'Lập bảng mã', done: 0, total: 1 });
     const codebook = await twice(async () => checkCodebook(await m.ask(codebookRequest(prep.items.slice(0, LIMITS.sample)), tagModel)));

@@ -28,22 +28,25 @@ import { makeCommentData } from './features/tiktok/comment-data.js';
 import { createOpenRouter } from './llm/openrouter.js';
 import { makeComment5w1h } from './features/ai/comment-5w1h.js';
 import { makeSoulprint } from './features/soulprint.js';
+import { makeBricks } from './features/bricks.js';
 
 const KNOWLEDGE_DIR = path.join(ROOT, 'src', 'features', 'ai', 'knowledge');
-/** The owner's course notes for AI prompts: every .md in the folder, or '' when there is none (the folder is not in git). */
-function readKnowledge(dir = KNOWLEDGE_DIR) {
+/** The owner's course notes for AI prompts, by file name without ".md" ({} when the folder is missing: it is not in git). */
+function readKnowledgeFiles(dir = KNOWLEDGE_DIR) {
   try {
-    return fs.readdirSync(dir).filter((f) => f.endsWith('.md')).sort().map((f) => fs.readFileSync(path.join(dir, f), 'utf8').trim()).filter(Boolean).join('\n\n---\n\n');
+    return Object.fromEntries(fs.readdirSync(dir).filter((f) => f.endsWith('.md')).sort().map((f) => [f.slice(0, -3), fs.readFileSync(path.join(dir, f), 'utf8').trim()]));
   } catch {
-    return '';
+    return {};
   }
 }
+/** Several knowledge files as one block, in the order asked; missing ones are skipped. @param {Record<string, string>} files @param {string[]} names */
+const knowledgeOf = (files, names) => names.map((n) => files[n]).filter(Boolean).join('\n\n---\n\n');
 
 /**
  * @param {{config?: ReturnType<typeof loadConfig>, source?: import('./ports/youtube-source.js').YouTubeSource, store?: import('./store/sqlite/index.js').Store,
- *   tiktok?: import('./ports/tiktok-source.js').TikTokSource, llm?: import('./ports/llm.js').LlmClient, knowledge?: string}} [o]
+ *   tiktok?: import('./ports/tiktok-source.js').TikTokSource, llm?: import('./ports/llm.js').LlmClient, knowledge?: string, knowledgeFiles?: Record<string, string>}} [o]
  */
-export function createApp({ config = loadConfig(), source, store, tiktok, llm, knowledge } = {}) {
+export function createApp({ config = loadConfig(), source, store, tiktok, llm, knowledge, knowledgeFiles } = {}) {
   store ??= createSqliteStore(openDatabase({ dataDir: config.dataDir }));
   const ws = 'local'; // workspace; becomes the signed-in workspace when the app goes multi-user
   const settings = () => store.settings.all(ws);
@@ -52,7 +55,9 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
   tiktok ??= createTikTokSource({ sessionFile: path.join(config.dataDir, 'tiktok-session.json') });
   // The owner's own OpenRouter key from Settings; read on every call so a new key works without a restart.
   llm ??= createOpenRouter({ getKey: () => String(settings().aiKey || '') });
-  knowledge ??= readKnowledge();
+  knowledgeFiles ??= readKnowledgeFiles();
+  // What the 5W1H summary reads (the same four files, in the same order, as before this change).
+  knowledge ??= knowledgeOf(knowledgeFiles, ['dick', 'funnel', 'kallaway', 'viral-concepts']);
   const base = { source, store, ws, settings, now: Date.now, records: recordsFor(store, ws) };
   const enrich = makeEnrich(base);
   const tiktokSearch = makeTikTokSearch({ tiktok, records: base.records, now: base.now });
@@ -86,6 +91,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
     videoAnalysisHistory: makeVideoAnalysisHistory({ store, ws }),
     tiktokChannel: makeTikTokChannelAnalysis({ tiktok, records: base.records, now: base.now, settings }),
     comment5w1h: makeComment5w1h({ llm, records: base.records, settings, knowledge, profileText: () => features.soulprint.context(), readComments: (ids) => features.commentData.comments(ids) }),
+    bricks: makeBricks({ repo: store.bricks, ws, llm, settings, knowledge: knowledgeOf(knowledgeFiles, ['viral-concepts']), analyst: knowledgeOf(knowledgeFiles, ['analyst']), profile: () => features.soulprint.get().profile, records: base.records, tiktok, source, commentsOf: (id) => store.comments.ofVideo(id), follows: store.follows }),
     soulprint: makeSoulprint({ repo: store.soulprint, ws, llm, settings, follows: store.follows, records: store.records, commentData: { videos: () => features.commentData.videos(), comments: (ids) => features.commentData.comments(ids) } }),
   };
 
@@ -111,6 +117,8 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
   handlers.tiktok_video_analysis = (p, ctx) => features.tiktokVideoAnalysis(p, ctx.progress);
   handlers.video_analysis = (p, ctx) => features.videoAnalysis(p, ctx.progress);
   handlers.tiktok_channel = (p, ctx) => features.tiktokChannel(p, ctx.progress);
+  handlers.brick_extract = (p, ctx) => features.bricks.extract(p, ctx.progress);
+  handlers.video_deep_dive = (p, ctx) => features.bricks.deepDive(p, ctx.progress);
   handlers.comment_5w1h = (p, ctx) => features.comment5w1h.run(p, ctx.progress);
   handlers.follow_refresh = (p, ctx) => features.follows.refresh(p, ctx.progress);
   const runner = createRunner({ jobsRepo: store.jobs, handlers, onCancelled: (job) => store.records.removeByJob(job.id) });

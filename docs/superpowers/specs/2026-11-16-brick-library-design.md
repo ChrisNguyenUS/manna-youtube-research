@@ -1,6 +1,6 @@
 # Thư viện gạch: thiết kế
 
-> Ngày: 2026-11-16 · Trạng thái: chờ duyệt · Phạm vi: giai đoạn 4 trong [kế hoạch tổng](../plans/2026-11-16-master-plan.md)
+> Ngày: 2026-11-16 · Trạng thái: đã duyệt · Phạm vi: giai đoạn 4 trong [kế hoạch tổng](../plans/2026-11-16-master-plan.md)
 > Cần trước: lớp LLM (giai đoạn 1), Soulprint (giai đoạn 2). Nên có: giai đoạn 3 (lời thoại YouTube).
 > Nguồn nội dung: Chương 2 và 4 của tài liệu Kallaway (outlier, 7 Lego bricks), skill `viral-content-analyst` (8 bước), 40 concept.
 
@@ -67,7 +67,7 @@ Ngưỡng là ô "Vượt kênh từ mấy lần thì đưa vào thư viện" tr
 
 Với mỗi video (tối đa 50 mỗi lần, 3 video song song):
 1. Lấy lời thoại: dùng bản đã lưu nếu có, không thì tải (TikTok 1 đến 2 giây; YouTube theo giai đoạn 3).
-2. Lấy tối đa 30 comment được chú ý nhất **đã có** trong app. Không tự thu comment mới; có tuỳ chọn "thu thêm 100 comment mỗi video".
+2. Lấy tối đa 30 comment được chú ý nhất **đã có** trong app (comment của chính báo cáo đó, hoặc bảng comment TikTok dùng chung). Job không tự thu comment mới; muốn có thì thu trước ở Thu thập bình luận hoặc Phân tích video.
 3. Một lần gọi model tổng hợp, kèm đoạn Soulprint (pillars, câu lọc) và file kiến thức concept.
 4. Kiểm đầu ra, lưu vào bảng.
 
@@ -79,7 +79,7 @@ Một video lỗi (không tải được, model lỗi hai lần) được ghi l�
 
 ### 5.1 Bảng
 
-Cột: video (ảnh, tiêu đề, link), kênh, nền tảng, vượt kênh (số lần), topic, pillar, concept, archetype, hook nguyên văn, hợp kênh. Lọc theo từng cột phân loại, tìm theo chữ, sắp theo điểm vượt kênh hoặc ngày. Chọn nhiều dòng để xuất Markdown hoặc bóc lại.
+Cột: video (ảnh, tiêu đề, link), kênh, nền tảng, vượt kênh (số lần), topic, pillar, concept, archetype, hook nguyên văn, hợp kênh. Lọc theo từng cột phân loại, tìm theo chữ, sắp theo điểm vượt kênh hoặc ngày. Xuất Markdown các dòng đang lọc. Bóc lại làm từng video trong màn chi tiết.
 
 ### 5.2 Chi tiết một video
 

@@ -14,6 +14,8 @@ export async function mount(root) {
         <div class="field"><label>Bỏ kênh dưới bao nhiêu sub khi tính "vượt kênh"</label><input class="input" type="number" min="0" data-k="minSubsForOutlier" value="${s.minSubsForOutlier}"><div class="help">Kênh quá nhỏ cho số vượt kênh rất nhiễu.</div></div>
         <div class="field"><label>Các nước dùng khi chọn 🌐 Toàn cầu</label><input class="input" data-k="globalRegions" value="${esc(s.globalRegions)}" placeholder="US,GB,IN,CA,AU,PH,VN,ID"><div class="help">Mã 2 chữ, cách nhau bằng dấu phẩy. Mỗi nước thêm 1 lượt tìm cho mỗi từ khoá.</div></div>
         <div class="field"><label>Video nổi bật = view ≥ bao nhiêu lần trung vị kênh</label><input class="input" type="number" min="1.5" step="0.5" data-k="outlierMultiple" value="${s.outlierMultiple}"></div>
+        <div class="field"><label>Vượt kênh từ mấy lần thì đưa vào Thư viện gạch</label><input class="input" type="number" min="1.5" step="0.5" data-k="bricksMinScore" value="${s.bricksMinScore}"><div class="help">Mặc định 3. Bắt đầu từ 5 nếu muốn chỉ lấy video thắng rõ.</div></div>
+
       </div>
       <div class="section-label">AI phân tích (OpenRouter)</div>
       <div class="grid grid-2">

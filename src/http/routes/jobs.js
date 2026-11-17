@@ -9,6 +9,8 @@ export const JOB_SCHEMAS = {
   tiktok_topic: { topic: 'string!', keywords: 'string?', maxKeywords: 'int?', perKeyword: 'int?', sort: /** @type {any} */ (['score', 'plays', 'trending', 'fresh']), minPlays: 'int?', maxAgeDays: 'int?', topComments: /** @type {any} */ ([0, 3]), keepOffTopic: 'bool?', keepPrevious: 'bool?' },
   tiktok_video_analysis: { videos: 'string!', script: 'bool?', comments: /** @type {any} */ ([0, 100, 300]), replies: 'bool?', reuse: 'bool?' },
   video_analysis: { videos: 'string!', script: 'bool?', comments: /** @type {any} */ ([0, 100, 300]), replies: 'bool?' },
+  brick_extract: { recordId: 'int?', links: 'string?', follows: 'string?', contrast: 'bool?', redo: 'bool?' },
+  video_deep_dive: { platform: /** @type {any} */ (['tiktok', 'youtube']), videoId: 'string!' },
   tiktok_channel: { input: 'string!', max: 'int?' },
   comment_5w1h: { videos: 'string?', onlyStep3: 'int?' },
   follow_refresh: { platform: /** @type {any} */ (['youtube', 'tiktok']), ref: 'string?' },
@@ -37,7 +39,7 @@ export function jobView(j) {
 
 /** How many links a pasted list holds (same splitting as the use case: whitespace or commas). */
 const countLinks = (videos) => String(videos || '').split(/[\s,]+/).filter(Boolean).length;
-const titleOf = (b, kind) => String((kind === 'follow_refresh' && (b.ref || 'Kênh đang theo dõi')) || (kind === 'comment_5w1h' && (b.onlyStep3 ? 'Viết lại nhận định 5W1H' : `5W1H · ${countLinks(b.videos)} video`)) || (kind.endsWith('video_analysis') && `${countLinks(b.videos)} video`) || (kind === 'tiktok_topic' && b.topic) || b.keywords || b.topic || b.input || b.seed || b.ideas || b.videos || kind).slice(0, 80);
+const titleOf = (b, kind) => String((kind === 'follow_refresh' && (b.ref || 'Kênh đang theo dõi')) || (kind === 'comment_5w1h' && (b.onlyStep3 ? 'Viết lại nhận định 5W1H' : `5W1H · ${countLinks(b.videos)} video`)) || (kind === 'brick_extract' && 'Bóc gạch video') || (kind === 'video_deep_dive' && 'Đào sâu video') || (kind.endsWith('video_analysis') && `${countLinks(b.videos)} video`) || (kind === 'tiktok_topic' && b.topic) || b.keywords || b.topic || b.input || b.seed || b.ideas || b.videos || kind).slice(0, 80);
 
 export const jobRoutes = [
   {

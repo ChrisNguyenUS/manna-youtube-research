@@ -1223,3 +1223,21 @@ details[open] > summary .yc-t-name::before { content: '▾ '; }
 .sp-table { margin: 12px 0; font-size: 13.5px; }
 .sp-draft { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; margin-top: 8px; }
 .sp-draft pre { white-space: pre-wrap; font: inherit; font-size: 13.5px; color: var(--text-2); margin: 8px 0 0; max-height: 220px; overflow: auto; }
+
+/* Thư viện gạch */
+.br-add .input-row { align-items: flex-start; }
+.br-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.br-filters .input { width: auto; flex: 0 1 190px; }
+.br-table tbody tr { cursor: pointer; }
+.br-table tbody tr:hover, .br-table tbody tr:focus-visible { background: var(--blue-soft); outline: none; }
+.br-hook { max-width: 260px; color: var(--text-2); }
+.br-tools { display: inline-flex; gap: 6px; margin-left: 8px; text-transform: none; letter-spacing: 0; vertical-align: middle; }
+.br-script { display: grid; gap: 2px; margin-top: 12px; }
+.br-line { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; padding: 4px 8px; border-radius: var(--radius-sm); border-left: 3px solid transparent; }
+.br-line.t-hook { border-left-color: var(--accent); }
+.br-line.t-lockin, .br-line.t-rehook { border-left-color: var(--blue); }
+.br-line.t-cta { border-left-color: var(--muted); }
+.br-line.hit { background: var(--blue-soft); }
+
+.br-follows, .br-compare { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.br-cmp td { padding: 4px 8px; }

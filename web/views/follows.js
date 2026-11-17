@@ -22,7 +22,7 @@ export async function mount(root, params) {
   root.innerHTML = `
     <div class="page-head"><div><h1>${icon('eye')} Kênh đang theo dõi</h1>
       <p>Kênh YouTube và TikTok bạn theo dõi. Bấm Cập nhật để xem video mới từ lần trước và video nào đang vượt trội so với chính kênh đó.</p></div>
-      <div class="head-actions"><button class="btn primary" data-refresh-all>${icon('refresh')} Cập nhật tất cả</button></div></div>
+      <div class="head-actions"><a class="btn" href="#/bricks">${icon('target')} Bóc gạch video vượt kênh</a><button class="btn primary" data-refresh-all>${icon('refresh')} Cập nhật tất cả</button></div></div>
     <div class="card card-pad"><div class="input-row">
       <select class="input" data-platform style="max-width:130px"><option value="tiktok">TikTok</option><option value="youtube">YouTube</option></select>
       <input class="input" data-input placeholder="@tenkenh hoặc link kênh">

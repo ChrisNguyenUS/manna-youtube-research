@@ -6,6 +6,7 @@ import { jobsRepo } from './repos/jobs.js';
 import { followsRepo } from './repos/follows.js';
 import { commentsRepo } from './repos/comments.js';
 import { soulprintRepo } from './repos/soulprint.js';
+import { bricksRepo } from './repos/bricks.js';
 
 export { DEFAULT_SETTINGS };
 
@@ -13,6 +14,6 @@ export { DEFAULT_SETTINGS };
 export function createSqliteStore(db) {
   const comments = commentsRepo(db);
   comments.moveEmbedded(); // once: comments of reports written before the comments table
-  return { db, cache: cacheRepo(db), records: recordsRepo(db, Date.now, comments), saved: savedRepo(db), settings: settingsRepo(db), jobs: jobsRepo(db), follows: followsRepo(db), comments, soulprint: soulprintRepo(db) };
+  return { db, cache: cacheRepo(db), records: recordsRepo(db, Date.now, comments), saved: savedRepo(db), settings: settingsRepo(db), jobs: jobsRepo(db), follows: followsRepo(db), comments, soulprint: soulprintRepo(db), bricks: bricksRepo(db) };
 }
 /** @typedef {ReturnType<typeof createSqliteStore>} Store */
