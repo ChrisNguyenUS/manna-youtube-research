@@ -1,6 +1,6 @@
 # Dàn ý script: thiết kế
 
-> Ngày: 2026-11-16 · Trạng thái: chờ duyệt · Phạm vi: giai đoạn 6 trong [kế hoạch tổng](../plans/2026-11-16-master-plan.md)
+> Ngày: 2026-11-16 · Trạng thái: đã duyệt · Phạm vi: giai đoạn 6 trong [kế hoạch tổng](../plans/2026-11-16-master-plan.md)
 > Cần trước: giai đoạn 5.
 > Nguồn nội dung: Chương 6, 7 và 8 của tài liệu Kallaway (hook 3 bước, Triple Hook, 6 archetype, Dopamine Loop, khung script ngắn), checklist "tính người" và 12 quy tắc viết "có hồn" của chủ app.
 
@@ -66,7 +66,7 @@ Chủ app dán lời đã viết vào ô **Soát lời thoại**. Code trả v�
 | Nhịp câu đều: từ 4 câu liền nhau có độ dài chênh nhau dưới 3 từ | "cạnh răng cưa" của Kallaway |
 | Câu quá dài không có dấu phẩy (trên 30 từ) | checklist, phần 4 |
 | Thiếu CTA: không có câu nào chứa lead magnet hoặc lời kêu gọi | Kallaway, CTA mọi video |
-| Số từ so với độ dài: quá 3 từ mỗi giây | ước lượng tốc độ nói, chỉnh được trong Cài đặt |
+| Số từ so với độ dài: quá 3 từ mỗi giây | ước lượng tốc độ nói; là một hằng số trong `lint.js`, sửa một dòng là đổi được |
 
 Danh sách từ nằm trong một file dữ liệu để chủ app thêm bớt. Công cụ không chấm "có hồn hay chưa"; nó chỉ bắt những lỗi đếm được. Lời đã soát có thể lưu vào thẻ (trường `script`) để xem lại ở giai đoạn 7.
 
@@ -74,7 +74,7 @@ Danh sách từ nằm trong một file dữ liệu để chủ app thêm bớt. 
 
 - `src/core/outline/`: `outline.js` (dàn ý trống, làm sạch, chia mốc thời gian), `assist.js` (ba trợ lý), `lint.js` và `lint-words.js` (soát lời).
 - `src/core/report/outline.js`: Markdown.
-- `src/features/ideas.js`: thêm `outlineAssist`, `lintScript`; dàn ý lưu trong `data.outline` của thẻ, không cần bảng mới.
+- `src/features/ideas.js`: thêm `outlineAssist`, `lintScript`. Dàn ý và lời thoại lưu ở hai cột mới của bảng `ideas` (migration 009), tách khỏi JSON của thẻ, để phần làm sạch thẻ không xoá mất chúng.
 - Route: `POST /api/v1/ideas/:id/outline/assist`, `POST /api/v1/ideas/lint`, `GET /api/v1/ideas/:id/outline.md`.
 - Web: tab Dàn ý trong `web/views/board.js`.
 - File kiến thức `hooks.md`.
