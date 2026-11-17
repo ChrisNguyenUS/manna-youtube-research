@@ -46,7 +46,7 @@ export const GROUPS = [
   {
     key: 'dissect', title: 'Mổ xẻ',
     items: [
-      { icon: 'bars', label: 'Phân tích video', tabs: [['/tiktok/video', 'Phân tích video', () => import('./views/tiktok/video.js')]] },
+      { icon: 'bars', label: 'Phân tích video', tabs: [['/video', 'Phân tích video', () => import('./views/video.js')]] },
       {
         icon: 'users', label: 'Phân tích kênh',
         platforms: {
@@ -92,7 +92,7 @@ export const GROUPS = [
 export const ITEMS = [HOME, SOULPRINT, ...GROUPS.flatMap((g) => g.items)];
 
 /** Old paths that now open another screen (the query string is kept). @type {Record<string, string>} */
-export const ALIASES = {};
+export const ALIASES = { '/tiktok/video': '/video' };
 
 /** Every screen of an entry, whatever the platform. @param {Item} item @returns {Tab[]} */
 export const allTabs = (item) => (item.platforms ? [...item.platforms.tiktok, ...item.platforms.youtube] : item.tabs ?? []);

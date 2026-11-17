@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 // into all of web/ (which is not type-checked).
 const { HOME, SOULPRINT, GROUPS, ITEMS, ALIASES, allTabs, has, platformOf, tabsFor, firstPath, findItem } = await import(new URL('../web/nav.js', import.meta.url).href);
 
-const LEGACY = ['/', '/soulprint', '/tiktok/topic', '/tiktok/search', '/tiktok/insight', '/tiktok/insight/collected', '/tiktok/video', '/tiktok/channel', '/tiktok/comments', '/tiktok/5w1h',
+const LEGACY = ['/', '/soulprint', '/tiktok/topic', '/tiktok/search', '/tiktok/insight', '/tiktok/insight/collected', '/video', '/tiktok/channel', '/tiktok/comments', '/tiktok/5w1h',
   '/research', '/videos', '/comments', '/channels', '/channel', '/compare', '/keywords', '/ideas', '/follows', '/history', '/saved', '/settings'];
 const item = (label) => ITEMS.find((it) => it.label === label);
 
@@ -44,5 +44,5 @@ test('lookups: the platform of a path, the tabs to show for it, where an entry o
   assert.deepEqual([firstPath(ch), firstPath(ch, 'youtube'), firstPath(ch, 'nope'), firstPath(item('Theo dõi'), 'youtube')], ['/tiktok/channel', '/channel', '/tiktok/channel', '/follows']);
   assert.equal(findItem('/compare'), ch);
   assert.equal(findItem('/khong-co'), HOME);
-  assert.deepEqual(ALIASES, {});
+  assert.deepEqual(ALIASES, { '/tiktok/video': '/video' });
 });

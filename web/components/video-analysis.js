@@ -154,7 +154,7 @@ export function videoAnalysis(box, { exportUrl }) {
     const head = `<div class="cx-head"><span><b>${fmt(parents)}</b> comment gốc · <b>${fmt(read - parents)}</b> trả lời · <b>${fmt(read)}</b> bản ghi · <b>${fmt(tagged)}</b> đã phân loại</span>
       <span class="muted">${r ? `<span class="cx-reused">Dùng lại dữ liệu ${r.state === 'exhausted' ? 'đã lấy hết' : 'đã thu thập'}</span> ` : ''}${at ? `lấy lúc ${at.toLocaleString('vi-VN')}` : ''}</span>
       ${e.video?.comments != null && e.video.comments > read ? `<span class="muted small" title="TikTok tính cả bình luận bị ẩn, đã xoá hoặc chưa đọc tới">TikTok báo ${fmt(e.video.comments)} bình luận; đã đọc ${fmt(read)}.</span>` : ''}</div>`;
-    offTab = commentBrowser(body, ctx, { base: ctx.all, filters: ['topic'], mode: 'embedded', head, openFull: `#/tiktok/comments?video=${encodeURIComponent(e.video.id)}` }).off;
+    offTab = commentBrowser(body, ctx, { base: ctx.all, filters: ['topic'], mode: 'embedded', head, openFull: rec.data.platform === 'tiktok' ? `#/tiktok/comments?video=${encodeURIComponent(e.video.id)}` : undefined }).off;
   }
 
   function detail() {

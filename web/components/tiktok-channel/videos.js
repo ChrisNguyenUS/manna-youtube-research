@@ -10,7 +10,7 @@ const COLS = [
 ];
 const val = (v, k) => (k === 'createdAt' ? Date.parse(v.createdAt || '') || 0 : v[k] ?? -Infinity);
 const tiktokLinks = (list) => list.map((v) => v.url).join('\n');
-export const analyzeHref = (videos) => `#/tiktok/video?videos=${encodeURIComponent(tiktokLinks(videos))}`;
+export const analyzeHref = (videos) => `#/video?videos=${encodeURIComponent(tiktokLinks(videos))}`;
 
 /**
  * @param {HTMLElement} el
