@@ -52,3 +52,29 @@ test('import only returns drafts: the saved profile is untouched', () => {
   assert.equal(a.features.soulprint.get().profile.statement.chosen, 'câu của tôi');
   assert.equal(a.features.soulprint.get().profile.avatar.portrait, '');
 });
+
+import { createFakeLlm } from '../../src/llm/fake.js';
+
+test('assist asks the write model with the profile on screen, returns a suggestion and saves nothing', async () => {
+  const llm = createFakeLlm([{ options: ['Tôi giúp A', 'Tôi giúp B', 'C cho D'], pick: 1, why: 'rõ nhất' }]);
+  const a = testApp(undefined, undefined, { llm });
+  a.store.settings.set(a.ws, { aiWriteModel: 'write/model' });
+  const onScreen = { avatar: { name: 'Lan', portrait: 'Đang bảo lãnh chồng' }, advantage: '200 hồ sơ', oneThing: 'hồ sơ bảo lãnh' };
+  const r = await a.features.soulprint.assist('statement', { profile: onScreen });
+  assert.deepEqual(r.suggestion, { options: ['Tôi giúp A', 'Tôi giúp B', 'C cho D'], pick: 1, why: 'rõ nhất' });
+  assert.deepEqual([r.action, r.usage.model, r.usage.tokensIn], ['statement', 'write/model', 10]);
+  assert.equal(llm.calls[0].model, 'write/model');
+  assert.match(llm.calls[0].user, /200 hồ sơ/);
+  const saved = a.features.soulprint.get();
+  assert.deepEqual([saved.updatedAt, saved.profile.statement.chosen, saved.profile.advantage], [null, '', ''], 'neither the suggestion nor the on-screen profile was saved');
+});
+
+test('assist without a key, with a failing model, or with junk output fails with the LLM\'s own code', async () => {
+  const off = testApp(undefined, undefined, { llm: createFakeLlm([], { ready: false }) });
+  await assert.rejects(off.features.soulprint.assist('check', { profile: {} }), (/** @type {any} */ e) => e.code === 'llm_no_key');
+  const down = testApp(undefined, undefined, { llm: createFakeLlm([Object.assign(new Error('x'), { code: 'llm_unavailable' })]) });
+  await assert.rejects(down.features.soulprint.assist('check', { profile: {} }), (/** @type {any} */ e) => e.code === 'llm_unavailable');
+  const junk = testApp(undefined, undefined, { llm: createFakeLlm([{ summary: '' }]) });
+  await assert.rejects(junk.features.soulprint.assist('tidy', { profile: {}, questionId: 'q4', answer: 'x' }), (/** @type {any} */ e) => e.code === 'llm_bad_output');
+  await assert.rejects(junk.features.soulprint.assist('tidy', { profile: {}, questionId: 'q99', answer: 'x' }), (/** @type {any} */ e) => e.code === 'invalid_input');
+});

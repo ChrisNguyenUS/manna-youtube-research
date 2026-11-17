@@ -3,6 +3,8 @@
 // hands other AI features its context text. Nothing here ever saves a model's output or an imported draft.
 import { cleanProfile, readiness, contextText, splitByHeadings, SECTION_LABELS } from '../core/soulprint/profile.js';
 import { QUESTIONS, INTRO, GAME_TABLE } from '../core/soulprint/questions.js';
+import { DEFAULT_MODEL, aiError } from '../core/ai/base.js';
+import { ACTIONS, assistRequest, checkAssist } from '../core/soulprint/assist.js';
 import { soulprintMarkdown } from '../core/report/soulprint.js';
 
 const SEEDS = 5;
@@ -19,11 +21,11 @@ const safe = (fn) => {
 
 /**
  * @param {{repo: {get: (ws: string) => {data: any, updatedAt: number} | null, save: (ws: string, data: any) => number}, ws: string,
- *   llm: import('../ports/llm.js').LlmClient, follows: {list: (ws: string) => any[]},
+ *   llm: import('../ports/llm.js').LlmClient, settings: () => Record<string, any>, follows: {list: (ws: string) => any[]},
  *   records: {list: (ws: string, kind: string, limit: number) => any[], get: (ws: string, id: number) => any},
  *   commentData: {videos: () => any[], comments: (ids: string[]) => any}}} deps
  */
-export function makeSoulprint({ repo, ws, llm, follows, records, commentData }) {
+export function makeSoulprint({ repo, ws, llm, settings, follows, records, commentData }) {
   const stored = () => {
     const row = repo.get(ws);
     return { profile: cleanProfile(row?.data).profile, updatedAt: row?.updatedAt ?? null };
@@ -75,5 +77,20 @@ export function makeSoulprint({ repo, ws, llm, follows, records, commentData }) 
     return { channels, pains: [...reportPains, ...commentPains].slice(0, SEEDS), avatar, pillars };
   }
 
-  return { get, save, seeds, importText: (text) => splitByHeadings(text), context: () => contextText(stored().profile), markdown: () => soulprintMarkdown(stored().profile) };
+
+  /**
+   * One AI helper: builds the request from what is on screen, asks the write model, checks the answer.
+   * Returns a suggestion; saves nothing. @param {string} action @param {{profile?: any, questionId?: string, answer?: string, text?: string}} input
+   */
+  async function assist(action, input = {}) {
+    if (!ACTIONS.includes(action)) throw Object.assign(new Error('Không có trợ lý này'), { code: 'invalid_input', field: 'action' });
+    if (!llm.ready()) throw aiError('llm_no_key', 'Chưa nhập API key OpenRouter. Vào Cài đặt để nhập.');
+    const question = QUESTIONS.find((q) => q.id === input.questionId);
+    const req = assistRequest(action, { profile: input.profile, question, answer: input.answer, text: input.text });
+    const model = String(settings().aiWriteModel || '').trim() || DEFAULT_MODEL;
+    const r = await llm.complete({ ...req, model });
+    return { action, suggestion: checkAssist(action, r.json, input.profile), usage: { model, tokensIn: r.tokensIn, tokensOut: r.tokensOut, costUsd: r.costUsd } };
+  }
+
+  return { get, save, seeds, assist, importText: (text) => splitByHeadings(text), context: () => contextText(stored().profile), markdown: () => soulprintMarkdown(stored().profile) };
 }

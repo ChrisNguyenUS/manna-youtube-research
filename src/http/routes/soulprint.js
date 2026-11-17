@@ -20,6 +20,8 @@ export const soulprintRoutes = [
       return app.features.soulprint.importText(body.text);
     },
   },
+  // AI helpers: return a suggestion for the screen to show. Nothing is saved here.
+  { method: 'POST', path: '/api/v1/soulprint/assist', handler: ({ app, body }) => app.features.soulprint.assist(String(body?.action || ''), { profile: body?.profile, questionId: body?.questionId, answer: body?.answer, text: body?.text }) },
   {
     method: 'GET', path: '/api/v1/soulprint/export.md',
     handler: ({ app, query }) => {

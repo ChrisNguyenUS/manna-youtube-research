@@ -84,7 +84,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
     videoAnalysisHistory: makeVideoAnalysisHistory({ store, ws }),
     tiktokChannel: makeTikTokChannelAnalysis({ tiktok, records: base.records, now: base.now, settings }),
     comment5w1h: makeComment5w1h({ llm, records: base.records, settings, knowledge, readComments: (ids) => features.commentData.comments(ids) }),
-    soulprint: makeSoulprint({ repo: store.soulprint, ws, llm, follows: store.follows, records: store.records, commentData: { videos: () => features.commentData.videos(), comments: (ids) => features.commentData.comments(ids) } }),
+    soulprint: makeSoulprint({ repo: store.soulprint, ws, llm, settings, follows: store.follows, records: store.records, commentData: { videos: () => features.commentData.videos(), comments: (ids) => features.commentData.comments(ids) } }),
   };
 
   /** Job kind → handler. ctx.progress throws after cancel, which is how jobs stop. */

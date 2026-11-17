@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { testApp } from '../features/helpers.js';
+import { createFakeLlm } from '../../src/llm/fake.js';
 import { createHttpServer } from '../../src/http/server.js';
 
 async function boot(opts) {
@@ -58,5 +59,19 @@ test('seeds and import routes answer; import needs text', async () => {
   const bad = await post(`${s.base}/api/v1/soulprint/import`, {});
   assert.equal(bad.status, 400);
   assert.equal((await bad.json()).error.field, 'text');
+  s.close();
+});
+
+test('assist over HTTP: 400 without a key, 400 for an unknown action, the suggestion with a key', async () => {
+  const off = await boot();
+  const noKey = await post(`${off.base}/api/v1/soulprint/assist`, { action: 'check', profile: {} });
+  assert.deepEqual([noKey.status, (await noKey.json()).error.code], [400, 'llm_no_key']);
+  off.close();
+  const s = await boot({ llm: createFakeLlm([{ issues: ['Mục tiêu không khớp game'] }]) });
+  const bad = await post(`${s.base}/api/v1/soulprint/assist`, { action: 'dance', profile: {} });
+  assert.deepEqual([bad.status, (await bad.json()).error.field], [400, 'action']);
+  const ok = await (await post(`${s.base}/api/v1/soulprint/assist`, { action: 'check', profile: { game: 'reach', objective: '20 khách' } })).json();
+  assert.deepEqual(ok.suggestion, { issues: ['Mục tiêu không khớp game'] });
+  assert.equal((await (await fetch(`${s.base}/api/v1/soulprint`)).json()).ai, true);
   s.close();
 });
