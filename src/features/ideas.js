@@ -11,12 +11,46 @@ const FULL = `Lô đang mở đã đủ ${LIMITS.live} thẻ. Bỏ một thẻ, 
 
 /**
  * @param {{repo: any, ws: string, settings: () => Record<string, any>, profile: () => any,
- *   library: {list: () => any[], get: (platform: string, videoId: string) => any}, llm: import('../ports/llm.js').LlmClient}} deps
+ *   library: {list: () => any[], get: (platform: string, videoId: string) => any}, fiveW: {report: (id: number) => any}, llm: import('../ports/llm.js').LlmClient}} deps
  *   library: the brick library (features.bricks), read for question 1 and for cards made from a video
  */
-export function makeIdeas({ repo, ws, settings, profile, library, llm }) {
+export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm }) {
   /** Ways to make a new card: `from` prefix → card fields. Later tasks add sources here. @type {Record<string, (parts: string[]) => any>} */
   const sources = { self: () => emptyCard() };
+
+  /** brick:PLATFORM:VIDEOID — the owner keeps the topic and the crowd's belief, and writes their own angle and reality. */
+  sources.brick = ([platform, ...rest]) => {
+    const videoId = rest.join(':');
+    if (!['tiktok', 'youtube'].includes(platform) || !videoId) throw invalid('Nguồn video không hợp lệ', 'from');
+    const r = library.get(platform, videoId);
+    const b = r.bricks;
+    return {
+      origin: { kind: 'brick', ref: `${platform}:${videoId}`, snapshot: {
+        title: r.meta.title, url: r.meta.url, platform, videoId, channelTitle: r.meta.channelTitle, score: r.meta.score ?? null,
+        topic: b.topic, angle: b.angle, concept: b.concept, pillar: b.pillar, hook: { spoken: b.hook.spoken, formula: b.hook.formula, archetype: b.hook.archetype }, story: { category: b.story.category }, belief: b.belief,
+      } },
+      topic: b.topic, pillar: b.pillar, concept: b.concept, belief: { common: b.belief?.common ?? '', reality: '' },
+    };
+  };
+  /** pain:INDEX — a pain of Soulprint's pain bank. */
+  sources.pain = ([i]) => {
+    const p = (profile()?.pains ?? [])[Number(i)];
+    if (!p || !/^\d+$/.test(String(i))) throw notFound('Nỗi đau này không còn trong Soulprint');
+    return { origin: { kind: 'pain', ref: String(i), snapshot: { text: p.text } }, pain: { text: p.text, source: p.source === '5w1h' ? '5w1h' : 'soulprint', evidence: [] } };
+  };
+  /** 5w1h:RECORDID:INDEX — a content idea of a 5W1H report, with its evidence comments' words. */
+  sources['5w1h'] = ([recordId, i]) => {
+    const rep = fiveW.report(Number(recordId));
+    const x = (rep.data?.ideas ?? [])[Number(i)];
+    if (!x) throw notFound('Gợi ý này không còn trong báo cáo 5W1H');
+    const byId = new Map(rep.comments.map((c) => [String(c.id), c]));
+    const quotes = (ids) => (ids ?? []).map((id) => byId.get(String(id))).filter(Boolean).map((c) => ({ text: c.text, likes: c.likes ?? 0 }));
+    return {
+      origin: { kind: '5w1h', ref: `${recordId}:${i}`, snapshot: { recordId: rep.id, recordTitle: rep.title, title: x.title } },
+      title: { text: x.title }, pain: { text: x.pain ?? '', source: '5w1h', evidence: quotes(x.evidence) },
+      belief: { common: x.belief?.text ?? '', reality: '' }, concept: x.concept, funnel: x.funnel,
+    };
+  };
 
   function openBatchId() {
     const open = repo.openBatch(ws);
