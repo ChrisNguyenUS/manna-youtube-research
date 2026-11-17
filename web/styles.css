@@ -1204,6 +1204,7 @@ details[open] > summary .yc-t-name::before { content: '▾ '; }
 /* Soulprint */
 .sp-home { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; color: inherit; text-decoration: none; }
 .sp-home span { display: grid; }
+.sp-home svg { width: 22px; height: 22px; flex: none; stroke: var(--accent); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .sp-section { margin-bottom: 14px; }
 .sp-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
 .sp-row .input:first-child { flex: 1; }
