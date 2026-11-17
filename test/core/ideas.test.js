@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { LEGO, QUESTIONS, LIMITS, emptyCard, cleanCard, statusOf, checksOf, batchCounts, batchNudge } from '../../src/core/ideas/card.js';
+import { LEGO, QUESTIONS, LIMITS, emptyCard, cleanCard, statusOf, checksOf, batchCounts, batchNudge, isFromWinner } from '../../src/core/ideas/card.js';
 import { keywords, precedentOf } from '../../src/core/ideas/precedent.js';
 
 const row = (platform, videoId, score, b) => ({ platform, videoId, meta: { title: `Video ${videoId}`, score }, bricks: { pillar: '', concept: null, topic: '', ...b } });
@@ -87,9 +87,9 @@ test('the six checks come from the card; ready needs q1 to q4, q6 and the filter
 
 test('batch counts and the nudge after Kallaway\'s mix', () => {
   const cards = [
-    ...Array.from({ length: 3 }, () => ({ status: 'draft', card: card({ origin: { kind: 'brick', ref: 'tiktok:1', snapshot: {} } }), ready: true })),
-    ...Array.from({ length: 3 }, () => ({ status: 'chosen', card: cleanCard({}), ready: false })),
-    { status: 'dropped', card: cleanCard({}), ready: false },
+    ...Array.from({ length: 3 }, () => ({ status: 'draft', card: card({ origin: { kind: 'brick', ref: 'tiktok:1', snapshot: {} } }), ready: true, fromWinner: true })),
+    ...Array.from({ length: 3 }, () => ({ status: 'chosen', card: cleanCard({}), ready: false, fromWinner: false })),
+    { status: 'dropped', card: cleanCard({}), ready: false, fromWinner: true },
   ];
   const n = batchCounts(cards);
   assert.deepEqual(n, { live: 6, outlier: 3, other: 3, dropped: 1, ready: 3, chosen: 3 });
@@ -97,4 +97,10 @@ test('batch counts and the nudge after Kallaway\'s mix', () => {
   assert.equal(batchNudge({ live: 3, outlier: 1, other: 2, dropped: 0, ready: 0, chosen: 0 }), null, 'too early to say');
   assert.match(batchNudge({ live: 8, outlier: 8, other: 0, dropped: 0, ready: 0, chosen: 0 }), /Chưa có ý nào ngoài video đã thắng/);
   assert.equal(batchNudge({ live: 10, outlier: 8, other: 2, dropped: 0, ready: 0, chosen: 0 }), null);
+});
+
+test('a library video counts as a winner only at or above the threshold; the library also holds weak videos for contrast', () => {
+  const from = (score) => card({ origin: { kind: 'brick', ref: 'tiktok:1', snapshot: { score } } });
+  assert.deepEqual([isFromWinner(from(5), 3), isFromWinner(from(3), 3), isFromWinner(from(0.5), 3), isFromWinner(from(null), 3), isFromWinner(from(5), 6)], [true, true, false, false, false]);
+  assert.equal(isFromWinner(card({}), 3), false, 'a pain card is never from a winner');
 });

@@ -11,6 +11,7 @@ export function ideasRepo(db, now = Date.now) {
     getBatch: (ws, id) => batch(db.prepare('SELECT * FROM idea_batches WHERE workspace_id = ? AND id = ?').get(ws, id)),
     /** @returns {number} */
     addBatch: (ws, title) => Number(db.prepare('INSERT INTO idea_batches (workspace_id, title, created_at) VALUES (?, ?, ?)').run(ws, title, now()).lastInsertRowid),
+    renameBatch: (ws, id, title) => void db.prepare('UPDATE idea_batches SET title = ? WHERE workspace_id = ? AND id = ?').run(title, ws, id),
     closeBatch: (ws, id, learned = null) => void db.prepare("UPDATE idea_batches SET status = 'closed', closed_at = ?, learned = COALESCE(?, learned) WHERE workspace_id = ? AND id = ?").run(now(), learned == null ? null : JSON.stringify(learned), ws, id),
     /** Oldest first, the order they were added. */
     cards: (ws, batchId) => /** @type {any[]} */ (db.prepare('SELECT * FROM ideas WHERE workspace_id = ? AND batch_id = ? ORDER BY id').all(ws, batchId)).map(card),

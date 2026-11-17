@@ -1,6 +1,6 @@
 // Use case: the idea board (spec 2026-11-16-idea-board-design.md). Batches of up to ten live cards; each card is
 // checked against Kallaway's six idea questions, the first one by searching the brick library.
-import { LEGO, STATUSES, FUNNEL, QUESTIONS, LIMITS, emptyCard, cleanCard, statusOf, checksOf, batchCounts, batchNudge } from '../core/ideas/card.js';
+import { LEGO, STATUSES, FUNNEL, QUESTIONS, LIMITS, emptyCard, cleanCard, statusOf, checksOf, batchCounts, batchNudge, isFromWinner } from '../core/ideas/card.js';
 import { precedentOf } from '../core/ideas/precedent.js';
 import { CONCEPTS } from '../core/bricks/schema.js';
 import { ideasMarkdown } from '../core/report/ideas.js';
@@ -67,7 +67,7 @@ export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm, kn
     const card = cleanCard(row.data);
     const precedent = precedentOf(card, ctx.rows, { min: ctx.min });
     const { checks, ready, missing } = checksOf(card, precedent, { hasFilter: ctx.hasFilter });
-    return { id: row.id, batchId: row.batchId, status: row.status, card, checks, ready, missing, trial: card.origin.kind === 'self', matches: precedent.matches, createdAt: row.createdAt, updatedAt: row.updatedAt };
+    return { id: row.id, batchId: row.batchId, status: row.status, card, checks, ready, missing, trial: card.origin.kind === 'self', fromWinner: isFromWinner(card, ctx.min), matches: precedent.matches, createdAt: row.createdAt, updatedAt: row.updatedAt };
   }
   function context() {
     const p = profile() ?? {};
@@ -117,12 +117,19 @@ export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm, kn
     return view(repo.getCard(ws, row.id), context());
   }
 
-  /** @param {string} [title] the open batch is closed; none: "Lô N" */
+  /**
+   * @param {string} [title] the open batch is closed and a new one opened; none: "Lô N". An open batch with no card at
+   * all is reused (renamed when a title is given) instead of leaving an empty closed batch behind.
+   */
   function newBatch(title) {
+    const name = String(title ?? '').trim().slice(0, 80);
     const open = repo.openBatch(ws);
+    if (open && !repo.cards(ws, open.id).length) {
+      if (name) repo.renameBatch(ws, open.id, name);
+      return board(open.id);
+    }
     if (open) repo.closeBatch(ws, open.id);
-    const id = repo.addBatch(ws, String(title ?? '').trim().slice(0, 80) || `Lô ${repo.listBatches(ws).length + 1}`);
-    return board(id);
+    return board(repo.addBatch(ws, name || `Lô ${repo.listBatches(ws).length + 1}`));
   }
 
   /**

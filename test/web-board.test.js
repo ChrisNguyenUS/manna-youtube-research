@@ -22,6 +22,11 @@ test('the board: counters, six dots, the card panel with its tabs, the batch-ful
   assert.match(src, /import \{[^}]*\besc\b[^}]*\} from '\.\.\/lib\.js'/);
 });
 
+test('unsaved edits and the batch that gets closed are asked about first; the screen cleans up after itself', () => {
+  const src = view();
+  for (const s of ['leaveOk()', 'Thẻ đang sửa chưa lưu', 'beforeunload', "removeEventListener('beforeunload'", 'Lô đã đóng vẫn xem lại được', 'originOf(x)', 'Từ thư viện gạch']) assert.ok(src.includes(s), s);
+});
+
 test('other screens link to the board, and never call its API themselves', () => {
   assert.match(fs.readFileSync('web/views/bricks.js', 'utf8'), /#\/board\?from=brick:/);
   assert.match(fs.readFileSync('web/views/soulprint.js', 'utf8'), /#\/board\?from=pain:/);
