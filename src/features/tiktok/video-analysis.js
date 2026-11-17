@@ -29,22 +29,23 @@ export function makeTikTokVideoAnalysis({ tiktok, records, now, comments }) {
 }
 
 /**
- * "Lần phân tích trước": each saved run with its videos (cover, caption, creator), whether a script was read and how
+ * "Lần phân tích trước": each saved run of either platform with its videos (cover, caption, creator), whether a script was read and how
  * many comments, so the list says what each run holds without opening it.
  * @param {{store: any, ws: string}} deps
  */
 export function makeVideoAnalysisHistory({ store, ws }) {
   /** @param {number} [limit] */
   return function videoAnalysisHistory(limit = 20) {
-    return store.records.list(ws, 'tiktok_video_analysis', limit).map((r) => {
+    const rows = ['tiktok_video_analysis', 'video_analysis'].flatMap((kind) => store.records.list(ws, kind, limit)).sort((a, b) => b.created_at - a.created_at || b.id - a.id).slice(0, limit);
+    return rows.map((r) => {
       const d = store.records.get(ws, r.id)?.data;
       const items = (d?.videos || []).map((e) => ({
-        url: e.video?.url ?? e.link, caption: e.video?.caption ?? '', author: e.video?.author ?? '', cover: e.video?.cover ?? null,
+        url: e.video?.url ?? e.link, caption: e.video?.caption ?? e.video?.title ?? '', author: e.video?.author ?? e.video?.channelTitle ?? '', cover: e.video?.cover ?? null,
         script: e.error ? null : e.transcript ? true : e.transcriptNote === 'off' ? null : false,
         parents: (e.comments || []).filter((c) => !c.parentId).length, replies: (e.comments || []).filter((c) => c.parentId).length,
         reused: !!e.commentsReused, error: e.error?.message ?? null,
       }));
-      return { id: r.id, title: r.title, createdAt: r.created_at, params: r.params, items, failed: items.filter((x) => x.error).length };
+      return { id: r.id, platform: r.kind === 'video_analysis' ? 'youtube' : 'tiktok', title: r.title, createdAt: r.created_at, params: r.params, items, failed: items.filter((x) => x.error).length };
     });
   };
 }

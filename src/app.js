@@ -21,6 +21,7 @@ import { makeTikTokInsight, makeTikTokInsightTopics } from './features/tiktok/in
 import { makeTikTokScrape } from './features/tiktok/scrape.js';
 import { makeTikTokTopicKeywords, makeTikTokTopicScan } from './features/tiktok/topic.js';
 import { makeTikTokVideoAnalysis, makeVideoAnalysisHistory } from './features/tiktok/video-analysis.js';
+import { makeYouTubeVideoAnalysis } from './features/video-analysis.js';
 import { makeTikTokChannelAnalysis } from './features/tiktok/channel.js';
 import { makeFollows } from './features/follows.js';
 import { makeCommentData } from './features/tiktok/comment-data.js';
@@ -81,6 +82,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
     tiktokVideoAnalysis: makeTikTokVideoAnalysis({ tiktok, records: base.records, now: base.now, comments: { coverage: (ids, want) => features.commentData.coverage(ids, want), ofVideo: (id) => store.comments.ofVideo(id) } }),
     follows: makeFollows({ ...base, tiktok }),
     commentData: makeCommentData({ store, ws }),
+    videoAnalysis: makeYouTubeVideoAnalysis({ source, records: base.records, now: base.now }),
     videoAnalysisHistory: makeVideoAnalysisHistory({ store, ws }),
     tiktokChannel: makeTikTokChannelAnalysis({ tiktok, records: base.records, now: base.now, settings }),
     comment5w1h: makeComment5w1h({ llm, records: base.records, settings, knowledge, profileText: () => features.soulprint.context(), readComments: (ids) => features.commentData.comments(ids) }),
@@ -107,12 +109,13 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
   handlers.tiktok_comments = (p, ctx) => features.tiktokComments(p, ctx.progress);
   handlers.tiktok_topic = (p, ctx) => features.tiktokTopicScan(p, ctx.progress);
   handlers.tiktok_video_analysis = (p, ctx) => features.tiktokVideoAnalysis(p, ctx.progress);
+  handlers.video_analysis = (p, ctx) => features.videoAnalysis(p, ctx.progress);
   handlers.tiktok_channel = (p, ctx) => features.tiktokChannel(p, ctx.progress);
   handlers.comment_5w1h = (p, ctx) => features.comment5w1h.run(p, ctx.progress);
   handlers.follow_refresh = (p, ctx) => features.follows.refresh(p, ctx.progress);
   const runner = createRunner({ jobsRepo: store.jobs, handlers, onCancelled: (job) => store.records.removeByJob(job.id) });
   return {
-    config, store, source, tiktok, llm, features, runner, ws, settings, close: () => tiktok.close(),
+    config, store, source, tiktok, llm, features, runner, ws, settings, close: async () => { await tiktok.close(); await source.close?.(); },
     /** Set by the entry point (src/main.js): stops jobs, closes Chromium and exits. Null when nothing owns the process (tests, CLI). */
     shutdown: /** @type {null | (() => void)} */ (null),
   };

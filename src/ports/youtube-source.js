@@ -22,6 +22,9 @@
  * @property {() => {captionsFilter: boolean, ccFilter: boolean, globalSearch: boolean}} capabilities
  * @property {() => {requests: number, failures: number}} stats
  * @property {(o: Record<string, any>) => void} [configure]
+ * @property {(id: string) => Promise<import('../core/video/transcript.js').Transcript|null>} [getTranscript]  null: the video has none. Throws with code
+ *   'setup_required' (Chromium missing) or 'source_changed' (the watch page could not be read)
+ * @property {() => Promise<void>} [close]  closes the hidden browser, if one was started
  */
 
 export {};

@@ -131,7 +131,7 @@ export async function mount(root, params) {
       return `<div class="cc-vrow">${v.cover ? `<img src="${esc(v.cover)}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : '<span class="cc-noimg"></span>'}
         <div class="cc-vtext"><a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.caption || v.url)}</a><span class="muted small">${v.author ? `@${esc(v.author)} · ` : ''}${fmt(parents)} gốc + ${fmt(n - parents)} trả lời${v.comments != null ? ` · video có ${fmt(v.comments)} bình luận` : ''}</span></div>
         <span class="cc-vacts"><a class="btn sm" href="${records.exportUrl(r.id, 'csv')}">${icon('download')} CSV</a><a class="btn sm" href="${records.exportUrl(r.id, 'md')}">${icon('download')} MD</a>
-          <a class="btn sm" href="#/tiktok/video?videos=${encodeURIComponent(v.url)}">${icon('bars')} Phân tích video</a></span></div>`;
+          <a class="btn sm" href="#/video?videos=${encodeURIComponent(v.url)}">${icon('bars')} Phân tích video</a></span></div>`;
     }).join('');
     const why = `Đã chọn ${p.max ?? '?'} comment gốc mỗi video${p.replies !== false ? ` và trả lời (tối đa ${PER_PARENT} mỗi comment)` : ', không lấy trả lời'}; video ít comment hơn thì lấy hết.`;
     out.innerHTML = `<div class="card cc-run">${summary(comments, recs.length, new Date(recs[0].created_at).toLocaleString('vi-VN'), `<p class="cx-note" style="padding:0 16px">${esc(why)}${skipped.length ? ` Bỏ qua ${skipped.length} link: ${esc(skipped.join(', '))}.` : ''}</p>`)}
@@ -149,7 +149,7 @@ export async function mount(root, params) {
       out.innerHTML = `<div class="card cc-run">${summary(d.comments, 1, `lần cuối ${ago(v.lastSeen)}`)}
         <div class="cc-videos"><div class="cc-vrow">${v.cover ? `<img src="${esc(v.cover)}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : '<span class="cc-noimg"></span>'}
           <div class="cc-vtext"><a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.caption || v.url)}</a><span class="muted small">${v.author ? `@${esc(v.author)} · ` : ''}gộp mọi lần thu thập, kể cả từ Phân tích video và Insight</span></div>
-          <span class="cc-vacts"><button type="button" class="btn sm" data-recollect="${esc(v.url)}">${icon('refresh')} Thu thập lại</button><a class="btn sm" href="#/tiktok/video?videos=${encodeURIComponent(v.url)}">${icon('bars')} Phân tích video</a></span></div></div>
+          <span class="cc-vacts"><button type="button" class="btn sm" data-recollect="${esc(v.url)}">${icon('refresh')} Thu thập lại</button><a class="btn sm" href="#/video?videos=${encodeURIComponent(v.url)}">${icon('bars')} Phân tích video</a></span></div></div>
         <div data-explorer></div></div>`;
       out.querySelector('[data-recollect]')?.addEventListener('click', (e) => {
         area.value = /** @type {HTMLElement} */ (e.currentTarget).dataset.recollect;
@@ -186,7 +186,7 @@ export async function mount(root, params) {
           <span class="muted small">${r.video.author ? `@${esc(r.video.author)} · ` : ''}<a href="${esc(r.video.url)}" target="_blank" rel="noopener" class="muted">${esc(r.video.url.replace(/^https:\/\/www\./, ''))}</a></span></div>
         <span class="cc-hnums"><b>${fmt(r.parents)}</b> gốc · <b>${fmt(r.replies)}</b> trả lời${r.timesCollected > 1 ? ` <span class="badge plain" title="Video này đã thu thập ${r.timesCollected} lần">${r.timesCollected} lần</span>` : ''}</span>
         <span class="muted small cc-hwhen">${ago(r.createdAt)}</span>
-        <span class="cc-hacts"><a class="btn sm" href="#/tiktok/comments?id=${r.id}">Mở</a><a class="btn sm" href="#/tiktok/video?videos=${encodeURIComponent(r.video.url)}" title="Phân tích video">${icon('bars')}</a>
+        <span class="cc-hacts"><a class="btn sm" href="#/tiktok/comments?id=${r.id}">Mở</a><a class="btn sm" href="#/video?videos=${encodeURIComponent(r.video.url)}" title="Phân tích video">${icon('bars')}</a>
           ${hist.armed === String(r.id) ? `<button type="button" class="btn sm danger" data-del="${r.id}">Xoá hẳn?</button>` : `<button type="button" class="icon-btn" data-del="${r.id}" title="Xoá lần thu thập này (bình luận vẫn còn nếu nơi khác cũng đã lấy)">${icon('trash')}</button>`}</span>
       </div>`).join('') + (hist.all.length > hist.limit ? `<div class="cc-more"><button type="button" class="btn sm" data-hmore>Xem thêm ${Math.min(10, hist.all.length - hist.limit)}</button></div>` : '') : emptyState('Chưa thu thập lần nào')}`;
   }

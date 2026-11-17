@@ -15,6 +15,7 @@ const RULES = {
   'cli/': ['sources/', 'store/', 'llm/'],
   'llm/': ['features/', 'http/', 'store/', 'jobs/', 'sources/', 'cli/', 'app.js'],
   'sources/tiktok/': ['sources/innertube/', 'features/', 'http/', 'store/', 'jobs/', 'llm/'],
+  'sources/browser/': ['sources/tiktok/', 'sources/innertube/', 'features/', 'http/', 'store/', 'jobs/', 'llm/'],
   'sources/innertube/': ['sources/tiktok/', 'features/', 'http/', 'store/', 'jobs/', 'llm/'],
   'features/tiktok/': ['sources/', 'store/', 'http/', 'cli/', 'llm/', 'app.js', 'features/video-search.js', 'features/channel-search.js', 'features/channel-analysis.js', 'features/comments.js', 'features/topic-research.js', 'features/keyword-ideas.js', 'features/keyword-score.js'],
 };

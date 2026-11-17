@@ -21,12 +21,14 @@ const invalid = (message) => Object.assign(new Error(message), { code: 'invalid_
  *   fetchVideo: (link: string, o: {script: boolean}) => Promise<{video: any, transcript: any|null, transcriptNote?: string|null}>,
  *   fetchComments: (video: any, o: {max: number, replies: boolean, reuse: boolean}, onProgress: (n: number) => void) => Promise<any[] | {comments: any[], reused: any}>,
  *   titleOf: (video: any) => string,
- * }} o  fetchVideo throws (with a code) when the video cannot be analyzed; transcriptNote says why there is no script ('none' by default)
+ *   parseLinks?: (videos: any) => string[],
+ * }} o  parseLinks: pasted text → distinct links (TikTok drops the query string, YouTube must keep its id; default: TikTok's).
+ *   fetchVideo throws (with a code) when the video cannot be analyzed; transcriptNote says why there is no script ('none' by default)
  */
-export function makeVideoAnalysisRunner({ kind, platform, records, now, fetchVideo, fetchComments, titleOf }) {
+export function makeVideoAnalysisRunner({ kind, platform, records, now, fetchVideo, fetchComments, titleOf, parseLinks = linksOf }) {
   /** @param {Record<string, any>} params {videos, script?, comments?, replies?} */
   return async function videoAnalysis(params, progress = noop) {
-    const links = linksOf(params.videos);
+    const links = parseLinks(params.videos);
     if (!links.length) throw invalid('Dán ít nhất một link video');
     if (links.length > MAX_VIDEOS) throw invalid(`Tối đa ${MAX_VIDEOS} video mỗi lần (đang có ${links.length})`);
     const script = params.script !== false;

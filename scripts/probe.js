@@ -14,6 +14,7 @@ const checks = [
   ['channelVideos', async () => (await src.getChannelVideos('UCWCreFX8bTVLJ6Y9lh6eZ5A', { max: 30 })).length >= 20],
   ['video', async () => !!(await src.getVideo('NcZSPhEvIjk')).publishedAt],
   ['comments', async () => (await src.getComments('NcZSPhEvIjk', { max: 5 })).comments.length > 0],
+  ['youtube-transcript', async () => ((await src.getTranscript?.('NcZSPhEvIjk'))?.segments.length ?? 0) >= 5],
   ['suggest', async () => (await src.suggest('kể chuyện', { gl: 'VN', hl: 'vi' })).length > 0],
 ];
 let failed = 0;
@@ -28,4 +29,5 @@ for (const [name, fn] of checks) {
   if (!ok) failed++;
 }
 await tt.close();
+await src.close?.();
 process.exit(failed ? 1 : 0);
