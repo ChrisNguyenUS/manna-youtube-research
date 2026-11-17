@@ -1,6 +1,6 @@
 # Chấm lô: thiết kế
 
-> Ngày: 2026-11-16 · Trạng thái: chờ duyệt · Phạm vi: giai đoạn 7 trong [kế hoạch tổng](../plans/2026-11-16-master-plan.md)
+> Ngày: 2026-11-16 · Trạng thái: đã duyệt, có [kế hoạch code](../plans/2026-11-17-batch-review.md) · Phạm vi: giai đoạn 7 trong [kế hoạch tổng](../plans/2026-11-16-master-plan.md)
 > Cần trước: giai đoạn 5. Không cần AI.
 > Nguồn nội dung: Chương 1 và 11 của tài liệu Kallaway (chọn game, đo theo lô 10, thứ tự thước đo).
 
@@ -75,7 +75,7 @@ Nút **Đóng lô** mở một bảng xác nhận gồm các đề xuất giữ 
 
 ## 7. Thành phần
 
-- Không bảng mới: kết quả nằm trong `data.published` của thẻ (`url`, `platform`, `videoId`, `postedAt`, `snapshots[]`, `leads`, `followers`); `learned` nằm trong `idea_batches`.
+- Không bảng mới: kết quả nằm trong cột `published` của `ideas`, cạnh JSON của thẻ (`url`, `platform`, `videoId`, `postedAt`, `snapshots[]`, `leads`, `followers`, `views` nhập tay, `error`); `learned` nằm trong `idea_batches`.
 - `src/core/ideas/review.js` (thuần): xếp hạng theo game, chia nửa, đếm thuộc tính, luật giữ và xem lại, khác biệt của video thua.
 - `src/core/report/review.js`: Markdown của một lô đã chấm.
 - `src/features/ideas.js`: `attachVideo`, `refresh` (job `batch_refresh`), `review(batchId)`, `close(batchId, learned)`.
@@ -104,3 +104,12 @@ Nút **Đóng lô** mở một bảng xác nhận gồm các đề xuất giữ 
 1. Gắn link, số tự cập nhật, số nhập tay.
 2. Xếp hạng và bảng gạch.
 3. Đóng lô, "làm lại video này".
+
+## 11. Điều chỉnh khi viết kế hoạch code
+
+- **Kết quả nằm ở cột riêng `published`, không trong JSON của thẻ.** Phần làm sạch thẻ bỏ mọi trường lạ, nên để chung thì mỗi lần lưu thẻ sẽ xoá kết quả. Cùng cách với dàn ý ở giai đoạn 6.
+- **Chấm lô là tab thứ hai của mục Bảng ý tưởng** trong menu, không phải một mục riêng.
+- **Mỗi ngày giữ một mốc số liệu**: cập nhật hai lần trong ngày thì lần sau thay lần trước. Giữ tối đa 30 mốc.
+- **"Làm lại video này" chỉ có sau khi đóng lô**, và thẻ mới vào lô đang mở. Thẻ làm lại có nguồn riêng (`redo`), giữ cả 7 gạch, tính là "từ video đã thắng", và câu 1 là "có".
+- **Nhập view bằng tay** được khi link không lấy được số.
+- **Đóng lại một lô đã đóng** chỉ thay các dòng mang sang, và ghi game ở lần lưu đó.
