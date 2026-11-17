@@ -44,6 +44,9 @@ test('a new batch closes the open one; old batches stay readable; Markdown of a 
   const b2 = f.newBatch('Lô tháng 12');
   assert.deepEqual([b2.batch.title, b2.cards.length, b2.batches.map((x) => [x.title, x.status, x.live])], ['Lô tháng 12', 0, [['Lô tháng 12', 'open', 0], ['Lô 1', 'closed', 1]]]);
   assert.equal(f.board(old).cards[0].card.topic, 'Thẻ xanh mất bao lâu');
+  const again = f.newBatch('Đổi tên');
+  assert.deepEqual([again.batch.id, again.batch.title, again.batches.length], [b2.batch.id, 'Đổi tên', 2], 'an open batch with no card is reused, not left behind empty');
+  f.create({ from: 'self' });
   assert.equal(f.newBatch().batch.title, 'Lô 3');
   const md = f.markdown(old);
   assert.match(md, /^# Lô 1: 1 thẻ/);
@@ -132,4 +135,18 @@ test('assist uses the card on screen, Soulprint and the idea knowledge, and save
   const oc = off.features.ideas.create({ from: 'self' });
   await assert.rejects(off.features.ideas.assist('draft', { id: oc.id, card: { topic: 'x' } }), (/** @type {any} */ e) => e.code === 'llm_no_key');
   await assert.rejects(a.features.ideas.assist('draft', { id: 999 }), (/** @type {any} */ e) => e.code === 'not_found');
+});
+
+test('a card from a weak library video is not counted as mined from a winner, and says so', () => {
+  const a = testApp();
+  brickRow(a, 'win', 6, { topic: 'Thắng' });
+  brickRow(a, 'weak', 0.5, { topic: 'Yếu' });
+  const f = a.features.ideas;
+  const w = f.create({ from: 'brick:tiktok:win' });
+  const k = f.create({ from: 'brick:tiktok:weak' });
+  assert.deepEqual([w.fromWinner, k.fromWinner], [true, false]);
+  assert.deepEqual([f.board().counts.outlier, f.board().counts.other], [1, 1]);
+  const md = f.markdown();
+  assert.match(md, /- Nguồn: video đã thắng: Video win/);
+  assert.match(md, /- Nguồn: thư viện gạch, video vượt kênh 0\.5×: Video weak/);
 });

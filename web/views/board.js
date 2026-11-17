@@ -7,7 +7,14 @@ import { esc, icon, toast, ago, errorCallout, emptyState, setUrl } from '../lib.
 const PATH = '/board';
 const TABS = [['idea', 'Ý tưởng', 'bulb'], ['checks', 'Chấm', 'check'], ['source', 'Gạch gốc', 'target']];
 const OK = { yes: ['có', 'on'], no: ['chưa', ''], unknown: ['chưa rõ', ''], skip: ['không áp dụng', 'skip'] };
-const ORIGIN = { self: 'Tự nghĩ', brick: 'Từ video đã thắng', pain: 'Từ nỗi đau', '5w1h': 'Từ 5W1H' };
+const ORIGIN = { self: 'Tự nghĩ', brick: 'Từ thư viện gạch', pain: 'Từ nỗi đau', '5w1h': 'Từ 5W1H' };
+/** Where a card came from; a library video counts as "đã thắng" only at or above the library threshold. */
+const originOf = (x) => {
+  const s = x.card.origin.snapshot;
+  if (x.fromWinner) return 'Từ video đã thắng';
+  return x.card.origin.kind === 'brick' && s?.score != null ? `${ORIGIN.brick} (video ${s.score}×)` : ORIGIN[x.card.origin.kind];
+};
+const UNSAVED = 'Thẻ đang sửa chưa lưu. Bỏ các thay đổi?';
 
 const get = (o, path) => path.split('.').reduce((v, k) => v?.[k], o);
 function set(o, path, value) {
@@ -38,7 +45,7 @@ export async function mount(root, params) {
     const c = x.card;
     return `<button type="button" class="bd-row ${state.open?.id === x.id ? 'on' : ''} ${x.status === 'dropped' ? 'dropped' : ''}" data-open="${x.id}">
       <span class="bd-n">${i + 1}</span>${chip(label(b.lists.statuses, x.status), x.status === 'chosen' ? '' : 'soft')}
-      <span class="bd-title"><b>${esc(c.title.text || c.topic || '(chưa có tiêu đề)')}</b><span class="muted small">${esc(ORIGIN[c.origin.kind])}${c.pillar ? ` · ${esc(c.pillar)}` : ''}${x.trial ? ' · thử nghiệm gốc' : ''}</span></span>
+      <span class="bd-title"><b>${esc(c.title.text || c.topic || '(chưa có tiêu đề)')}</b><span class="muted small">${esc(originOf(x))}${c.pillar ? ` · ${esc(c.pillar)}` : ''}${x.trial ? ' · thử nghiệm gốc' : ''}</span></span>
       ${dots(x)}${x.ready ? chip('đủ căn cứ', '') : ''}</button>`;
   }
 
@@ -135,6 +142,14 @@ export async function mount(root, params) {
   }
   const fail = (e) => { const box = root.querySelector('[data-err]'); if (box) box.innerHTML = /đủ 10 thẻ/.test(e?.message ?? '') ? `<div class="callout">${esc(e.message)} <button type="button" class="btn sm" data-new-batch>Mở lô mới</button></div>` : errorCallout(e); };
 
+  /** True when nothing unsaved would be lost, or the owner agrees to drop it. */
+  const leaveOk = () => !state.dirty || window.confirm(UNSAVED);
+  // Closing or reloading the window with unsaved edits asks first; removed when the screen closes.
+  const onUnload = (e) => {
+    if (state.dirty) e.preventDefault();
+  };
+  window.addEventListener('beforeunload', onUnload);
+
   function openCard(id) {
     const x = b.cards.find((y) => y.id === Number(id));
     if (!x) return;
@@ -171,14 +186,17 @@ export async function mount(root, params) {
   });
   root.addEventListener('change', async (e) => {
     const el = /** @type {HTMLSelectElement} */ (e.target);
-    if (el.dataset.batch !== undefined) { setUrl(PATH, { batch: el.value }); await reload(Number(el.value), null); }
+    if (el.dataset.batch === undefined) return;
+    if (!leaveOk()) return void (el.value = String(b.batch.id));
+    setUrl(PATH, { batch: el.value });
+    await reload(Number(el.value), null);
   });
   root.addEventListener('click', async (e) => {
     const t = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!t) return;
     const d = t.dataset;
     try {
-      if (d.open) openCard(d.open);
+      if (d.open) { if (Number(d.open) !== state.open?.id && leaveOk()) openCard(d.open); }
       else if (d.tab) { state.tab = d.tab; state.suggestion = null; render(); }
       else if (d.save !== undefined) await save();
       else if (d.drop !== undefined) await save({ status: state.open.status === 'dropped' ? 'draft' : 'dropped' });
@@ -208,8 +226,19 @@ export async function mount(root, params) {
         state.dirty = true;
         render();
       } else if (d.reject !== undefined) { state.suggestion = null; render(); }
-      else if (d.new !== undefined) { const x = await ideas.create('self'); await reload(x.batchId, x.id); }
-      else if (d.newBatch !== undefined) { const nb = await ideas.newBatch(); setUrl(PATH, { batch: nb.batch.id }); b = nb; state.open = null; render(); }
+      else if (d.new !== undefined) { if (!leaveOk()) return; const x = await ideas.create('self'); await reload(x.batchId, x.id); }
+      else if (d.newBatch !== undefined) {
+        // The batch that gets closed is the open one, which may not be the one on screen: say which.
+        const open = b.batches.find((x) => x.status === 'open');
+        if (open?.live && !window.confirm(`Đóng "${open.title}" (${open.live} thẻ) và mở lô mới? Lô đã đóng vẫn xem lại được.`)) return;
+        if (!leaveOk()) return;
+        const nb = await ideas.newBatch();
+        setUrl(PATH, { batch: nb.batch.id });
+        b = nb;
+        state.open = null;
+        state.dirty = false;
+        render();
+      }
     } catch (err) { fail(err); }
   });
 
@@ -224,4 +253,5 @@ export async function mount(root, params) {
       fail(e);
     }
   } else if (params.card) openCard(params.card);
+  return () => window.removeEventListener('beforeunload', onUnload);
 }

@@ -89,10 +89,17 @@ export function checksOf(c, precedent, { hasFilter }) {
   return { checks, ready: !missing.length, missing };
 }
 
-/** @param {{status: string, card: ReturnType<typeof emptyCard>, ready: boolean}[]} cards */
+/**
+ * A card mined from a video that beat its channel. The brick library also holds weak videos (added for contrast), so
+ * a library video counts only when its score, at the time the card was made, reaches the library threshold.
+ * @param {ReturnType<typeof emptyCard>} card @param {number} min the library threshold (setting bricksMinScore)
+ */
+export const isFromWinner = (card, min) => card.origin.kind === 'brick' && card.origin.snapshot?.score != null && card.origin.snapshot.score >= min;
+
+/** @param {{status: string, card: ReturnType<typeof emptyCard>, ready: boolean, fromWinner: boolean}[]} cards */
 export function batchCounts(cards) {
   const live = cards.filter((x) => x.status !== 'dropped');
-  const outlier = live.filter((x) => x.card.origin.kind === 'brick').length;
+  const outlier = live.filter((x) => x.fromWinner).length;
   return { live: live.length, outlier, other: live.length - outlier, dropped: cards.length - live.length, ready: live.filter((x) => x.ready).length, chosen: live.filter((x) => x.status === 'chosen').length };
 }
 

@@ -3,7 +3,7 @@ import { LEGO, STATUSES, FUNNEL } from '../ideas/card.js';
 
 const label = (pairs, k) => pairs.find((x) => x[0] === k)?.[1] ?? k;
 const OK = { yes: 'có', no: 'chưa', unknown: 'chưa rõ', skip: 'không áp dụng' };
-const SRC = { self: 'tự nghĩ', brick: 'video đã thắng', pain: 'nỗi đau trong Soulprint', '5w1h': 'gợi ý 5W1H' };
+const SRC = { self: 'tự nghĩ', brick: 'thư viện gạch', pain: 'nỗi đau trong Soulprint', '5w1h': 'gợi ý 5W1H' };
 
 /** @param {{batch: any, cards: any[], counts: any}} b the board of one batch */
 export function ideasMarkdown(b) {
@@ -13,7 +13,8 @@ export function ideasMarkdown(b) {
     const line = (k, v) => v && L.push(`- ${k}: ${v}`);
     L.push('', `## ${i + 1}. ${c.title.text || c.topic || '(chưa có tiêu đề)'} (${label(STATUSES, x.status)})`, '');
     const s = c.origin.snapshot;
-    line('Nguồn', `${SRC[c.origin.kind]}${s?.title ? `: ${s.title}` : s?.text ? `: ${s.text}` : ''}${s?.url ? ` (${s.url})` : ''}`);
+    const src = x.fromWinner ? 'video đã thắng' : c.origin.kind === 'brick' && s?.score != null ? `thư viện gạch, video vượt kênh ${s.score}×` : SRC[c.origin.kind];
+    line('Nguồn', `${src}${s?.title ? `: ${s.title}` : s?.text ? `: ${s.text}` : ''}${s?.url ? ` (${s.url})` : ''}`);
     line('Topic', c.topic);
     line('Pillar', c.pillar);
     line('Nỗi đau', c.pain.text);
