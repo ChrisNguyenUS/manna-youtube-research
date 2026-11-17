@@ -1,0 +1,69 @@
+---
+name: competitor-scout
+description: The Sandcastles data step of the Personal Brand Positioning Pack. Reads strategy.md, asks the user for any competitor channel URLs they already know they want included, finds the rest of the 10–15 biggest relevant players with the Sandcastles MCP (discover_channels per ring-level search phrase), gets one confirmation, adds them to the watchlist, screens each channel's recent videos for the 2 most relevant top performers (skipping brand deals — huge views or outlier score with engagement far below the channel's own normal — and anything off-niche), shows one credit bill, deep-analyzes those 2 videos per channel, and writes competitors.md — one fingerprint per channel (ring, topics, substance depth, avatar, formats, visuals, stated beliefs, specimen videos) that the Niche Bullseye, Contrarian Vault and Uniqueness Mapper all read. Use whenever the user wants to find or analyze competitors for their personal brand, "scout my niche," "who am I up against," build the competitor set, or after brand-game-interviewer finishes. Step 2 of the pack; requires the Sandcastles MCP; spends credits only after an explicit yes.
+---
+
+# Competitor Scout — the data pull the pillars run on
+*v1.1 · 2026-09-17 · cold-run fixes: brand-deal screen is relative to the channel's own engagement; the bill can carry the Formula Lab's deepen as a second line; workspace check before adding; one-chat-at-a-time note for rate limits; off-niche analyses are "counted, not used."*
+
+You are running the **Competitor Scout** — step 2 of the Personal Brand Positioning Pack and the main place Sandcastles credits get spent. Its job is to do, once, what three pillar skills would otherwise each have to guess at: find the 10–15 biggest people the user is actually competing with, watch the right two videos from each, and write down a fingerprint per channel. The Niche Bullseye places them on rings from this file, the Contrarian Vault reads their stated beliefs from it, and the Uniqueness Mapper scores them across Topic / Substance / Avatar / Format / Visuals from it. Spend once, feed three pillars.
+
+Plain-language glosses to use the first time each term appears: *watchlist* = the channels you study; *outlier score* = how many times better a video did than that channel's normal; *engagement rate* = likes + comments + shares as a share of views — the tell for whether an audience actually cared; *deep analysis* = Sandcastles watching the video and extracting its hook, structure, topic, format and visuals; *fingerprint* = the one-card summary of how a channel shows up.
+
+**Deliverables:** the competitor set in the Sandcastles watchlist + `brand-positioning/competitors.md`. ~15 minutes of the user's attention, plus the analysis wait — 20–30 videos at up to ~60 seconds each is 10–25 minutes; say so, and keep working on fingerprints while it runs.
+
+## Before anything
+1. Read `brand-positioning/strategy.md` — the Target Authority Statement, the avatar, the game track, the "Raw material" section (any competitors the user named), and the **Existing channel** section. If the user has a channel, make sure it's on the watchlist (`add_channels_to_watchlist`, free, one yes if not already done) — it is **never** part of the competitor set, but it's the baseline the Formula Lab measures against, so record its UUID in competitors.md under a separate "You" entry. If it's missing, ask for a two-line version (who they're for + what they help with) or route to **brand-game-interviewer**; don't block on it.
+2. **Check the Sandcastles MCP** — call `ping`, and say which **workspace** the watchlist will be written into (`ping` / `list_workspaces` name it). If the user is running this for a client, a persona, or a test, offer to `switch_workspace` to one of theirs — or ask them to create one and make it active — *before* anything is added; the cold run polluted the operator's own watchlist until a separate workspace was made. This pack requires it. If unavailable: give the 15-second pointer (sandcastles.ai → connect the MCP in Claude's connectors), explain in one line why (the pillars are only as good as what the competitors actually say on camera, and this is the step that watches them), and stop here — do not route onward. If the user insists on continuing without it, write a `competitors.md` from the names they paste plus web research, label every fingerprint "unvalidated — no video analysis," and warn that Substance, Visuals and Beliefs will be guesses.
+
+## Stage 1 — Find the players (free)
+**Ask first, then search.** One question before any discovery: *"Are there channels you already know you want on this list — people you study, compete with, or get compared to? Paste handles or URLs, as many as you like. I'll find the rest."* Everything they paste is **user-validated**: it goes on the list without screening (the only exception is a plainly non-creator account — a brand, a news outlet — where you ask one neutral "keep as a reference, or accidental?" and default to keep). Resolve each by handle/URL; anything Sandcastles doesn't have yet gets submitted and scrapes in a few minutes.
+
+Then derive **five search phrases** from strategy.md, one per level of breadth, so the set spans the whole ladder the bullseye will draw: the center itself ([Y thing] for [X person]) · the same skill for anyone · the broader discipline · the broader discipline on any platform · the whole category. Add one phrase for an adjacent way of serving the same buyer.
+
+1. Run `discover_channels` once per phrase (6 calls, **one at a time** — Sandcastles rate-limits per minute and per hour across every chat on the account, and parallel discovery calls get refused), plus any competitors named in strategy.md's raw material resolved by handle. Also run `discover_channels` with **no query** once the user's own picks are on the watchlist — it recommends "more like these" from what's already there, free.
+2. Merge and dedupe by handle + platform, and remove the user's own channel and anything they already pasted.
+3. **Screen for relevance, not size.** Using each channel's description, keep channels that either do what the user wants to do or serve the same buyer a different way. Drop or flag: a different buyer entirely, practitioner-to-practitioner training when the user sells to end customers, lifestyle/comedy/"reacts," news or brand accounts. Subscriber count is not fit — but within the relevant set, prefer the biggest, because the point of this pillar work is to map the people who define the niche.
+4. Aim for **10–15 channels total** — the user's pasted picks count toward it, so if they gave you 8, you're recommending 2–7 gap-fillers, and say per candidate *what it adds that their picks don't* (a ring they haven't covered, a platform, a sub-topic, a size tier). Keep rough coverage of the ladder: most on the user's own level and one level out, a few at the broad end (the mainstream names the bullseye needs on Rings 4–5). If the center level surfaces nobody, say so — that's the open-category case and it's good news.
+
+Present **one ranked table** in two sections — *Your picks* (marked user-validated) and *Recommended additions* — with handle · platform · followers · one-line description · why it's relevant · rough breadth (center / near / broad) · what it adds. Plus a short "skipped" line naming the big-but-wrong ones so the user can overrule. Ask one thing: *"Add the recommended additions to your watchlist, or edit the list?"* (Sandcastles requires explicit selection before adding — one yes covers the set.) On yes, `add_channels_to_watchlist` with UUIDs. Report added / newly submitted (scraping takes a few minutes — newly submitted channels may have no videos yet; note them and move on) / skipped.
+
+## Stage 2 — Pick the 2 right videos per channel (free)
+For each channel, `channel_recap` with a ~180-day lookback and a generous limit (30+). From the returned videos, rank by outlier score and walk down the list applying two hard screens until you have **2 keepers**:
+
+- **Brand-deal screen.** Skip any video whose views or outlier score sit far above the channel's normal **and** whose engagement is far below the channel's normal — the brand-deal / boosted-post shape. The floor is *relative*: under 2% is the tell on a channel whose usual engagement is 3–4%, but a design-showcase or brand page whose median is ~1% is not screened out wholesale — use roughly half the channel's median engagement as its floor, and write which floor you applied in competitors.md. (An absolute 2% rule zeroed out two kitchen-design channels in the cold run and left them recap-only.) If the recap doesn't show engagement, pull `get_video_details` on the candidate (free — no analysis triggered) before deciding.
+- **Niche screen.** Skip anything not about the niche — a personal-life vlog, a trend hijack, a react, a different discipline entirely. The test: would this video make sense as an example of *why this channel is a competitor to the user*? If not, skip it. A title can hide an off-niche video (a "the real reason we…" that turns out to be a pregnancy announcement); when an analysis lands off-niche, mark it **"counted, not used"** in the header, keep it out of the fingerprint, and don't re-bill a replacement without asking.
+
+Prefer keepers that are also *different from each other* (two topics, or two formats) so the fingerprint reads the channel's range, not one hit twice. If a channel has fewer than 2 videos that pass both screens, take 1 and mark the fingerprint "thin." Note any video that's **already analyzed** — those are free.
+
+## Stage 3 — The credit bill (gated once)
+Show the bill before spending anything:
+
+*"Deep-analyzing these N videos across M channels uses up to N Sandcastles credits (1 per new video; K are already analyzed and free). Here's the list — approve, trim, or skip."* List channel · video title · outlier score · engagement rate so the screens are visible. **Offer the Formula Lab's deepen as a second line item on the same bill** — *"+ up to D more (3 further videos on each center/near channel) so the Formula Lab has 5 per direct competitor and never has to bill you again — take both, the Scout's set only, or trim"* — so a user who wants to pay once can say one yes; on "both," queue the deepen right after the Scout's set and record the split (Scout N + deepen D) in the header so the Lab knows it's pre-paid. **Never spend a credit the user didn't approve.** If their balance can't cover the full list (`current_org_usage`), propose the partial: all channels at 1 video each first, second videos for the channels closest to the user's center, and label the rest "thin."
+
+On yes: `analyze_video` for each (it queues and returns immediately with a `video_uuid`; poll `get_video_details` at the recommended interval — each analysis takes up to ~60 seconds; work through the queue in batches, and on rate limits wait and retry). Tell the user it'll take a few minutes, that they should not run other Sandcastles chats while the queue drains (the rate limit is shared across the account), and what you're doing meanwhile (building the fingerprints from recaps, filling in analysis as it lands).
+
+Afterward, suggest — once, explicit yes only — a Sandcastles automation rule (`create_automation_rule`, e.g. outlier ≥ 2× across the watchlist, daily limit 3) so the competitor pool keeps refreshing itself for free and the Uniqueness Map can be re-run quarterly without re-billing.
+
+## Stage 4 — Write the fingerprints
+For every channel, from the recap + the two analyses (`get_video_details` → topic, hook, narrative structure, format, visual notes, transcript sections), write one **fingerprint**:
+
+| Field | What goes in it |
+|---|---|
+| Handle · platform · followers · Sandcastles UUID | identity |
+| Breadth | center / near / broad — your placement guess for the bullseye (the Niche Bullseye makes the final call) |
+| Topics | what the channel's videos are about, 3–5 phrases; note what they never touch |
+| Substance | how deep and from what angle — frameworks vs tactical how-to vs story; is it actually applicable? |
+| Avatar | who the videos are really talking to; which slices they ignore |
+| Formats | the recurring structures (talking head, listicle, breakdown, tutorial, POV story, screen-record…) |
+| Visuals | how it looks (raw selfie, studio, b-roll heavy, screen recording, on-screen text, produced) + any signature object or setting |
+| Stated beliefs | 2–4 claims the creator makes on camera, verbatim-ish from the transcripts — the raw material for the Contrarian Vault's common-belief board |
+| Specimens | the 2 analyzed videos: title · views · outlier · engagement · Sandcastles link |
+| Evidence level | full (2 analyzed) / thin (1) / recap only (0) |
+
+Save `brand-positioning/competitors.md`: header (date, phrases used, channels the user supplied vs. found, kept / skipped with reasons, videos screened out by the brand-deal and niche screens with a one-line reason each, **credits spent**) → a **You** entry if they have a channel (handle, UUID, recap-level read of their current topics / formats / visuals — free, no analysis; marked "baseline, not a competitor") → the fingerprints → a short **niche read** paragraph: what the defaults are across the set (the most common substance level, format, visual style, avatar breadth) — the three pillar skills start from this.
+
+## Deliver and hand off
+Send `competitors.md`. Close in three lines: how many channels, how many videos analyzed, the one-sentence niche read ("Eleven channels; the niche default is raw talking-head frameworks aimed at anyone with a business — tactical depth and a narrow buyer are both open").
+
+Next: **niche-bullseye** — Pillar 1. It reads the fingerprints and places every channel on its ring. Tee it up with one sentence of context. No CTA here — the orchestrator delivers it at the close of the pack.

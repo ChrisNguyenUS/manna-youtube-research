@@ -1,0 +1,5 @@
+Run my hook playbook.
+
+Use the Sandcastles MCP to find my newest Hook Genius report (list_reports, search "Hook Genius", newest succeeded run) and pull its full data with get_report_details. Read the whole report, then summarize it to me in short bullets with the number beside each claim, name the pattern under all of it, and give me 2 or 3 follow-up questions.
+
+Then build the full Hook Playbook page from it, following the hook-playbook skill: pull the real spoken hook and outlier score for every referenced video, recompute the medians, find what separates the top and bottom videos inside each shape, and publish a visual, dynamic HTML report that tells me exactly what to do with my hooks, with a pre-flight hook checker and a topic-to-hook generator inside it.

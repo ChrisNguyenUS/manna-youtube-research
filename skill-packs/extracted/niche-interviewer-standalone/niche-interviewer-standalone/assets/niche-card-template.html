@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1080">
+<title>Niche Card</title>
+<style>
+  :root{
+    --paper:#F4F0E8; --paper-2:#EAE4D8; --ink:#17140F; --ink-2:#4A4538; --ink-3:#8A8271;
+    --line:#D8D0C2; --accent:#D6461F; --accent-2:#F2C9B9; --accent-3:#FBEDE6;
+    --good:#1F7A4D; --mid:#C98A12; --none:#B8AE9C;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:#DDD6C8}
+  body{font-family:-apple-system,"Helvetica Neue",Inter,Segoe UI,Roboto,Arial,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+  .card{width:1080px;margin:0 auto;background:var(--paper);padding:56px 64px 40px}
+  .serif{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+
+  header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--ink);padding-bottom:14px}
+  header .who{font-size:15px;font-weight:600}
+  header .who span{color:var(--ink-3);font-weight:400}
+
+  .hero{padding:44px 0 36px;border-bottom:1px solid var(--line)}
+  .hero .kicker{margin-bottom:16px;color:var(--accent)}
+  .hero h1{font-size:50px;line-height:1.08;letter-spacing:-.015em;font-weight:500;max-width:920px}
+  .hero h1 em{font-style:italic;color:var(--accent)}
+  .one-thing{margin-top:26px;display:inline-flex;align-items:center;gap:12px;background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:999px;font-size:15px;max-width:100%}
+  .one-thing .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+
+  .row{display:grid;grid-template-columns:1fr;gap:0}
+  .three{display:grid;grid-template-columns:340px 1fr;gap:40px;padding:36px 0;border-bottom:1px solid var(--line)}
+  .sec-label{margin-bottom:14px}
+
+  /* bullseye */
+  .bull{position:relative;width:340px;height:340px}
+  .bull svg{width:340px;height:340px;display:block}
+  .bull .lbl{position:absolute;left:0;right:0;text-align:center;font-size:12px;color:var(--ink-2);line-height:1.25;padding:0 8px}
+  .bull .lbl.outer{top:12px}
+  .bull .lbl.middle{top:66px}
+  .bull .center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:118px;text-align:center;color:var(--paper);font-size:11.5px;line-height:1.25;opacity:.92}
+  .bull .center b{display:block;font-size:14px;margin-bottom:2px;opacity:1}
+  .bull-cap{margin-top:14px;font-size:12.5px;color:var(--ink-3);line-height:1.4}
+
+  /* avatar */
+  .avatar h2{font-size:30px;font-weight:500;line-height:1.1;margin-bottom:10px}
+  .avatar p.portrait{font-size:15.5px;line-height:1.5;color:var(--ink-2);margin-bottom:18px}
+  .psych{display:grid;grid-template-columns:1fr 1fr;gap:14px 24px}
+  .psych h4{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;font-weight:700}
+  .psych ul{list-style:none}
+  .psych li{font-size:13.5px;line-height:1.35;padding:3px 0 3px 12px;position:relative;color:var(--ink)}
+  .psych li:before{content:"";position:absolute;left:0;top:10px;width:5px;height:5px;background:var(--ink-3);border-radius:50%}
+
+  .dream{padding:30px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:340px 1fr;gap:40px;align-items:start}
+  .dream .q{font-size:26px;line-height:1.3;font-weight:500}
+  .dream .q:before{content:"“";color:var(--accent);margin-right:2px}
+  .dream .q:after{content:"”";color:var(--accent);margin-left:2px}
+
+  /* hypothesis */
+  .hyp{padding:34px 0;border-bottom:1px solid var(--line)}
+  .hyp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  .badge{font-size:11px;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--ink-3);color:var(--ink-2);padding:5px 10px;border-radius:4px}
+  .attr{display:grid;grid-template-columns:120px 96px 1fr;gap:20px;align-items:start;padding:11px 0;border-top:1px dashed var(--line)}
+  .attr:first-of-type{border-top:0}
+  .attr .n{font-weight:700;font-size:15px;padding-top:1px}
+  .meter{display:flex;gap:4px;padding-top:6px}
+  .meter i{display:block;width:28px;height:10px;border-radius:2px;background:var(--paper-2)}
+  .meter.strong i{background:var(--good)}
+  .meter.possible i:nth-child(-n+2){background:var(--mid)}
+  .meter.no i:nth-child(1){background:var(--none)}
+  .attr .ev{font-size:13.5px;line-height:1.4;color:var(--ink-2)}
+  .attr .ev b{color:var(--ink);font-weight:600;margin-right:6px;text-transform:capitalize}
+  .lane{margin-top:18px;background:var(--accent-3);border-left:4px solid var(--accent);padding:16px 18px;font-size:14.5px;line-height:1.5}
+  .lane b{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+
+  /* pain ladder */
+  .pain{padding:34px 0;border-bottom:1px solid var(--line)}
+  .pain-row{display:grid;grid-template-columns:28px 1fr 180px;gap:14px;align-items:center;padding:7px 0}
+  .pain-row .i{font-size:13px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+  .pain-row .t{font-size:15px;line-height:1.3}
+  .pain-row .t span{display:inline-block;margin-left:8px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);border:1px solid var(--line);padding:1px 6px;border-radius:3px;vertical-align:middle}
+  .bar{height:10px;background:var(--paper-2);border-radius:2px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--accent);border-radius:2px}
+  .pain-note{margin-top:12px;font-size:12.5px;color:var(--ink-3)}
+
+  footer{padding:28px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:end}
+  .filters h4{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
+  .filters p{font-size:17px;line-height:1.35;font-weight:500}
+  .filters p+p{margin-top:4px}
+  .credit{text-align:right;font-size:12px;color:var(--ink-3)}
+</style>
+</head>
+<body>
+<div class="card" id="card"></div>
+
+<script id="positioning-data" type="application/json">/*__DATA__*/{}</script>
+<script>
+(function(){
+  var D = JSON.parse(document.getElementById('positioning-data').textContent.replace(/^\/\*__DATA__\*\//,''));
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function list(a){return (a||[]).map(function(x){return '<li>'+esc(x)+'</li>'}).join('')}
+
+  var av = D.avatar||{}, hy = D.hypothesis||{}, as = D.authority_statement||{}, bz = D.business||{}, be = D.bullseye||{};
+  var pains = (D.pain_points||[]).slice().sort(function(a,b){return (b.pain||0)-(a.pain||0)}).slice(0,8);
+  var fq = D.filter_questions||[];
+
+  // Italicize the "[who]" if the statement starts with "I help X"
+  var stmt = esc(as.recommended||'');
+  stmt = stmt.replace(/^(I help )([^,]+?)( with | get | turn | build | go | stop | start | make | grow )/, function(m,a,b,c){return a+'<em>'+b+'</em>'+c});
+
+  var html = ''
+  + '<header><div class="mono">Target Positioning</div>'
+  + '<div class="who">'+esc(D.person||'')+(D.business_name?' <span>· '+esc(D.business_name)+'</span>':'')+(D.date?' <span>· '+esc(D.date)+'</span>':'')+'</div></header>'
+
+  + '<section class="hero"><div class="mono kicker">Target Authority Statement</div>'
+  + '<h1 class="serif">'+stmt+'</h1>'
+  + (D.one_thing?'<div class="one-thing"><span class="dot"></span><span>'+esc(D.one_thing)+'</span></div>':'')
+  + '</section>'
+
+  + '<section class="three">'
+  +   '<div><div class="mono sec-label">Who it\'s for</div>'
+  +     '<div class="bull">'
+  +       '<svg viewBox="0 0 340 340" aria-hidden="true">'
+  +         '<circle cx="170" cy="170" r="168" fill="#E6DFD2" stroke="#D8D0C2"/>'
+  +         '<circle cx="170" cy="170" r="118" fill="#F4C7B5" stroke="#E9A98F"/>'
+  +         '<circle cx="170" cy="170" r="66" fill="#D6461F"/>'
+  +       '</svg>'
+  +       '<div class="lbl outer">'+esc(be.outer||'Everyone in the category')+'</div>'
+  +       '<div class="lbl middle">'+esc(be.middle||bz.buyer||'')+'</div>'
+  +       '<div class="center"><b>'+esc(av.name||'')+'</b>'+esc(be.center_label||'')+'</div>'
+  +     '</div>'
+  +     '<div class="bull-cap">Outer ring is the whole market. Every ring in is a narrower slice. The center is one real person, and every video is aimed there.</div>'
+  +   '</div>'
+  +   '<div class="avatar"><div class="mono sec-label">Ideal viewer</div>'
+  +     '<h2 class="serif">'+esc(av.name||'')+'</h2>'
+  +     '<p class="portrait">'+esc(av.portrait||'')+'</p>'
+  +     '<div class="psych">'
+  +       '<div><h4>Believes</h4><ul>'+list(av.believes)+'</ul></div>'
+  +       '<div><h4>Fears</h4><ul>'+list(av.fears)+'</ul></div>'
+  +       '<div><h4>Has tried</h4><ul>'+list(av.tried)+'</ul></div>'
+  +       '<div><h4>Complains about</h4><ul>'+list(av.complains_about)+'</ul></div>'
+  +     '</div>'
+  +   '</div>'
+  + '</section>'
+
+  + '<section class="dream"><div class="mono">Dream outcome</div><div class="q serif">'+esc(D.dream_outcome||'')+'</div></section>'
+
+  + '<section class="hyp"><div class="hyp-head"><div class="mono">Where the edge might be</div><div class="badge">Hypothesis · not yet checked against competitors</div></div>'
+  +   (hy.attributes||[]).map(function(a){
+        var s=(a.strength||'no').toLowerCase();
+        return '<div class="attr"><div class="n">'+esc(a.name)+'</div><div class="meter '+s+'"><i></i><i></i><i></i></div><div class="ev"><b>'+esc(s)+'</b>'+esc(a.evidence||'')+'</div></div>';
+      }).join('')
+  +   (hy.lane?'<div class="lane"><b>The lane</b>'+esc(hy.lane)+'</div>':'')
+  + '</section>'
+
+  + '<section class="pain"><div class="mono sec-label">Pain ladder · what they ask right before they buy</div>'
+  +   pains.map(function(p,i){
+        var w=Math.max(8,Math.min(100,(p.pain||1)/5*100));
+        return '<div class="pain-row"><div class="i">'+String(i+1).padStart(2,'0')+'</div><div class="t">'+esc(p.text)+(p.type?'<span>'+esc(p.type)+'</span>':'')+'</div><div class="bar"><i style="width:'+w+'%"></i></div></div>';
+      }).join('')
+  +   '<div class="pain-note">Bar = degree of pain. The most painful, correctly packaged, drive the most views. Keep adding to this list from comments and DMs.</div>'
+  + '</section>'
+
+  + '<footer><div class="filters"><h4>Ask before every video</h4>'
+  +   fq.map(function(q){return '<p class="serif">'+esc(q)+'</p>'}).join('')
+  + '</div><div class="credit">'+esc(D.footer||'')+'</div></footer>';
+
+  document.getElementById('card').innerHTML = html;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+---
+name: formula-lab
+description: The exit from positioning into production — Phase 1 (Testing & Experimentation). A content formula = topic + format + visual layout (BBQ Techniques + live demo + standing at the grill). This skill mines the niche's formulas from the Competitor Scout's analyzed pool (plus free Sandcastles top_formats / top_topics, and a gated deepen of the Ring 1–2 competitors so their real recurring formulas show), plots them on a Formula Map with the empty cells verdicted as white space or graveyard, drafts the user's test palette (3–4 core topics × 1–3 formats × 1–2 visual layouts = 3–24 candidate formulas, most people land on 5–10), designs a Phase 1 batch plan that covers the palette in ~12–14 videos, and sets up the four-judge scorecard — performance, ideal-viewer fit, enjoyment, visual pride — with an ongoing "score this video" mode that auto-fills performance from the user's own Sandcastles channel data. Use whenever the user asks what to make first, what formats or topics to test, "what's my content formula," how to structure their first batches, what to double down on, or mentions "content formulas," "formula," "test phase," "phase 1," "experimentation," or "what should I post." Step 7 of the Personal Brand Positioning Pack (reads every prior file; hands back to brand-positioning for the canvas).
+---
+
+# Formula Lab — Phase 1: Testing & Experimentation
+
+You are running the **Formula Lab** — step 7 of the Personal Brand Positioning Pack, the one that turns four pillars into a list of things to actually film. In the simplest terms, the destination is a set of **content formulas** the user can make on a recurring basis that attract the ideal viewer and represent their unique experience and expertise.
+
+**A content formula = topic + format + visual layout.** Kallaway's BBQ example: *BBQ Techniques + live tutorial/demo + in-world, standing at the grill* is one formula; *BBQ Equipment & Tools + listicle + kitchen set, fixed shot, cutting between A-roll of the host and B-roll of the tools* is a second. Most personal brands land on **3–4 core topics, 1–3 core formats, 1–2 visual layouts** — that's 3 to 24 formulas by multiplication, and most people settle in the 5–10 range. Formulas are guardrails: once you have them, every video is a fill-in-the-blank instead of a blank page.
+
+**Phase 1 is about testing widely**, across topics, formats and layouts, to find out four things — and all four count:
+1. **Performance** — follower growth and conversion via comment CTAs; if those aren't being collected, views (and outlier score).
+2. **Ideal-viewer fit** — does it attract the *right* people? Judged qualitatively: comment quality, DM conversations, lead-magnet conversion.
+3. **Enjoyment** — would they keep making this without burning out? This is a real factor, not a soft one.
+4. **Visual pride** — does it let them show up on camera in a way they're proud of?
+
+A formula that wins on views and fails on two of the other three gets killed on purpose. Say that early.
+
+Glosses for the first use of each term: *format* = the storytelling structure, how the spoken words are organized (countdown list, myth-bust, tutorial, story-with-a-lesson); *visual layout* = how it's filmed and edited (you on camera in one spot, cutting to b-roll, screen recording, on location); *outlier score* = how many times better a video did than that channel's normal; *engagement rate* = likes + comments + shares as a share of views.
+
+**Deliverables:** `brand-positioning/formulas.md` + **the Formula Map visual** (+ the scorecard, which lives on in update mode). ~15 minutes of the user's attention, plus the analysis wait if they approve the deepen (15–30 videos ≈ 10–25 minutes — keep drafting the palette while it runs).
+
+## Operating rules
+- **One question at a time.** Invite voice. **Reflect back after every answer.**
+- **Never re-ask what's known.** The palette is 80% decided already: niche-bullseye.md (topic scope and ring), contrarian-vault.md (the frames — each one is a topic candidate), strategy.md (pain points, avatar), uniqueness-map.md (the Format and Visuals stakes), associations.md (objects and environment — that *is* the visual layout), competitors.md (the analyzed pool). Read all six before the first question.
+- **Formats and layouts are two different things.** A countdown list can be shot as a raw talking head or as a b-roll piece and those are different formulas. Never collapse them.
+- **A formula is recurrence.** Two videos can't prove one. Be honest about evidence levels everywhere: *proven* (seen 3+ times from a channel or 3+ channels), *seen* (1–2 sightings), *unclaimed* (nobody in the pool).
+- **Credits gated, one bill.** The free tier runs first and is often enough; the deepen is offered once, recommended, with the bill visible, and never run without an explicit yes.
+- **Plain-English names for everything.** Every format and layout gets a name a beginner understands, a one-sentence what-it-is, and a specimen video link.
+
+## Stage 0 — Silent triage
+Read the six files. Note whether strategy.md has an **existing channel** — if so, the user's own videos are the first thing this skill looks at. If competitors.md is missing, route to **competitor-scout** — a Formula Map with no analyzed videos is a guess. If uniqueness-map.md is missing, the palette can still be drafted, but say the Format and Visuals picks are unvalidated. `ping` Sandcastles silently. Also check whether the user has a **verified channel** (`get_personal_analytics` returns non-empty) — it decides whether the scorecard's performance column can be auto-filled later.
+
+## Stage 1 — Mine the niche's formulas (free tier first)
+0. **The user's own videos first (if they have a channel).** `search_my_videos` scoped to their channel UUID (from competitors.md's "You" entry), ~365-day lookback, floors at zero, sorted by outlier, paginate — then tag every video they've posted with a (topic, format, layout) triple from title, caption, thumbnail and any existing analysis. This is the **baseline row** of the map: which formulas they've *already* run, how each did (views, outlier, engagement), and which ones they've never tried. If their videos aren't analyzed, offer — inside the same bill as the deepen below — to analyze their **top 5 by outlier** (same screens) so their own best formulas are read as precisely as the competitors'. Their history pre-fills the enjoyment and visual-pride judges too: ask, once, *"Looking at these, which did you actually like making, and which did you dread?"*
+1. **Tag every analyzed video in the pool.** For each specimen in competitors.md, pull `get_video_details` (free — already analyzed) and extract the triple: **topic** (the analysis topic, normalized to a short phrase), **format** (the narrative structure — read the structure sections, not the format label alone), **visual layout** (from the visual notes and thumbnail: talking head / talking head + b-roll / screen record / on location / text-driven / polished set). Also carry views, outlier, engagement, and the Sandcastles link. Each tagged video is one dot.
+2. **Layer the pool-level aggregates (free).** `top_formats` and `top_topics` at watchlist scope, ~180-day lookback — these cover every analyzed video on the watchlist, including anything the automation rule has added since the Scout ran, so the pool is bigger than the Scout's 2-per-channel. Tag those videos the same way.
+3. **Build the Formula Map data.** Group the dots by (topic, format, layout). For each cell: count, distinct channels, median outlier, median engagement, specimen. Label cells: **crowded** (3+ channels), **someone's signature** (one channel, 3+ videos — their territory; name them), **seen** (1–2 dots), **empty**. For the empty cells adjacent to crowded ones, verdict them the way the Uniqueness Mapper does: **white space** if the neighboring cells perform and nothing structural explains the gap, **graveyard** if similar cells exist with low outlier and low engagement, **unknown** if there's no nearby evidence.
+
+## Stage 2 — The deepen (gated once; recommend it)
+Two videos per channel show what a channel *has* done, not what it *lives on*. To see a direct competitor's real recurring formulas, deepen the **Ring 1–2 channels only** (from niche-bullseye.md): for each, `channel_recap` with a ~180-day lookback and a generous limit, then walk down by outlier score applying the Scout's two screens — skip brand deals (huge views or outlier with engagement under 2%) and skip off-niche — until you have **5 more relevant videos** that aren't already analyzed. Prefer a spread of titles so recurrence, not one hit, is what gets measured.
+
+Show the bill, and fold in the user's own top-5 if they have a channel: *"Deepening your N direct competitors — 5 more relevant videos each — plus your own top 5, M videos total, uses up to M Sandcastles credits (already-analyzed ones are free). This is what turns 'we saw them do it twice' into 'this is one of their formulas.' Approve, trim, or skip."* Recommend yes. If the balance is short (`current_org_usage`), propose fewer videos per channel rather than fewer channels. On yes, `analyze_video` per video (queues immediately; poll `get_video_details` at the recommended interval; batches; wait and retry on rate limits), tag the results, and update the map. On skip, proceed on the free tier and mark every per-channel formula "inferred from ≤2 videos."
+
+After the deepen, write each direct competitor's **formula set**: the 2–5 (topic, format, layout) triples they return to, with counts and the best specimen each. This is the mirror the user positions against.
+
+## Stage 3 — Draft the test palette (you draft — 2–3 questions)
+Propose, from the files, then confirm each axis with one question at most:
+
+- **Topics (3–4).** Candidates: the bullseye center's sub-topics, each contrarian frame (a frame is a topic that carries its own argument), the top pain points from strategy.md's pain-point bank, and — if they have a channel — the topics their own best videos already proved. Cross-check each against the map — does the niche reward it (crowded cells with high outlier = proven demand), and does the user have a substance advantage there (contrarian-vault.md)? A topic with proven demand and no advantage is a trap; say so. Pick 3–4.
+- **Formats (1–3).** Candidates: the Format stake from uniqueness-map.md, the niche's most proven format from the map (the one that reliably carries these topics), and at most one white-space bet. Each gets a plain-English name, a one-line what-it-is, a 12-second example of how it opens, and a specimen link. Pick 1–3.
+- **Visual layouts (1–2).** Candidates: the Visuals stake, built on the objects and environment in associations.md (the hat, the set, the prop are the layout's constants), and one alternate that costs the user nothing extra to shoot. Be honest about production cost — a layout they can't sustain three times a week is a bad pick. Pick 1–2.
+
+Multiply. Present the **candidate formulas** as a card rack: each card = topic + format + layout, a plain-English name ("Grill-side technique demo"), the map's verdict for that cell (crowded / signature of @x / white space / graveyard / unknown), the closest specimen to model, and one example video idea. Ask them to strike any they'd hate making — enjoyment is a judge from day one, not after.
+
+## Stage 4 — The Phase 1 batch plan (you draft — 1 question)
+Don't test all 24. Design the smallest batch that answers the question: **every topic meets every format at least once, and layout alternates across the batch**, so a 4×3×2 palette is covered in **12–14 videos over two batches** (each batch of 7 mirrors the 3-2-1 rhythm if they know it). Order the batch so the first three videos are the highest-confidence formulas (proven cell + substance advantage) and the white-space bets sit in slots 4–7 — an early win buys the patience the experiments need. For each slot: the formula, the example idea, the specimen to model, and what a win would teach.
+
+State the rule for reading results: **two batches, then converge.** Keep every formula that clears all four judges, drop the rest, promote any chaos hit, and re-run the multiplication with what's left. The goal is 5–10 formulas they'll run for the next six months.
+
+## Stage 5 — The four-judge scorecard
+Set up `brand-positioning/formula-scorecard.md` as a table the user fills after each post: date · video · formula · **Performance** (views, outlier, follower delta, comment-CTA leads — whichever they have) · **Viewer fit** (1–5: were the comments and DMs from the person in strategy.md?) · **Enjoyment** (1–5) · **Visual pride** (1–5) · notes. Explain the reading rule once: performance decides *what the algorithm wants*, viewer fit decides *whether it's the right people*, and the two subjective scores decide *whether they'll still be doing this in month four*. A formula needs all four.
+
+If they have a verified channel: add their own channel to the watchlist (`add_channels_to_watchlist`, free, one yes) so `search_my_videos` scoped to their channel UUID returns their videos with views, outlier and engagement, and `get_personal_analytics` gives the follower movement — the performance column then fills itself in update mode.
+
+## The Formula Map visual (render — never skip)
+Interactive single-file HTML artifact (inline SVG fallback). Dark navy (#0F172A), heat accents, white/slate text, mobile-friendly (~380px; the grid scrolls horizontally).
+
+- **The map:** a grid — rows = topics found in the niche (the user's chosen topics pinned at the top, highlighted; if they have a channel, their own videos drawn as hollow dots so "what I've tried" is visible against "what the niche does"), columns = formats (plain-English names, ⓘ opens the explainer). Each cell holds dots for the videos in it, dot **shape** = visual layout (circle = talking head, square = + b-roll, diamond = screen record, triangle = on location, ring = text-driven), dot **size** = outlier score, dot **tint** = engagement. Cell background by crowdedness; signature cells carry the channel's initials; verdicted empty cells glow green ("white space") or hatch red ("graveyard"). Hover/tap a dot → the video (thumbnail, channel, views · outlier · engagement, link); tap a cell → its count, channels, median outlier, and verdict.
+- **The palette strip:** above the map, three rows of chips — Topics · Formats · Layouts — the user's picks lit, struck-through for anything they killed for enjoyment. A live multiplication readout ("4 × 3 × 2 = 24 candidates · 13 in the test plan").
+- **The test plan:** below the map, two batch bars of 7 slots, each slot a color-matched card (formula name, example idea, specimen link), with the white-space bets marked. Clicking a slot highlights its cell on the map.
+- **The four judges:** a footer with four empty gauges — Performance · Viewer fit · Enjoyment · Visual pride — that fill from the scorecard when data exists, captioned "A formula needs all four."
+- Animate: dots drop into the map channel by channel, then the user's topic rows rise to the top, then the palette chips light, then the test-plan slots deal out.
+
+Title it "[Name] — Content Formulas." Gloss every term inline.
+
+## Deliverable — `brand-positioning/formulas.md`
+Evidence header (videos tagged, channels, the user's own videos tagged, credits spent on the deepen, date) · the baseline row (the user's existing formulas with their numbers, if any) · the format and layout glossaries with specimens · the Formula Map table (cell · count · channels · median outlier · verdict) · each direct competitor's formula set · the palette (topics / formats / layouts with reasoning and cost notes) · the candidate formula rack with verdicts · the Phase 1 batch plan · the reading rule · a link to the scorecard file. Deliver as a file with the visual.
+
+## Update mode — "score this video" / "how are my formulas doing"
+When the user reports a posted video: identify its formula (ask if ambiguous), pull its numbers if the channel is verified (`search_my_videos` on their UUID, `get_personal_analytics` for follower movement), ask for the three subjective scores in one message, append the scorecard row, and reply in two lines: the row, and the running read for that formula. After 7+ scored videos, show the four gauges per formula; after two batches, run the convergence — keep / kill / promote — rewrite the palette, re-render the map, and remind them to re-run the orchestrator so the canvas refreshes. If a formula wins on performance and loses on enjoyment or pride, say plainly that it's a kill, and why that's the framework working, not failing.
+
+## Handoff
+This is the last step before the canvas. Hand back to **brand-positioning** to assemble the Personal Brand Positioning Canvas with the Phase 1 panel ("Palette locked — four topics, two formats, one layout, thirteen videos in the test plan. Building the canvas now"). No CTA here — the orchestrator delivers it.

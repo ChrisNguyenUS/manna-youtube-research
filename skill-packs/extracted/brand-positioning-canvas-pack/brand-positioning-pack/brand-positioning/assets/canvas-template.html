@@ -1,0 +1,468 @@
+<!--
+  TEMPLATE for the Personal Brand Positioning Canvas (brand-positioning orchestrator, Step 6).
+  This file is filled with Kallaway's OWN positioning as a worked example.
+  When rendering a user's canvas: keep the structure and styling, replace EVERY piece of example
+  content (name, handle, game, statement, rings, players, frames, keywords, lanes, grid, stake) with
+  the user's data from brand-positioning/*.md, and delete the "WORKED EXAMPLE" badge.
+  Sections are marked with  DATA:  comments.
+-->
+<title>Kallaway Positioning Canvas</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root{
+    --bg:#0F172A; --bg2:#131D33; --surface:#1A2540; --line:#26324D; --line2:#33405E;
+    --text:#E6EBF5; --muted:#94A3B8; --faint:#64748B;
+    --r1:#EF4444; --r2:#F97316; --r3:#F59E0B; --r4:#38BDF8; --r5:#3B5A8A;
+    --open:#34D399; --violet:#A78BFA;
+    --display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
+    --body:"DM Sans","Helvetica Neue",Arial,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.55;padding-inline:20px;padding-block:0 64px}
+  a{color:var(--r4)}
+  .wrap{max-width:1080px;margin:0 auto}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.05}
+  h2{font-size:28px;font-weight:700}
+  h3{font-size:16px;font-weight:700}
+  p{margin:0}
+  .muted{color:var(--muted)}
+  .small{font-size:13px}
+  .gloss{color:var(--faint);font-size:12.5px}
+
+  /* header */
+  header{padding-block:40px 28px;border-bottom:1px solid var(--line)}
+  .topline{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;margin-bottom:18px}
+  .name{font-family:var(--display);font-weight:800;font-size:22px}
+  .handle{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .badge{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:4px 8px;border:1px dashed var(--violet);color:var(--violet);border-radius:4px;margin-left:auto}
+  .game{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch;margin-bottom:28px}
+  .track{border:1px solid var(--line);border-radius:10px;padding:16px 18px;background:var(--bg2);opacity:.55}
+  .track.on{opacity:1;border-color:var(--r2);background:linear-gradient(180deg,#1E2440,#161F38);box-shadow:0 0 0 1px rgba(249,115,22,.25),0 12px 40px -20px rgba(249,115,22,.6)}
+  .track .eyebrow{margin-bottom:6px}
+  .track h3{font-size:19px;margin-bottom:10px}
+  .meters{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:12px;color:var(--muted)}
+  .meter{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .meter i{display:inline-block;width:56px;height:5px;border-radius:3px;background:var(--line2);position:relative;overflow:hidden}
+  .meter i::after{content:"";position:absolute;inset:0;width:var(--v);background:var(--r2);border-radius:3px}
+  .track.off .meter i::after{background:var(--faint)}
+  .why{margin-top:12px;font-size:13.5px;border-top:1px solid var(--line);padding-top:10px}
+  .door{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;color:var(--faint);text-align:center;padding:0 4px}
+  .door span{display:block;white-space:nowrap}
+  .tas{font-family:var(--display);font-weight:800;font-size:clamp(28px,4.6vw,46px);line-height:1.08;letter-spacing:-.01em;margin:6px 0 18px}
+  .tas .x{color:var(--r1)} .tas .y{color:var(--r3)} .tas .z{color:var(--r4)}
+  .taskey{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:22px}
+  .taskey b{font-weight:600}
+  .taskey .x{color:var(--r1)} .taskey .y{color:var(--r3)} .taskey .z{color:var(--r4)}
+  .filterrow{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch}
+  .filter{flex:1 1 420px;display:flex;align-items:center;gap:14px;border:1px solid var(--line2);border-radius:999px;padding:10px 18px 10px 12px;background:var(--surface)}
+  .filter .lab{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--r3);white-space:nowrap}
+  .filter .q{font-weight:500;font-size:14.5px}
+  .filter .gate{margin-left:auto;display:flex;gap:6px;font-family:var(--mono);font-size:11px;white-space:nowrap}
+  .filter .gate b{padding:3px 8px;border-radius:999px;background:rgba(52,211,153,.15);color:var(--open);font-weight:600}
+  .filter .gate s{padding:3px 8px;border-radius:999px;background:rgba(239,68,68,.12);color:var(--r1);text-decoration:none}
+  .objective{flex:0 1 auto;display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:999px;padding:10px 16px;font-size:13px;color:var(--muted)}
+  .objective b{color:var(--text);font-weight:500}
+
+  /* pillars */
+  section.pillar{padding-block:40px;border-bottom:1px solid var(--line)}
+  .phead{display:flex;align-items:baseline;gap:14px;margin-bottom:6px}
+  .pnum{font-family:var(--mono);font-size:12px;color:var(--r2);letter-spacing:.1em}
+  .pdesc{max-width:64ch;color:var(--muted);margin-bottom:24px}
+  .two{display:grid;grid-template-columns:minmax(280px,420px) 1fr;gap:32px;align-items:start}
+  @media (max-width:720px){.two{grid-template-columns:1fr}.game{grid-template-columns:1fr}.door{flex-direction:row;gap:12px;padding:4px 0}.badge{margin-left:0}}
+
+  /* bullseye */
+  .bullseye{width:100%;max-width:420px;aspect-ratio:1;display:block}
+  .ringlist{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .ring{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--bg2)}
+  .ring:last-child{border-bottom:0}
+  .ring .n{font-family:var(--mono);font-size:12px;font-weight:600;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#0F172A}
+  .ring .l{font-weight:500;font-size:14px}
+  .ring .c{font-size:12px;color:var(--faint)}
+  .ring .who{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+  .chip{font-family:var(--mono);font-size:10.5px;padding:3px 7px;border-radius:999px;border:1px solid var(--line2);color:var(--muted);white-space:nowrap}
+  .chip.you{border-color:var(--r1);color:var(--r1);font-weight:600}
+  .path{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px}
+  .path .step{padding:6px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--line)}
+  .path .arrow{font-family:var(--mono);font-size:11px;color:var(--faint);max-width:150px;line-height:1.3}
+  .inner{margin-top:14px;font-size:13px;color:var(--muted)}
+  .inner b{color:var(--text);font-weight:500}
+
+  /* frames */
+  .frames{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .frame{border:1px solid var(--line);border-radius:10px;background:var(--bg2);padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+  .frame.head{border-color:var(--r1);box-shadow:0 0 0 1px rgba(239,68,68,.25)}
+  .frame .tag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--r1)}
+  .frame h3{font-size:18px}
+  .ts{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:13.5px}
+  .ts .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding-top:3px}
+  .ts .they{color:var(--faint)} .ts .you{color:var(--r3)}
+  .ts .v.they{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(148,163,184,.5)}
+  .takes{margin:0;padding-left:16px;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+  .proof{font-size:12px;color:var(--faint);border-top:1px solid var(--line);padding-top:8px;margin-top:auto}
+  .vaultbar{margin-top:16px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font-size:13px;color:var(--muted);border:1px dashed var(--line2);border-radius:8px;padding:10px 14px}
+  .vaultbar .count{font-family:var(--mono);color:var(--text);font-weight:600}
+
+  /* associations */
+  .ad{border:1px solid var(--line);border-radius:10px;background:#fff;color:#1F2937;padding:14px 16px;font-family:Arial,sans-serif;max-width:420px}
+  .ad .q{border:1px solid #DADCE0;border-radius:999px;padding:8px 14px;font-size:14px;display:flex;gap:10px;align-items:center;color:#202124}
+  .ad .q i{width:16px;height:16px;border:2px solid #4285F4;border-radius:50%;position:relative}
+  .ad .q i::after{content:"";position:absolute;width:2px;height:7px;background:#4285F4;right:-4px;bottom:-5px;transform:rotate(-45deg)}
+  .ad .sp{font-size:11px;font-weight:700;color:#202124;margin:12px 0 2px}
+  .ad .url{font-size:12px;color:#202124}
+  .ad .title{font-size:17px;color:#1A0DAB;margin:2px 0}
+  .ad .desc{font-size:12.5px;color:#4D5156}
+  .challengers{margin-top:10px;font-size:12px;color:var(--faint)}
+  .lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+  .lane{border:1px solid var(--line);border-radius:10px;background:var(--bg2);padding:14px 16px}
+  .lane .eyebrow{margin-bottom:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chips .chip{white-space:normal;line-height:1.35}
+  .chips .say{border-color:var(--r3);color:var(--text)}
+  .chips .no{text-decoration:line-through;opacity:.55}
+  .draft{display:inline-block;margin-top:14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--violet);border:1px dashed var(--violet);padding:4px 8px;border-radius:4px}
+
+  /* grid */
+  .gridwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;min-width:820px;font-size:12.5px}
+  th,td{padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+  th{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:var(--bg2);font-weight:600}
+  th small{display:block;font-family:var(--body);text-transform:none;letter-spacing:0;color:var(--faint);font-weight:400;margin-top:2px;font-size:11px}
+  td.who{white-space:nowrap;font-weight:500}
+  td.who span{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--line2);font-family:var(--mono);font-size:9.5px;margin-right:8px;color:var(--text)}
+  td.hot{background:rgba(239,68,68,.08)} td.warm{background:rgba(245,158,11,.07)} td.cool{background:rgba(56,189,248,.06)}
+  tr.stake td{background:#12203A;border-top:2px solid var(--r3);border-bottom:0;font-weight:500;color:var(--text)}
+  tr.stake td.who{color:var(--r3);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+  .ws{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;padding:2px 6px;border-radius:4px;margin-bottom:4px}
+  .ws.open{background:rgba(52,211,153,.15);color:var(--open)}
+  .ws.cont{background:rgba(245,158,11,.15);color:var(--r3)}
+  .ws.def{background:rgba(148,163,184,.12);color:var(--muted)}
+  td.open{box-shadow:inset 0 0 0 1px rgba(52,211,153,.45)}
+  .ustate{margin-top:16px;max-width:70ch;color:var(--muted);font-size:14px}
+
+  /* formulas */
+  .palette{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:18px}
+  .prow{border:1px solid var(--line);border-radius:10px;background:var(--bg2);padding:12px 14px}
+  .prow .eyebrow{margin-bottom:8px;display:flex;justify-content:space-between}
+  .prow .eyebrow b{color:var(--text)}
+  .prow .chip.pick{border-color:var(--r3);color:var(--text)}
+  .mult{font-family:var(--mono);font-size:12px;color:var(--muted);margin:-6px 0 18px}
+  .mult b{color:var(--text)}
+  .rack{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-bottom:22px}
+  .fcard{border:1px solid var(--line);border-radius:8px;background:var(--bg2);padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:12.5px}
+  .fcard.ws{border-color:rgba(52,211,153,.55)}
+  .fcard.sig{border-color:rgba(245,158,11,.5)}
+  .fcard.grave{opacity:.5}
+  .fcard h4{margin:0;font-family:var(--display);font-size:14px;font-weight:700}
+  .fcard .trip{font-family:var(--mono);font-size:10.5px;color:var(--muted);line-height:1.5}
+  .fcard .trip i{font-style:normal;color:var(--faint)}
+  .fcard .ws{align-self:flex-start}
+  .batches{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+  @media (max-width:720px){.batches{grid-template-columns:1fr}}
+  .batch{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg2)}
+  .batch .eyebrow{margin-bottom:8px}
+  .slots{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .slot{aspect-ratio:1;border-radius:6px;display:grid;place-items:center;font-family:var(--mono);font-size:10px;font-weight:600;color:#0F172A;position:relative}
+  .slot.t1{background:var(--r1)} .slot.t2{background:var(--r2)} .slot.t3{background:var(--r3)} .slot.t4{background:var(--r4)}
+  .slot.bet::after{content:"★";position:absolute;top:2px;right:4px;font-size:9px;color:#0F172A}
+  .slot.empty{background:var(--line);color:var(--faint)}
+  .batch .key{margin-top:8px;font-size:11.5px;color:var(--faint)}
+  .judges{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .judge{border:1px dashed var(--line2);border-radius:10px;padding:10px 12px;text-align:center}
+  .judge .eyebrow{margin-bottom:6px}
+  .gauge{height:6px;border-radius:3px;background:var(--line2);position:relative;overflow:hidden}
+  .gauge::after{content:"";position:absolute;inset:0;width:var(--v,0%);background:var(--open);border-radius:3px}
+  .judge .how{font-size:11px;color:var(--faint);margin-top:6px}
+
+  footer{padding-top:36px;text-align:center}
+  .mantra{font-family:var(--display);font-weight:700;font-size:clamp(18px,2.6vw,24px);color:var(--text)}
+  .mantra em{font-style:normal;color:var(--r2)}
+  footer .small{margin-top:8px}
+  @media (prefers-reduced-motion:no-preference){
+    .track.on{animation:glow 1.2s ease-out}
+    @keyframes glow{from{box-shadow:0 0 0 0 rgba(249,115,22,0)}to{box-shadow:0 0 0 1px rgba(249,115,22,.25),0 12px 40px -20px rgba(249,115,22,.6)}}
+  }
+</style>
+
+<div class="wrap">
+<header>
+  <!-- DATA: name, handle -->
+  <div class="topline">
+    <span class="eyebrow">Personal Brand Positioning Canvas</span>
+    <span class="name">Kallaway</span><span class="handle">@kallawaymarketing</span>
+    <span class="badge">Worked example — delete when rendering a user</span>
+  </div>
+
+  <!-- DATA: game track (mark the chosen one .on, the other .off), reason -->
+  <div class="game">
+    <div class="track off">
+      <div class="eyebrow">Game A</div>
+      <h3>Mass Reach / Awareness</h3>
+      <div class="meters">
+        <div class="meter"><span>Time to win</span><i style="--v:90%"></i></div>
+        <div class="meter"><span>$ per follower</span><i style="--v:25%"></i></div>
+        <div class="meter"><span>Recognizability</span><i style="--v:95%"></i></div>
+        <div class="meter"><span>Fame tax</span><i style="--v:85%"></i></div>
+      </div>
+      <p class="why muted small">Boomerang conversion — reach now, a slice buys later across an ecosystem. Makes more in total; takes far longer.</p>
+    </div>
+    <div class="door"><span>cult → mainstream: possible</span><span>↔</span><span>mainstream → cult: hard</span></div>
+    <div class="track on">
+      <div class="eyebrow">Game B · chosen</div>
+      <h3>Efficient / Dialed Conversion</h3>
+      <div class="meters">
+        <div class="meter"><span>Time to win</span><i style="--v:30%"></i></div>
+        <div class="meter"><span>$ per follower</span><i style="--v:92%"></i></div>
+        <div class="meter"><span>Recognizability</span><i style="--v:30%"></i></div>
+        <div class="meter"><span>Fame tax</span><i style="--v:20%"></i></div>
+      </div>
+      <p class="why">“Faster to win and far more money per follower. I don't need the mainstream fandom most people think they want.”</p>
+    </div>
+  </div>
+
+  <!-- DATA: Target Authority Statement, tagged [X] [Y] [Z] -->
+  <div class="eyebrow">Target Authority Statement</div>
+  <p class="tas">I help <span class="x">business owners</span> scale their businesses faster <span class="y">with social media and YouTube content</span> <span class="z">using a data-driven, still-creative workflow</span>.</p>
+  <div class="taskey"><span><b class="x">X</b> who I'm for</span><span><b class="y">Y</b> what I help with</span><span><b class="z">Z</b> the way I do it</span></div>
+
+  <!-- DATA: avatar filter, 12–18 month objective -->
+  <div class="filterrow">
+    <div class="filter">
+      <span class="lab">Avatar filter</span>
+      <span class="q">Will this actually provide value for a business owner trying to turn views into dollars?</span>
+      <span class="gate"><b>yes → make it</b><s>no → don't</s></span>
+    </div>
+    <div class="objective"><span class="eyebrow">12–18 mo</span><b>Views → Short Form Academy students + Sandcastles signups</b></div>
+  </div>
+</header>
+
+<!-- ============ PILLAR 1 ============ -->
+<section class="pillar">
+  <div class="phead"><span class="pnum">PILLAR 1</span><h2>Niche Targeting</h2></div>
+  <p class="pdesc">How narrow the lane is. Narrow first — topics, examples, words and proof all aimed at one person — then take bigger slices ring by ring as authority builds. <span class="gloss">TAM = everyone who could ever care; it grows outward, but most TAMs are far bigger than they look.</span></p>
+  <div class="two">
+    <!-- DATA: ring labels (short), players per ring (initials + handle), YOU marker at ring 1, inner dot -->
+    <svg class="bullseye" viewBox="0 0 420 420" role="img" aria-label="Five-ring niche bullseye with competitors placed">
+      <defs>
+        <filter id="g"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <circle cx="210" cy="210" r="200" fill="#1E3A5F" opacity=".55"/>
+      <circle cx="210" cy="210" r="160" fill="#38BDF8" opacity=".22"/>
+      <circle cx="210" cy="210" r="120" fill="#F59E0B" opacity=".28"/>
+      <circle cx="210" cy="210" r="80"  fill="#F97316" opacity=".38"/>
+      <circle cx="210" cy="210" r="40"  fill="#EF4444" opacity=".6"/>
+      <g fill="none" stroke="#0F172A" stroke-width="2">
+        <circle cx="210" cy="210" r="200"/><circle cx="210" cy="210" r="160"/><circle cx="210" cy="210" r="120"/><circle cx="210" cy="210" r="80"/><circle cx="210" cy="210" r="40"/>
+      </g>
+      <!-- ring numbers on the vertical axis -->
+      <g font-family="JetBrains Mono, monospace" font-size="10" fill="#E6EBF5" text-anchor="middle" opacity=".9">
+        <text x="210" y="24">5</text><text x="210" y="64">4</text><text x="210" y="104">3</text><text x="210" y="144">2</text>
+      </g>
+      <!-- players: each bubble = <g> with circle + initials; handle in <title> -->
+      <g font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600" text-anchor="middle" dominant-baseline="central">
+        <!-- Ring 5 -->
+        <g transform="translate(340,90)"><title>@hormozi · Ring 5 · Business</title><circle r="20" fill="#1E3A5F" stroke="#3B5A8A"/><text fill="#E6EBF5">AH</text></g>
+        <!-- Ring 4 -->
+        <g transform="translate(90,320)"><title>@neilpatel · Ring 4 · Marketing of any kind</title><circle r="16" fill="#123A52" stroke="#38BDF8"/><text fill="#E6EBF5">NP</text></g>
+        <!-- Ring 3 -->
+        <g transform="translate(300,275)"><title>@garyvee · Ring 3 · Content growth on any platform</title><circle r="17" fill="#3A2F0F" stroke="#F59E0B"/><text fill="#E6EBF5">GV</text></g>
+        <g transform="translate(120,150)"><title>@dankoe · Ring 3 · Content growth on any platform</title><circle r="13" fill="#3A2F0F" stroke="#F59E0B"/><text fill="#E6EBF5">DK</text></g>
+        <!-- Ring 2 -->
+        <g transform="translate(262,170)"><title>@junyuh · Ring 2 · Social media growth for anyone</title><circle r="12" fill="#3F2410" stroke="#F97316"/><text fill="#E6EBF5">JY</text></g>
+        <g transform="translate(170,262)"><title>@brockjohnson · Ring 2 · Social media growth for anyone</title><circle r="12" fill="#3F2410" stroke="#F97316"/><text fill="#E6EBF5">BJ</text></g>
+        <!-- Ring 1 — YOU -->
+        <g transform="translate(210,210)" filter="url(#g)"><title>Kallaway · Ring 1 · Social media growth for business owners</title><circle r="15" fill="#EF4444" stroke="#FFF" stroke-width="1.5"/><text fill="#FFF" font-size="8.5">YOU</text></g>
+        <!-- inner dot: the one-notch-narrower statement -->
+        <g transform="translate(210,210)"><circle r="4" fill="#FFF"/></g>
+      </g>
+    </svg>
+    <div>
+      <div class="ringlist">
+        <!-- DATA: one .ring per ring; colors fixed by ring number -->
+        <div class="ring"><span class="n" style="background:var(--r1)">1</span><div><div class="l">Social media growth for business owners</div><div class="c">the center — what I claim</div></div><div class="who"><span class="chip you">YOU</span></div></div>
+        <div class="ring"><span class="n" style="background:var(--r2)">2</span><div><div class="l">Social media growth for anyone</div><div class="c">relaxes: who it's for</div></div><div class="who"><span class="chip">Jun Yuh</span><span class="chip">Brock Johnson</span></div></div>
+        <div class="ring"><span class="n" style="background:var(--r3)">3</span><div><div class="l">Content growth on any platform</div><div class="c">relaxes: which platforms</div></div><div class="who"><span class="chip">Dan Koe</span><span class="chip">Gary Vee</span></div></div>
+        <div class="ring"><span class="n" style="background:var(--r4)">4</span><div><div class="l">Marketing of any kind</div><div class="c">relaxes: which discipline</div></div><div class="who"><span class="chip">Neil Patel</span></div></div>
+        <div class="ring"><span class="n" style="background:var(--r5);color:#E6EBF5">5</span><div><div class="l">Business</div><div class="c">the whole category</div></div><div class="who"><span class="chip">Hormozi</span></div></div>
+      </div>
+      <!-- DATA: inner dot statement (adopted / parked) -->
+      <p class="inner">● Inner dot (one notch narrower, adopted): <b>personal brand growth on Instagram for business owners doing $10K–$1M/month</b></p>
+      <!-- DATA: expansion path with milestones -->
+      <div class="path">
+        <span class="step">Ring 1 now</span><span class="arrow">→ when SFA case studies cover 5+ business types</span>
+        <span class="step">Ring 2</span><span class="arrow">→ when creator-side results are proven, not just business-side</span>
+        <span class="step">Ring 3</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PILLAR 2 ============ -->
+<section class="pillar">
+  <div class="phead"><span class="pnum">PILLAR 2</span><h2>Core Contrarian Beliefs</h2></div>
+  <p class="pdesc">The 3–5 macro frames the brand hangs on — a new solution to an old problem, positioned against what the crowd says. Same opinions as everyone else = a smaller derivative of whoever said them first.</p>
+  <!-- DATA: 3–5 .frame cards; the headline frame gets class "head" -->
+  <div class="frames">
+    <div class="frame head">
+      <span class="tag">Headline frame</span>
+      <h3>Data-driven growth that stays creative</h3>
+      <div class="ts">
+        <span class="k they">They say</span><span class="v they">Growth is vibes — be creative, post a lot, hope.</span>
+        <span class="k you">I say</span><span class="v">Use data to decide what to make; use creativity to make it. That's the goldilocks.</span>
+      </div>
+      <ul class="takes">
+        <li>Outliers, not averages, tell you what to make next</li>
+        <li>Study your niche's top 50 before you script anything</li>
+        <li>A watchlist beats a mood board</li>
+      </ul>
+      <p class="proof">Proof: 0 → ~450K YouTube subs in under two years running this exact workflow.</p>
+    </div>
+    <div class="frame">
+      <span class="tag" style="color:var(--r3)">Frame 2</span>
+      <h3>Aim smaller to grow bigger</h3>
+      <div class="ts">
+        <span class="k they">They say</span><span class="v they">Go broad — a bigger audience means more reach.</span>
+        <span class="k you">I say</span><span class="v">Broad content confuses the algorithm. Speak to one person and it expands you outward itself.</span>
+      </div>
+      <ul class="takes">
+        <li>One viral Ring-5 video teaches the algorithm the wrong audience</li>
+        <li>The bullseye, not the follower count, is the strategy</li>
+      </ul>
+      <p class="proof">Proof: 367 short-form videos; the narrow ones converted, the broad ones just got views.</p>
+    </div>
+    <div class="frame">
+      <span class="tag" style="color:var(--r3)">Frame 3</span>
+      <h3>Views are the receipt, not the product</h3>
+      <div class="ts">
+        <span class="k they">They say</span><span class="v they">More followers = more money.</span>
+        <span class="k you">I say</span><span class="v">Money per follower is the score. Efficient conversion beats mainstream fame for a business.</span>
+      </div>
+      <ul class="takes">
+        <li>Pick your game before you pick your content</li>
+        <li>Proof aimed at the buyer converts; proof aimed at everyone impresses</li>
+      </ul>
+      <p class="proof">Proof: a 30K-buyer audience outearns a 1M-scroller audience on every offer I've run.</p>
+    </div>
+  </div>
+  <!-- DATA: vault count -->
+  <div class="vaultbar"><span class="count">14 takes vaulted</span><span>Vault rule: watch something in your space → disagree violently? → write topic · their belief · your take. Repeat forever; re-cluster every ~20 entries.</span></div>
+</section>
+
+<!-- ============ PILLAR 3 ============ -->
+<section class="pillar">
+  <div class="phead"><span class="pnum">PILLAR 3</span><h2>Associations &amp; Common Objects</h2></div>
+  <p class="pdesc">Personal branding is associations at scale — you, welded to certain words, people, objects and places, repeated until the link is reflexive. People remember objects better than names.</p>
+  <div class="two">
+    <div>
+      <div class="eyebrow" style="margin-bottom:8px">The Google Adwords for the brain</div>
+      <!-- DATA: paid keywords (1–3) in the query box; name as the sponsored result -->
+      <div class="ad">
+        <div class="q"><i></i>business owners · social media · data-driven</div>
+        <div class="sp">Sponsored</div>
+        <div class="url">kallaway · @kallawaymarketing</div>
+        <div class="title">The data-driven way for business owners to grow on social</div>
+        <div class="desc">The first name that should come up in your head for those three words. Paid for with repetition, not dollars.</div>
+      </div>
+      <!-- DATA: challenger words -->
+      <p class="challengers">Challengers: “outlier” · “views into dollars”</p>
+    </div>
+    <div>
+      <div class="lanes">
+        <!-- DATA: four lanes -->
+        <div class="lane"><div class="eyebrow">Messages · say-list</div><div class="chips"><span class="chip say">business owners</span><span class="chip say">data-driven</span><span class="chip say">outlier</span><span class="chip say">watchlist</span><span class="chip say">views into dollars</span><span class="chip say">bullseye</span><span class="chip no">go viral</span><span class="chip no">hacks</span><span class="chip no">content creator</span></div></div>
+        <div class="lane"><div class="eyebrow">People</div><div class="chips"><span class="chip">for: owners at $10K–$1M/mo</span><span class="chip">with: SFA students &amp; case studies</span><span class="chip">with: Sandcastles users</span></div></div>
+        <div class="lane"><div class="eyebrow">Objects</div><div class="chips"><span class="chip">🧢 the hat</span><span class="chip">🖤 black hoodie</span><span class="chip">🕶 round sunglasses (stories)</span></div></div>
+        <div class="lane"><div class="eyebrow">Environment</div><div class="chips"><span class="chip">🎙 the studio — same desk, same wall, every video</span></div></div>
+      </div>
+      <p class="small muted" style="margin-top:12px">Repetition rule: every one of these is in every post. One-offs are decoration.</p>
+      <!-- DATA: draft/final status — remove the badge when final -->
+      <span class="draft">Final — objects and set have survived 100+ posts</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PILLAR 4 ============ -->
+<section class="pillar">
+  <div class="phead"><span class="pnum">PILLAR 4</span><h2>Points of Uniqueness</h2></div>
+  <p class="pdesc">The 5–10 biggest players mapped across the five ways to be different, and the stake planted where the white space is. <span class="gloss">Cell tint = how crowded that option is across the niche (red crowded → blue rare). Green outline = white space.</span></p>
+  <div class="gridwrap">
+    <!-- DATA: rows = competitors; final row = YOUR STAKE with .open / .cont / .def tags per cell -->
+    <table>
+      <thead><tr>
+        <th>Player</th>
+        <th>Topic<small>what the videos are about</small></th>
+        <th>Substance<small>how deep, what angle</small></th>
+        <th>Avatar<small>who it's aimed at</small></th>
+        <th>Format<small>how it's structured</small></th>
+        <th>Visuals<small>how it looks</small></th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="who"><span>AH</span>Hormozi</td><td class="hot">Entrepreneurial mindset · macro frameworks · common mistakes · live business breakdowns</td><td class="hot">Talking heads very broad; breakdowns fairly specific</td><td class="warm">Young entrepreneurs <em>and</em> business owners on one channel</td><td class="hot">Talking head · listicle · breakdown</td><td class="hot">Extremely raw, in studio</td></tr>
+        <tr><td class="who"><span>GV</span>Gary Vee</td><td class="hot">Attention · platform shifts · hustle</td><td class="hot">High-level, motivational, rarely tactical</td><td class="hot">Everyone with ambition</td><td class="hot">Talking head · keynote clips</td><td class="hot">Raw, podcast/stage clips</td></tr>
+        <tr><td class="who"><span>DK</span>Dan Koe</td><td class="warm">One-person business · writing · focus</td><td class="warm">Philosophical frameworks, some systems</td><td class="warm">Solo creators / writers</td><td class="warm">Essay-style talking head</td><td class="cool">Minimal, cinematic b-roll</td></tr>
+        <tr><td class="who"><span>JY</span>Jun Yuh</td><td class="warm">Growth tips across platforms</td><td class="warm">Tactical but generalist</td><td class="hot">Anyone who wants to grow</td><td class="hot">Fast listicle talking head</td><td class="warm">Raw + captions</td></tr>
+        <tr><td class="who"><span>BJ</span>Brock Johnson</td><td class="warm">Instagram algorithm · features</td><td class="warm">Tactical, feature-level, weekly</td><td class="hot">Any Instagram user</td><td class="warm">Structured tutorial</td><td class="warm">Raw + screen recording</td></tr>
+        <tr><td class="who"><span>NP</span>Neil Patel</td><td class="warm">SEO · ads · marketing broadly</td><td class="warm">Stat-led, surface-level how-to</td><td class="warm">Marketers &amp; SMBs</td><td class="hot">Talking head listicle</td><td class="cool">Produced, branded set</td></tr>
+        <tr class="stake">
+          <td class="who">Your stake</td>
+          <td class="open"><span class="ws open">White space</span><br>Social media growth for business owners specifically — IG + YouTube, nothing else</td>
+          <td class="open"><span class="ws open">White space</span><br>Data-backed tactical how-tos where the incumbents sell frameworks</td>
+          <td class="open"><span class="ws open">White space</span><br>Owners at $10K–$1M/mo who need leads, not fame</td>
+          <td><span class="ws cont">Contested · BJ</span><br>Structured breakdowns + tutorials — win on depth, not novelty</td>
+          <td class="open"><span class="ws open">White space</span><br>Produced studio + on-screen data viz vs. a raw default</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- DATA: uniqueness statement -->
+  <p class="ustate"><b style="color:var(--text)">Uniqueness statement.</b> The lane is data-driven social growth for revenue-stage business owners, stacked on Substance, Avatar and Visuals: the niche's defaults are raw, broad and framework-level, so tactical depth aimed at one buyer with visible data is open on three of five attributes. Takes share most directly from Brock Johnson's tutorial audience by going deeper and narrower.</p>
+</section>
+
+<!-- ============ PHASE 1 — CONTENT FORMULAS ============ -->
+<section class="pillar">
+  <div class="phead"><span class="pnum">PHASE 1</span><h2>Content Formulas</h2></div>
+  <p class="pdesc">A content formula = <b style="color:var(--text)">topic + format + visual layout</b>. Test widely first, then keep only the formulas that clear all four judges. Most brands settle on 5–10. <span class="gloss">Format = how the words are organized; visual layout = how it's shot and edited.</span></p>
+
+  <!-- DATA: palette — the user's picks per axis (.pick), killed ones struck (.no) -->
+  <div class="palette">
+    <div class="prow"><div class="eyebrow"><span>Topics</span><b>4</b></div><div class="chips"><span class="chip pick">Data-driven growth workflows</span><span class="chip pick">Hooks &amp; storytelling</span><span class="chip pick">Views → dollars (CTAs, offers)</span><span class="chip pick">AI × content</span></div></div>
+    <div class="prow"><div class="eyebrow"><span>Formats</span><b>3</b></div><div class="chips"><span class="chip pick">Structured breakdown</span><span class="chip pick">Countdown list</span><span class="chip pick">Screen-record walkthrough</span><span class="chip no">Day-in-the-life vlog</span></div></div>
+    <div class="prow"><div class="eyebrow"><span>Visual layouts</span><b>2</b></div><div class="chips"><span class="chip pick">Studio talking head + on-screen data</span><span class="chip pick">Screen + face cam</span></div></div>
+  </div>
+  <!-- DATA: multiplication readout -->
+  <p class="mult"><b>4 × 3 × 2 = 24</b> candidate formulas · <b>13</b> in the Phase 1 test plan · target after two batches: <b>5–10</b></p>
+
+  <!-- DATA: candidate formula rack — one card per formula in the test plan; class ws / sig / grave per map verdict -->
+  <div class="rack">
+    <div class="fcard ws"><span class="ws open">White space</span><h4>Outlier autopsy</h4><div class="trip"><i>topic</i> data-driven growth · <i>format</i> structured breakdown · <i>layout</i> studio + on-screen data</div></div>
+    <div class="fcard ws"><span class="ws open">White space</span><h4>Workflow walkthrough</h4><div class="trip"><i>topic</i> AI × content · <i>format</i> screen-record walkthrough · <i>layout</i> screen + face cam</div></div>
+    <div class="fcard sig"><span class="ws cont">Signature · BJ</span><h4>Hook countdown</h4><div class="trip"><i>topic</i> hooks &amp; storytelling · <i>format</i> countdown list · <i>layout</i> studio + on-screen data</div></div>
+    <div class="fcard"><span class="ws def">Crowded</span><h4>CTA teardown</h4><div class="trip"><i>topic</i> views → dollars · <i>format</i> structured breakdown · <i>layout</i> studio + on-screen data</div></div>
+    <div class="fcard ws"><span class="ws open">White space</span><h4>Storytelling rebuild</h4><div class="trip"><i>topic</i> hooks &amp; storytelling · <i>format</i> screen-record walkthrough · <i>layout</i> screen + face cam</div></div>
+    <div class="fcard grave"><span class="ws def">Graveyard</span><h4>AI tools list</h4><div class="trip"><i>topic</i> AI × content · <i>format</i> countdown list · <i>layout</i> studio + on-screen data</div></div>
+  </div>
+
+  <!-- DATA: two batches of 7 slots; class t1–t4 = topic color; .bet = white-space bet; .empty = unused slot -->
+  <div class="batches">
+    <div class="batch"><div class="eyebrow">Batch 1 · highest-confidence first</div><div class="slots"><div class="slot t1">1</div><div class="slot t2">2</div><div class="slot t3">3</div><div class="slot t1 bet">4</div><div class="slot t4 bet">5</div><div class="slot t2">6</div><div class="slot t3 bet">7</div></div><div class="key">Every topic meets every format at least once across the two batches; layout alternates. ★ = white-space bet.</div></div>
+    <div class="batch"><div class="eyebrow">Batch 2 · the rest of the palette</div><div class="slots"><div class="slot t4">8</div><div class="slot t1">9</div><div class="slot t2 bet">10</div><div class="slot t3">11</div><div class="slot t4">12</div><div class="slot t1">13</div><div class="slot empty">—</div></div><div class="key">Then converge: keep what clears all four judges, kill the rest, promote any surprise.</div></div>
+  </div>
+
+  <!-- DATA: four judges — gauge --v fills from formula-scorecard.md; 0% until posts exist -->
+  <div class="judges">
+    <div class="judge"><div class="eyebrow">Performance</div><div class="gauge" style="--v:0%"></div><div class="how">follower growth · comment-CTA leads · else views</div></div>
+    <div class="judge"><div class="eyebrow">Viewer fit</div><div class="gauge" style="--v:0%"></div><div class="how">comment quality · DMs · lead-magnet conversion</div></div>
+    <div class="judge"><div class="eyebrow">Enjoyment</div><div class="gauge" style="--v:0%"></div><div class="how">would you still make this in month four?</div></div>
+    <div class="judge"><div class="eyebrow">Visual pride</div><div class="gauge" style="--v:0%"></div><div class="how">do you show up the way you want to?</div></div>
+  </div>
+  <p class="small muted" style="margin-top:10px">A formula needs all four. Gauges fill from the scorecard once posting starts.</p>
+</section>
+
+<footer>
+  <p class="mantra">Narrow the lane. <em>Say what they won't.</em> Repeat the symbols. Own the white space. Test the formulas.</p>
+  <!-- DATA: date -->
+  <p class="small muted">Positioning canvas · built Sep 13, 2026 · personal branding is subtraction, not addition</p>
+</footer>
+</div>

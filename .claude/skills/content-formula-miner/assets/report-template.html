@@ -1,0 +1,431 @@
+<title>Formula Miner</title>
+<!--
+  TEMPLATE for the Content Formula Miner report (house style: the Sep 13 Positioning Canvas tokens).
+  build_report.py fills it: the <title> (DATA: title), and the DATA object in the last <script>.
+  Everything renders from DATA — the markup below is the skeleton, with DATA: comments at every fill point.
+  Written for the Artifact tool (no html/head/body); build_report.py --standalone adds the wrapper.
+-->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root{
+    --bg:#0F172A; --bg2:#131D33; --surface:#1A2540; --line:#26324D; --line2:#33405E;
+    --text:#E6EBF5; --muted:#94A3B8; --faint:#64748B;
+    --r1:#EF4444; --r2:#F97316; --r3:#F59E0B; --r4:#38BDF8; --r5:#3B5A8A;
+    --open:#34D399; --violet:#A78BFA;
+    --display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
+    --body:"DM Sans","Helvetica Neue",Arial,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:0 64px}
+  a{color:var(--r4);text-decoration:none} a:hover{text-decoration:underline}
+  .wrap{max-width:1180px;margin:0 auto}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1,h2,h3,h4{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.05}
+  h1{font-size:clamp(28px,4.4vw,46px);font-weight:800;letter-spacing:-.01em}
+  h2{font-size:28px;font-weight:700} h3{font-size:16px;font-weight:700}
+  p{margin:0} .muted{color:var(--muted)} .small{font-size:13px} .gloss{color:var(--faint);font-size:12.5px}
+  .mono{font-family:var(--mono)} .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .card{background:var(--bg2);border:1px solid var(--line);border-radius:10px}
+
+  header{padding-block:40px 24px;border-bottom:1px solid var(--line)}
+  .topline{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin-bottom:14px}
+  .name{font-family:var(--display);font-weight:800;font-size:22px}
+  .handle{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .subline{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin:12px 0 18px;display:flex;flex-wrap:wrap;gap:6px 14px}
+  .subline b{color:var(--text);font-weight:600}
+  .lead{font-size:17px;max-width:78ch;color:var(--text)}
+  .lead b{color:var(--r3);font-weight:600}
+
+  /* chips */
+  .chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;padding:3px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--muted);white-space:nowrap;letter-spacing:.04em}
+  .chip i{width:8px;height:8px;border-radius:50%;background:var(--tc,var(--faint));display:inline-block}
+  .tag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;border-radius:4px;border:1px solid transparent;white-space:nowrap}
+  .tag.working{color:var(--r2);border-color:rgba(249,115,22,.55);background:rgba(249,115,22,.12)}
+  .tag.promising{color:var(--violet);border-color:rgba(167,139,250,.55);border-style:dashed}
+  .tag.flat{color:var(--muted);border-color:var(--line2)}
+  .tag.early{color:var(--faint);border-color:var(--line)}
+  .tag.dead{color:var(--muted);border-color:var(--line2);opacity:.6}
+  .tag.untried{color:var(--open);border-color:rgba(52,211,153,.6);background:rgba(52,211,153,.08)}
+  .tag.untried.b{border-style:dashed;background:transparent}
+
+  /* video thumb */
+  .vid{position:relative;display:block;flex:none;width:54px;aspect-ratio:9/16;border-radius:6px;overflow:hidden;background:var(--line2);border:1px solid var(--line)}
+  .vid img{width:100%;height:100%;object-fit:cover;display:block}
+  .vid b{position:absolute;left:3px;bottom:3px;font-family:var(--mono);font-size:9.5px;font-weight:600;padding:1px 4px;border-radius:3px;background:rgba(15,23,42,.85);color:var(--text)}
+  .vid.lg{width:72px} .vid.xl{width:96px} .vid.sm{width:40px}
+  .vid.niche b{color:var(--violet)}
+
+  /* scorecard */
+  .score{padding-block:28px 10px}
+  .score .head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:10px;margin-bottom:14px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:12px;color:var(--muted);align-items:center} .legend .chip{white-space:normal}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 12px}
+  .fbtn{font-family:var(--mono);font-size:11px;letter-spacing:.04em;padding:7px 12px;border-radius:999px;border:1px solid var(--line2);background:var(--bg2);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .fbtn i{width:9px;height:9px;border-radius:50%;background:var(--tc,var(--faint));display:inline-block}
+  .fbtn:hover{border-color:var(--tc,var(--muted));color:var(--text)}
+  .fbtn.on{border-color:var(--tc,var(--text));color:var(--text);background:color-mix(in srgb,var(--tc,var(--surface)) 18%,var(--bg2));box-shadow:inset 0 0 0 1px var(--tc,var(--text))}
+  .fbtn:focus-visible{outline:2px solid var(--r4);outline-offset:2px}
+  .fcount{font-family:var(--mono);font-size:11px;color:var(--faint);align-self:center;margin-left:auto}
+  .frow[hidden]{display:none!important}
+  table.hm tr.dim th,table.hm tr.dim td{opacity:.28}
+  .neverused{font-size:12px;color:var(--muted);margin-top:8px} .neverused b{color:var(--text);font-weight:500}
+  .rows{display:flex;flex-direction:column;gap:6px}
+  .frow{display:grid;grid-template-columns:28px 54px minmax(220px,1.1fr) minmax(220px,1.4fr) auto;gap:12px;align-items:center;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);cursor:pointer;transition:border-color .15s}
+  .frow:hover,.frow:focus-visible{border-color:var(--line2);outline:none}
+  .frow.dead{opacity:.5}
+  .frow.untried{border-style:dashed;border-color:rgba(52,211,153,.5);background:transparent}
+  .frow.untried.b{border-color:rgba(52,211,153,.3)}
+  .frow .rank{font-family:var(--mono);font-size:12px;color:var(--faint);text-align:right}
+  .frow .lab{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .frow .lab .f{font-weight:600;font-size:14px;line-height:1.25}
+  .f .t,.hk .t{color:var(--tc)} .d{color:var(--faint);font-weight:400;margin:0 5px}
+  .frow .lab .meta{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px}
+  .frow .lab .meta b{color:var(--text);font-weight:600}
+  .bar{position:relative;height:34px;display:flex;align-items:center}
+  .bar .track{position:absolute;inset:0;border-radius:6px;background:var(--surface);border:1px solid var(--line)}
+  .bar .tick{position:absolute;top:0;bottom:0;width:1px;background:var(--line2)} .bar .tick.one{background:var(--muted);width:2px}
+  .bar .tick span{position:absolute;top:-14px;left:-10px;font-family:var(--mono);font-size:9px;color:var(--faint);width:24px;text-align:center}
+  .bar .fill{position:absolute;left:0;top:7px;bottom:7px;border-radius:4px;background:var(--tc);opacity:.85;min-width:3px}
+  .bar .range{position:absolute;top:50%;height:2px;background:var(--tc);opacity:.35}
+  .bar .best{position:absolute;top:50%;transform:translate(-50%,-50%);width:9px;height:9px;border-radius:50%;background:var(--bg);border:2px solid var(--tc)}
+  .bar .val{position:absolute;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text);transform:translateY(-1px)}
+  .frow .right{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+  .frow .right .n{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .rows .divider{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--open);padding:12px 4px 4px}
+  @media (max-width:760px){
+    .frow{grid-template-columns:22px 44px 1fr auto;grid-template-areas:"r v l t" "r v b b";row-gap:8px}
+    .frow .rank{grid-area:r} .frow .vid{grid-area:v;width:44px} .frow .lab{grid-area:l} .frow .bar{grid-area:b} .frow .right{grid-area:t}
+  }
+
+  /* do this next */
+  .next{padding-block:26px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .next .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:12px}
+  .ncard{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+  .ncard.double{border-color:rgba(249,115,22,.5)} .ncard.stop{opacity:.9} .ncard.test{border-color:rgba(52,211,153,.5)}
+  .ncard .k{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase}
+  .ncard.double .k{color:var(--r2)} .ncard.stop .k{color:var(--muted)} .ncard.test .k{color:var(--open)}
+  .ncard h3{font-size:18px} .ncard p{font-size:13.5px;color:var(--muted)}
+  .ncard .fs{display:flex;flex-wrap:wrap;gap:6px} .ncard .fs .chip{white-space:normal;line-height:1.35;text-align:left}
+
+  section.s{padding-block:40px;border-bottom:1px solid var(--line)}
+  .shead{display:flex;align-items:baseline;gap:14px;margin-bottom:6px}
+  .snum{font-family:var(--mono);font-size:12px;color:var(--r2);letter-spacing:.1em}
+  .sdesc{max-width:72ch;color:var(--muted);margin-bottom:20px}
+
+  /* heat maps */
+  .maps{display:flex;flex-direction:column;gap:22px}
+  .map .cap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:8px}
+  .map .cap h3{font-size:17px}
+  .gridwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--bg2)}
+  table.hm{border-collapse:separate;border-spacing:3px;min-width:640px;width:100%;font-size:12px}
+  table.hm th{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:8px 6px;vertical-align:bottom}
+  table.hm th.row{white-space:nowrap;text-transform:none;letter-spacing:0;font-family:var(--body);font-size:12.5px;color:var(--text);font-weight:500;padding-right:10px}
+  table.hm th.row i{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;background:var(--tc,transparent)}
+  table.hm th small{display:block;font-family:var(--mono);font-size:9.5px;color:var(--faint);text-transform:none;letter-spacing:0;margin-top:2px}
+  td.cell{height:54px;min-width:64px;border-radius:6px;padding:5px 6px;vertical-align:top;position:relative;cursor:pointer;border:1px solid var(--line);background:var(--surface)}
+  td.cell:hover,td.cell:focus-visible{outline:1px solid var(--muted)}
+  td.cell.h5{background:rgba(239,68,68,.34)} td.cell.h4{background:rgba(249,115,22,.28)} td.cell.h3{background:rgba(245,158,11,.22)} td.cell.h2{background:rgba(56,189,248,.16)} td.cell.h1{background:rgba(59,90,138,.28)}
+  td.cell.dead{opacity:.5} td.cell.empty{background:transparent;border-color:var(--line);cursor:default}
+  td.cell.untried{background:transparent;border:1.5px solid rgba(52,211,153,.75);box-shadow:inset 0 0 0 1px rgba(52,211,153,.2)} td.cell.untried.b{border-style:dashed;box-shadow:none}
+  td.cell .n{font-family:var(--mono);font-size:15px;font-weight:600;line-height:1}
+  td.cell .m{font-family:var(--mono);font-size:10px;color:var(--text);margin-top:3px} td.cell .m b{font-weight:600}
+  td.cell .t{position:absolute;right:5px;top:5px;font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase}
+  td.cell .t.w{color:var(--r2)} td.cell .t.p{color:var(--violet)} td.cell .t.u{color:var(--open)} td.cell .t.d{color:var(--muted)}
+  td.cell .top{position:absolute;right:5px;bottom:4px;font-family:var(--mono);font-size:9px;color:var(--r3)}
+  td.cell.empty .n{color:var(--line2)}
+  .hkey{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:12px;color:var(--muted);margin-top:8px;align-items:center}
+  .hkey i{display:inline-block;width:14px;height:10px;border-radius:2px;vertical-align:middle;margin-right:4px;border:1px solid var(--line)}
+
+  /* drawer */
+  .drawer{margin-top:14px;padding:14px 16px;display:none}
+  .drawer.on{display:block}
+  .drawer .dh{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:10px}
+  .drawer .dh h3{font-size:16px}
+  .vlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+  .vitem{display:flex;gap:10px;align-items:flex-start;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+  .vitem .hk{font-size:12.5px;line-height:1.35} .vitem .hm2{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:4px;display:flex;flex-wrap:wrap;gap:4px 10px}
+  .vitem .hm2 a{color:var(--r4)}
+
+  /* substrate */
+  .sub{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+  .scard{padding:12px 12px;display:flex;gap:10px;align-items:center}
+  .scard .l{font-size:13px;font-weight:500} .scard .m{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px} .scard .m b{color:var(--text)}
+
+  /* niche */
+  .nsrc{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-bottom:14px;padding:10px 12px;border:1px dashed var(--line2);border-radius:8px}
+  .nsrc b{color:var(--text)}
+  .chans{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:22px}
+  .chan{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+  .chan .h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .chan .h b{font-family:var(--display);font-size:16px} .chan .h span{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .chan .hero{display:flex;gap:10px;align-items:center;font-size:12.5px} .chan .hero .m{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  .chan .never{font-family:var(--mono);font-size:10.5px;color:var(--open);margin-top:2px}
+  .nlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+
+  /* try next + batch */
+  .tries{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+  .try{padding:14px 16px;display:flex;flex-direction:column;gap:10px;border-color:rgba(52,211,153,.5)}
+  .try .src{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--open)}
+  .try h3{font-size:17px} .try p{font-size:13.5px;color:var(--muted)}
+  .try .models{display:flex;gap:10px;align-items:flex-end} .try .models .lbl{font-family:var(--mono);font-size:9.5px;color:var(--faint);text-align:center;margin-top:3px}
+  .batch{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:6px}
+  @media (max-width:900px){.batch{grid-template-columns:repeat(4,minmax(0,1fr))}} @media (max-width:560px){.batch{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .slot{padding:10px;display:flex;flex-direction:column;gap:6px;border-top:4px solid var(--tc);min-height:150px}
+  .slot.bet{border-style:solid;box-shadow:inset 0 0 0 1px rgba(52,211,153,.35)}
+  .slot .no{font-family:var(--mono);font-size:11px;color:var(--faint);display:flex;justify-content:space-between}
+  .slot .no b{color:var(--open);font-weight:600}
+  .slot .f{font-size:12.5px;font-weight:600;line-height:1.3} .slot .f .t{color:var(--tc)}
+  .slot .role{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .slot .models{display:flex;gap:6px;margin-top:auto}
+
+  /* explainers */
+  .ex{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+  .exc{padding:12px 14px;display:flex;gap:12px}
+  .exc .body{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .exc h4{font-size:15px;font-weight:700} .exc .what{font-size:12.5px;color:var(--muted)}
+  .exc .ex12{font-size:12.5px;font-style:italic;color:var(--text);border-left:2px solid var(--line2);padding-left:8px;margin-top:4px}
+  .exc .spec{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+  .exc .added{font-family:var(--mono);font-size:9.5px;color:var(--violet);border:1px dashed var(--violet);border-radius:4px;padding:1px 6px;align-self:flex-start}
+  .buckets{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:18px}
+  .bk{padding:12px 14px;border-top:3px solid var(--tc)} .bk b{font-family:var(--display);font-size:15px} .bk p{font-size:12.5px;color:var(--muted);margin-top:4px} .bk .m{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:6px}
+
+  /* method */
+  .method{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+  .mc{padding:12px 14px} .mc .eyebrow{margin-bottom:6px} .mc .big{font-family:var(--display);font-size:26px;font-weight:800} .mc p,.mc li{font-size:12.5px;color:var(--muted)} .mc ul{margin:6px 0 0;padding-left:16px;display:flex;flex-direction:column;gap:3px}
+  .mc b{color:var(--text)}
+
+  footer{padding-top:36px;text-align:center}
+  .mantra{font-family:var(--display);font-weight:700;font-size:clamp(18px,2.6vw,24px)} .mantra em{font-style:normal;color:var(--r2)}
+  footer .small{margin-top:8px}
+  .info{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--faint);color:var(--faint);font-family:var(--mono);font-size:9.5px;margin-left:4px;vertical-align:middle;text-decoration:none}
+  .info:hover{border-color:var(--text);color:var(--text);text-decoration:none}
+  @media (prefers-reduced-motion:no-preference){.frow,.ncard,.try{transition:transform .15s}.frow:hover{transform:translateX(2px)}}
+</style>
+
+<div class="wrap">
+<header>
+  <!-- DATA: eyebrow, channel title, handle -->
+  <div class="topline"><span class="eyebrow" id="eyebrow">Content Formula Miner</span><span class="name" id="chname"></span><span class="handle" id="chhandle"></span></div>
+  <h1 id="title">Which of my formulas work, which don't, and what haven't I tried?</h1>
+  <!-- DATA: subline counts -->
+  <div class="subline" id="subline"></div>
+  <!-- DATA: lead -->
+  <p class="lead" id="lead"></p>
+</header>
+
+<!-- ===== SIGNATURE VISUAL: the scorecard ===== -->
+<section class="score">
+  <div class="head">
+    <div><div class="eyebrow">The scorecard</div><h2>Every formula you've run, ranked</h2>
+      <p class="muted small" style="margin-top:4px">A formula = topic bucket · Sandcastles format <a class="info" href="#explain" title="what the words mean">i</a> · layout. Bar = median outlier on a doubling scale; ring = best reel. Thin formulas are pulled toward 1x until they earn their rank.</p></div>
+    <div class="legend" id="legend"></div>
+  </div>
+  <!-- DATA: one button per topic bucket; click filters the scorecard and dims the other topics in the maps -->
+  <div class="filters" id="filters" role="tablist" aria-label="Filter by topic bucket"></div>
+  <div class="rows" id="rows"></div>
+  <div class="card drawer" id="drawer"></div>
+</section>
+
+<!-- ===== DO THIS NEXT ===== -->
+<section class="next">
+  <div class="eyebrow">Do this next</div>
+  <div class="grid" id="donext"></div>
+</section>
+
+<!-- ===== 01 HEAT MAPS ===== -->
+<section class="s" id="maps">
+  <div class="shead"><span class="snum">01</span><h2>Three heat maps, one story</h2></div>
+  <p class="sdesc">Each map is the same 133 reels cut two ways. Tint is where the outlier mass sits; the badge is the median; green outline is a square you've never made whose parts are proven.</p>
+  <div class="maps" id="heatmaps"></div>
+  <div class="card drawer" id="drawer2"></div>
+</section>
+
+<!-- ===== 02 SUBSTRATE ===== -->
+<section class="s" id="substrate">
+  <div class="shead"><span class="snum">02</span><h2>What's on the top half</h2></div>
+  <p class="sdesc" id="subdesc"></p>
+  <div class="sub" id="sub"></div>
+</section>
+
+<!-- ===== 03 NICHE PANEL ===== -->
+<section class="s" id="niche">
+  <div class="shead"><span class="snum">03</span><h2>The niche, for comparison</h2></div>
+  <p class="sdesc">The five watchlist channels with the most outliers, what they win with, and the formulas among them you've never run. A panel, not the point.</p>
+  <div class="nsrc" id="nsrc"></div>
+  <div class="chans" id="chans"></div>
+  <div class="eyebrow" style="margin-bottom:8px">Niche-proven, never run by you</div>
+  <div class="nlist" id="never"></div>
+</section>
+
+<!-- ===== 04 TRY NEXT ===== -->
+<section class="s" id="try">
+  <div class="shead"><span class="snum">04</span><h2>Five formulas to try next</h2></div>
+  <p class="sdesc">Each one changes a single part of something you've already proven, or borrows a square the niche has proven for you.</p>
+  <div class="tries" id="tries"></div>
+</section>
+
+<!-- ===== 05 BATCH ===== -->
+<section class="s" id="batchsec">
+  <div class="shead"><span class="snum">05</span><h2>Your next batch of 7</h2></div>
+  <p class="sdesc" id="batchnote"></p>
+  <div class="batch" id="batch"></div>
+</section>
+
+<!-- ===== 06 EXPLAINERS ===== -->
+<section class="s" id="explain">
+  <div class="shead"><span class="snum">06</span><h2>What every word means</h2></div>
+  <p class="sdesc">Topic buckets are what a reel is about. Formats are Sandcastles' own names for how the words are organized. Layouts are how it's shot and edited. Every name comes with a real reel from the data when one exists.</p>
+  <div class="eyebrow" style="margin-bottom:8px">Topic buckets</div>
+  <div class="buckets" id="bucketdefs"></div>
+  <div class="eyebrow" style="margin-bottom:8px">Formats (Sandcastles names)</div>
+  <div class="ex" id="exs"></div>
+  <div class="eyebrow" style="margin:18px 0 8px">Layouts</div>
+  <div class="ex" id="exl"></div>
+</section>
+
+<!-- ===== 07 METHOD ===== -->
+<section class="s" id="method">
+  <div class="shead"><span class="snum">07</span><h2>How this was built</h2></div>
+  <p class="sdesc">Free data first, screened the way every workflow screens, tagged by hand where judgment is needed and by script where it isn't.</p>
+  <div class="method" id="methodcards"></div>
+</section>
+
+<footer>
+  <p class="mantra">Keep what works. <em>Kill what's flat.</em> Change one part at a time.</p>
+  <p class="small muted" id="foot"></p>
+</footer>
+</div>
+
+<script>
+const DATA = /*DATA*/null/*DATA*/;
+(function(){
+  if(!DATA){document.getElementById('lead').textContent='No data was injected into this template.';return;}
+  const A=DATA.analysis, N=DATA.niche, P=DATA.picks, TH=DATA.thumbs||{}, M=DATA.meta||{};
+  const names=A.names, buckets=A.buckets.map(b=>b.name);
+  const TC=['var(--r2)','var(--r1)','var(--r3)','var(--r4)','var(--violet)','var(--r5)'];
+  const tcol=b=>TC[buckets.indexOf(b)]||'var(--faint)';
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const fmt=n=>n==null?'—':(n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?Math.round(n/1e3)+'K':String(n));
+  const x=v=>v==null?'—':(Math.round(v*10)/10)+'x';
+  const sname=k=>(names[k]||[k])[0];
+  const V=A.videos;
+  const thumbOf=u=>TH[u]||'';
+  const vidHtml=(u,cls,niche)=>{const v=niche||V[u];if(!v)return'';const o=v.outlier;const url=v.url||'#';const t=thumbOf(u);
+    return `<a class="vid ${cls||''} ${niche?'niche':''}" href="${esc(url)}" target="_blank" rel="noopener" title="${esc(v.hook||v.sc&&v.sc.spoken_hook||'')}">${t?`<img src="${t}" alt="" loading="lazy">`:''}<b>${x(o)}</b></a>`;};
+  const formulaHtml=(b,s,l)=>`<span class="t" style="--tc:${tcol(b)}">${esc(b)}</span><span class="d">·</span>${esc(sname(s))}<span class="d">·</span>${esc(sname(l))}`;
+  const tagHtml=(t,tier)=>`<span class="tag ${t} ${tier==='B'?'b':''}">${t==='untried'&&tier==='B'?'untried · half':t}</span>`;
+
+  /* header */
+  $('eyebrow').textContent=`Content Formula Miner · ${M.workspace||''}`;
+  $('chname').textContent=M.channel_title||''; $('chhandle').textContent=M.handle||'';
+  const ch=A.channel;
+  $('subline').innerHTML=[`<b>${ch.n}</b> reels`,`${esc(M.window||ch.first+' → '+ch.last)}`,`<b>${A.formulas.length}</b> formulas tried`,`<b>${A.untried.length}</b> untried`,`built ${esc(M.date||'')}`,`<b>${M.credits??0}</b> credits spent`].map(s=>`<span>${s}</span>`).join('');
+  $('lead').innerHTML=esc(P.lead).replace(/(\d+(?:\.\d+)?x)/g,'<b>$1</b>');
+
+  /* scorecard */
+  const LOGMIN=Math.log2(0.25), LOGMAX=Math.log2(64);
+  const pos=v=>Math.max(0,Math.min(100,(Math.log2(Math.max(0.25,v))-LOGMIN)/(LOGMAX-LOGMIN)*100));
+  const ticks=[0.5,1,2,4,8,16,32];
+  const barHtml=(f)=>{const m=f.median||0,b=f.best?f.best.outlier:m;return `<div class="bar"><div class="track"></div>${ticks.map(t=>`<div class="tick ${t===1?'one':''}" style="left:${pos(t)}%"><span>${t}x</span></div>`).join('')}<div class="range" style="left:${pos(m)}%;width:${Math.max(0,pos(b)-pos(m))}%"></div><div class="fill" style="width:${pos(m)}%"></div><div class="best" style="left:${pos(b)}%"></div><span class="val" style="left:calc(${Math.max(pos(m),pos(b))}% + 9px)">${x(m)}</span></div>`;};
+  $('legend').innerHTML=`<span class="chip"><span class="tag working" style="padding:1px 6px">working</span> ≥1.5x on 3+</span><span class="chip"><span class="tag promising" style="padding:1px 6px">promising</span> under 3 reels, best ≥3x</span><span class="chip" style="border-color:rgba(52,211,153,.6);color:var(--open)">green = never made</span>`;
+  const rowsEl=$('rows');
+  let html='';
+  A.formulas.forEach((f,i)=>{
+    html+=`<div class="frow ${f.tag}" tabindex="0" data-f="${i}" data-bucket="${esc(f.bucket)}" style="--tc:${tcol(f.bucket)}"><div class="rank">${i+1}</div>${vidHtml(f.best.uuid)}<div class="lab"><div class="f">${formulaHtml(f.bucket,f.structure,f.layout)}</div><div class="meta"><span><b>${f.n}</b> reel${f.n===1?'':'s'}</span><span>best <b>${x(f.best.outlier)}</b></span><span>top 10: <b>${f.top10}</b>/10</span><span>leads/1K <b>${f.leads_per_1k==null?'—':f.leads_per_1k.toFixed(1)}</b></span><span>last ${esc(f.last)}</span></div></div>${barHtml(f)}<div class="right">${tagHtml(f.tag)}<span class="n">rank ${f.shrunk}</span></div></div>`;
+  });
+  if(A.untried.length){html+=`<div class="divider">Never made — the parts are proven</div>`;
+    A.untried.forEach((u,i)=>{html+=`<div class="frow untried ${u.tier==='B'?'b':''}" tabindex="0" data-u="${i}" data-bucket="${esc(u.bucket)}" style="--tc:${tcol(u.bucket)}"><div class="rank">—</div><div class="vid" style="border-style:dashed;background:transparent"></div><div class="lab"><div class="f">${formulaHtml(u.bucket,u.structure,u.layout)}</div><div class="meta"><span>${esc(u.why)}</span></div></div><div class="bar"><div class="track" style="border-style:dashed"></div>${ticks.map(t=>`<div class="tick ${t===1?'one':''}" style="left:${pos(t)}%"><span>${t}x</span></div>`).join('')}</div><div class="right">${tagHtml('untried',u.tier)}</div></div>`;});}
+  rowsEl.innerHTML=html;
+
+  /* topic filter buttons */
+  const countIn=b=>A.formulas.filter(f=>!b||f.bucket===b).length;
+  $('filters').innerHTML=[`<button class="fbtn on" role="tab" data-b="">All <span class="mono" style="color:var(--faint)">${A.formulas.length}</span></button>`]
+    .concat(buckets.map(b=>`<button class="fbtn" role="tab" data-b="${esc(b)}" style="--tc:${tcol(b)}"><i></i>${esc(b)} <span class="mono" style="color:var(--faint)">${countIn(b)}</span></button>`)).join('')+`<span class="fcount" id="fcount"></span>`;
+  let activeBucket='';
+  const applyFilter=()=>{
+    let shown=0,unt=0;
+    rowsEl.querySelectorAll('.frow').forEach(r=>{const ok=!activeBucket||r.dataset.bucket===activeBucket;r.hidden=!ok;if(ok){if(r.dataset.f!=null)shown++;else unt++;}});
+    const div=rowsEl.querySelector('.divider');if(div)div.hidden=unt===0;
+    $('fcount').textContent=activeBucket?`${shown} tried · ${unt} never made in ${activeBucket}`:'';
+    $('filters').querySelectorAll('.fbtn').forEach(b=>{const on=(b.dataset.b||'')===activeBucket;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
+    document.querySelectorAll('table.hm tr[data-bucket]').forEach(tr=>tr.classList.toggle('dim',!!activeBucket&&tr.dataset.bucket!==activeBucket));
+    $('drawer').classList.remove('on');
+    try{localStorage.setItem('cfm-filter',activeBucket);}catch(e){}
+  };
+  $('filters').addEventListener('click',e=>{const b=e.target.closest('.fbtn');if(!b)return;activeBucket=b.dataset.b||'';applyFilter();});
+
+  const drawerFor=(el,title,sub,uuids,nicheVids)=>{
+    el.classList.add('on');
+    const items=(nicheVids||uuids.map(u=>V[u])).filter(Boolean);
+    el.innerHTML=`<div class="dh"><h3>${title}</h3><span class="mono small muted">${esc(sub)}</span><a href="#" class="mono small" data-close>close ×</a></div><div class="vlist">${items.map(v=>`<div class="vitem">${vidHtml(v.uuid,'lg',nicheVids?v:null)}<div><div class="hk">${esc(v.hook||(v.sc&&v.sc.spoken_hook)||v.caption_line||'')}</div><div class="hm2"><span>${esc(v.published_at||v.date||'')}</span><span>${fmt(v.views)} views</span><span>${fmt(v.comments)} comments</span>${v.handle?`<span>@${esc(v.handle)}</span>`:''}${v.substrate?`<span>${esc(v.substrate)}</span>`:''}<a href="${esc(v.url)}" target="_blank" rel="noopener">post ↗</a>${v.sc_url?`<a href="${esc(v.sc_url)}" target="_blank" rel="noopener">analysis ↗</a>`:''}</div></div></div>`).join('')}</div>`;
+    el.querySelector('[data-close]').onclick=e=>{e.preventDefault();el.classList.remove('on');};
+    el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  };
+  rowsEl.addEventListener('click',e=>{const r=e.target.closest('.frow');if(!r||e.target.closest('a'))return;
+    if(r.dataset.f!=null){const f=A.formulas[+r.dataset.f];drawerFor($('drawer'),f.label,`${f.n} reels · median ${x(f.median)} · best ${x(f.best.outlier)} · ${f.first} → ${f.last}`,f.videos);}
+    else{const u=A.untried[+r.dataset.u];$('drawer').classList.add('on');$('drawer').innerHTML=`<div class="dh"><h3>${esc(u.label)}</h3><a href="#" class="mono small" data-close>close ×</a></div><p class="muted small">${esc(u.why)}. Model the structure on your best ${esc(sname(u.structure))} and keep the topic; see section 04.</p>`;$('drawer').querySelector('[data-close]').onclick=e=>{e.preventDefault();$('drawer').classList.remove('on');};}
+  });
+  rowsEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.classList.contains('frow'))e.target.click();});
+
+  /* do this next */
+  const findF=lab=>A.formulas.find(f=>f.label===lab)||A.untried.find(u=>u.label===lab)||{label:lab};
+  $('donext').innerHTML=P.do_next.map(c=>`<div class="card ncard ${c.kind}"><span class="k">${c.kind==='double'?'Keep':c.kind==='stop'?'Stop':'Test'}</span><h3>${esc(c.title)}</h3><p>${esc(c.text)}</p><div class="fs">${(c.formulas||[]).map(l=>{const f=findF(l);return `<span class="chip" style="--tc:${tcol(f.bucket||'')}"><i></i>${esc(l)}</span>`;}).join('')}</div></div>`).join('');
+
+  /* heat maps */
+  const HM=[['topic_structure','Topic × structure','What each topic works as'],['topic_layout','Topic × layout','Where each topic has been shot'],['structure_layout','Structure × layout','The niche map, on your channel']];
+  const heatClass=(cell,cells)=>{if(!cell.n)return cell.tag==='untried'?`untried ${cell.tier==='B'?'b':''}`:'empty';
+    const hs=Object.values(cells).filter(c=>c.n).map(c=>c.heat).sort((a,b)=>a-b);const r=hs.indexOf(cell.heat)/Math.max(1,hs.length-1);
+    return (cell.tag==='dead'?'dead ':'')+(r>=.8?'h5':r>=.6?'h4':r>=.4?'h3':r>=.2?'h2':'h1');};
+  const tagAbbr=t=>t==='working'?'<span class="t w">working</span>':t==='promising'?'<span class="t p">promising</span>':t==='dead'?'<span class="t d">dead</span>':'';
+  const usedCols=(h)=>h.cols.filter(c=>h.rows.some(r=>{const cell=h.cells[r+'|'+c];return cell.n>0||cell.tag==='untried';}));
+  const usedRows=(h)=>h.rows.filter(r=>h.cols.some(c=>{const cell=h.cells[r+'|'+c];return cell.n>0||cell.tag==='untried';}));
+  $('heatmaps').innerHTML=HM.map(([k,t,d])=>{const h=A.heatmaps[k];const isB=r=>buckets.includes(r);const cols=usedCols(h),rows=usedRows(h);
+    const hiddenC=h.cols.filter(c=>!cols.includes(c)),hiddenR=h.rows.filter(r=>!rows.includes(r));
+    const never=[...hiddenC,...hiddenR].filter(x=>!isB(x)).map(x=>sname(x));
+    return `<div class="map"><div class="cap"><h3>${t}</h3><span class="muted small">${d}</span></div><div class="gridwrap"><table class="hm"><thead><tr><th></th>${cols.map(c=>`<th>${esc(sname(c))}${isB(c)?'':`<small>${esc(c)}</small>`}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr ${isB(r)?`data-bucket="${esc(r)}"`:''}><th class="row" ${isB(r)?`style="--tc:${tcol(r)}"`:''}>${isB(r)?'<i></i>':''}${esc(isB(r)?r:sname(r))}</th>${cols.map(c=>{const cell=h.cells[r+'|'+c];const cls=heatClass(cell,h.cells);
+      return `<td class="cell ${cls}" tabindex="${cell.n?0:-1}" data-map="${k}" data-key="${esc(r+'|'+c)}"><div class="n">${cell.n||(cell.tag==='untried'?'+':'·')}</div>${cell.n?`<div class="m">med <b>${x(cell.median)}</b> · best ${x(cell.best.outlier)}</div>`:cell.tag==='untried'?`<div class="m" style="color:var(--open)">never made</div>`:''}${cell.n?tagAbbr(cell.tag):''}${cell.top10?`<div class="top">★${cell.top10}</div>`:''}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>${never.length?`<p class="neverused"><b>Never used on this channel:</b> ${never.map(esc).join(' · ')}</p>`:''}</div>`;}).join('')+
+    `<div class="hkey"><span><i style="background:rgba(239,68,68,.34)"></i>most outlier mass</span><span><i style="background:rgba(59,90,138,.28)"></i>least</span><span><i style="border:1.5px solid var(--open)"></i>never made, parts proven</span><span><i style="border:1.5px dashed var(--open)"></i>half-proven</span><span><i style="opacity:.5;background:var(--surface)"></i>dead (median under 0.8x)</span><span>★ = reels in your top 10</span><span>· = never made, parts unproven</span></div>`;
+  $('heatmaps').addEventListener('click',e=>{const td=e.target.closest('td.cell');if(!td)return;const h=A.heatmaps[td.dataset.map];const cell=h.cells[td.dataset.key];if(!cell||!cell.n)return;const [r,c]=td.dataset.key.split('|');
+    drawerFor($('drawer2'),`${esc(buckets.includes(r)?r:sname(r))} · ${esc(sname(c))}`,`${cell.n} reels · median ${x(cell.median)} · best ${x(cell.best.outlier)}`,cell.videos);});
+  $('heatmaps').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.classList.contains('cell'))e.target.click();});
+
+  /* substrate */
+  const ov=A.overrides&&A.overrides.layout_collapse;
+  $('subdesc').textContent=ov?`Sandcastles labels each reel by what fills the graphic half of the split. Those labels were collapsed into one layout (${sname(ov.to)}) because the look is the same; here they are as a second signal.`:`Sandcastles' finer layout labels inside each layout.`;
+  $('sub').innerHTML=A.substrate.map(s=>`<div class="card scard">${vidHtml(s.best.uuid)}<div><div class="l">${esc(s.substrate)}</div><div class="m"><b>${s.n}</b> reels · med <b>${x(s.median)}</b> · best ${x(s.best.outlier)} · top 10: ${s.top10}</div><div class="m" style="color:var(--faint)">${esc(sname(s.layout))} · ${esc(s.sc_label)}</div></div></div>`).join('');
+
+  /* niche */
+  const src=N.source||{};
+  $('nsrc').innerHTML=src.kind==='format-finder'?`Imported from the <b>Format Finder</b> report (${esc(src.date||'')}) instead of recomputed: ${esc(src.niche||'')} · outliers 3x and up only · ${N.panel_size} of the top five channels' outliers fit your buckets (${N.pool_size-N.panel_size>0?'the rest are off-topic or untagged':''}). <b>Medians here are inflated</b> by the 3x floor; compare counts and bests with your channel, not medians.`:`Computed from already-analyzed watchlist outliers (free). ${esc(N.note||'')}`;
+  const nv=(v,cls)=>v?vidHtml(v.uuid,cls,v):'';
+  $('chans').innerHTML=N.top_channels.map(c=>`<div class="card chan"><div class="h"><b>@${esc(c.handle)}</b><span>${c.n} outliers · med ${x(c.median)}</span></div>${(c.heroes||[]).slice(0,2).map(h=>`<div class="hero">${nv(h.best,'sm')}<div><div>${esc(sname(h.structure))} · ${esc(sname(h.layout))}</div><div class="m">${h.count} winners · med ${x(h.median)}${h.share?` · ${h.share}% of theirs`:''}</div></div></div>`).join('')}${(c.formulas||[]).filter(f=>f.you_n===0).slice(0,2).map(f=>`<div class="never">never run by you: ${esc(f.label)} (${f.n}, best ${x(f.best.outlier)})</div>`).join('')}${c.tagged<3?`<div class="gloss">Only ${c.tagged} of their outliers fit your buckets — mostly off-topic for you.</div>`:''}</div>`).join('');
+  $('never').innerHTML=N.never_run.slice(0,6).map(f=>`<div class="vitem">${nv(f.best,'lg')}<div><div class="hk" style="font-weight:600">${formulaHtml(f.bucket,f.structure,f.layout)}</div><div class="hm2"><span>${f.n} niche winners</span><span>best ${x(f.best.outlier)} @${esc(f.best.handle)}</span><span>you: 0</span></div><div class="hk" style="margin-top:4px;color:var(--muted);font-size:12px">“${esc((f.best.hook||'').slice(0,110))}”</div></div></div>`).join('')+
+    (N.sl_never_run||[]).slice(0,3).map(c=>`<div class="vitem" style="border-style:dashed">${c.specimen?nv(c.specimen,'lg'):''}<div><div class="hk" style="font-weight:600">${esc(c.label)}</div><div class="hm2"><span>${c.count} niche winners</span><span>med ${x(c.median)}</span><span>best ${x(c.best)}</span><span style="color:var(--open)">${c.new_layout?'a layout you\'ve never used':c.new_structure?'a structure you\'ve never used':'never combined by you'}</span></div></div></div>`).join('');
+
+  /* try next */
+  const model=(u,niche)=>{if(!u)return'';if(niche){const v=(N.never_run.concat(N.niche_formulas||[]).map(f=>f.best).concat((N.sl_cells||[]).map(c=>c.specimen)).concat(N.top_channels.flatMap(c=>(c.heroes||[]).map(h=>h.best).concat([c.best])))).find(v=>v&&v.uuid===u);return v?`<div>${nv(v,'lg')}<div class="lbl">@${esc(v.handle)}</div></div>`:'';}
+    return V[u]?`<div>${vidHtml(u,'lg')}<div class="lbl">yours</div></div>`:'';};
+  $('tries').innerHTML=P.try_next.map(t=>`<div class="card try" style="--tc:${tcol(t.bucket)}"><span class="src">${esc(t.source)}</span><h3>${formulaHtml(t.bucket,t.structure,t.layout)}</h3><p>${esc(t.why)}</p><div class="models">${model(t.model_own)}${model(t.model_niche,true)}</div></div>`).join('');
+
+  /* batch */
+  $('batchnote').textContent=P.batch_note||'';
+  $('batch').innerHTML=P.batch.map(s=>`<div class="card slot ${s.bet?'bet':''}" style="--tc:${tcol(s.bucket)}"><div class="no"><span>${s.slot}</span>${s.bet?'<b>bet</b>':''}</div><div class="f"><span class="t">${esc(s.bucket)}</span><br>${esc(sname(s.structure))}<br><span class="muted" style="font-weight:400">${esc(sname(s.layout))}</span></div><div class="role">${esc(s.role)}</div><div class="models">${s.model_own&&V[s.model_own]?vidHtml(s.model_own,'sm'):''}${s.model_niche?model(s.model_niche,true).replace('class="lbl"','class="lbl" hidden'):''}</div></div>`).join('');
+
+  /* explainers */
+  const axisRow=(axis,k)=>(A.axes[axis]||[]).find(r=>r.key===k);
+  $('bucketdefs').innerHTML=A.buckets.map(b=>{const r=axisRow('topics',b.name);return `<div class="card bk" style="--tc:${tcol(b.name)}"><b>${esc(b.name)}</b><p>${esc(b.what)}</p><div class="m">${r?`${r.n} reels · med ${x(r.median)} · best ${x(r.best.outlier)} · top 10: ${r.top10}`:'0 reels'}</div></div>`;}).join('');
+  const specimenFor=(axis,k)=>{const r=axisRow(axis,k);if(r&&r.best)return{own:true,v:V[r.best.uuid]};const c=(N.sl_cells||[]).find(c=>(axis==='structures'?c.structure:c.layout)===k&&c.specimen);return c?{own:false,v:c.specimen,cell:c}:null;};
+  const exHtml=(axis,keys)=>keys.map(k=>{const sp=specimenFor(axis,k);const nm=names[k]||[k,''];const used=axisRow(axis,k);
+    return `<div class="card exc" id="ex-${k}">${sp?(sp.own?vidHtml(sp.v.uuid,'lg'):nv(sp.v,'lg')):'<div class="vid lg" style="border-style:dashed;background:transparent"></div>'}<div class="body"><h4>${esc(nm[0])} <span class="mono" style="font-size:10px;color:var(--faint)">${esc(k)}</span></h4><div class="what">${esc(nm[1])}</div>${sp?`<div class="ex12">12 seconds in — “${esc((sp.own?(sp.v.sc&&sp.v.sc.spoken_hook):sp.v.hook)||'')}”</div><div class="spec">${sp.own?`your best: ${x(sp.v.outlier)}, ${esc(sp.v.published_at)}`:`niche specimen: @${esc(sp.v.handle)}, ${x(sp.v.outlier)}`}</div>`:'<div class="spec">no reel in your data or the niche pool yet</div>'}${used?`<div class="spec">you: ${used.n} reels · med ${x(used.median)}</div>`:'<div class="spec" style="color:var(--open)">you: never</div>'}${A.added&&A.added[k]?`<span class="added">added · ${esc(A.added[k])}</span>`:''}</div></div>`;}).join('');
+  $('exs').innerHTML=exHtml('structures',A.structures);
+  $('exl').innerHTML=exHtml('layouts',A.layouts);
+
+  /* method */
+  const sc=A.screen||{};
+  $('methodcards').innerHTML=(M.method||[]).map(m=>`<div class="card mc"><div class="eyebrow">${esc(m.label)}</div>${m.big?`<div class="big">${esc(m.big)}</div>`:''}${m.text?`<p>${m.text}</p>`:''}${m.items?`<ul>${m.items.map(i=>`<li>${i}</li>`).join('')}</ul>`:''}</div>`).join('');
+  $('foot').textContent=`Content Formula Miner · ${M.workspace||''} · ${M.date||''} · your own channel, scored; the niche is a panel · the full system lives at shortform.academy`;
+})();
+</script>

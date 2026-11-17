@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<title>Kallaway Hook Playbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --bg:#F2F3F7; --surface:#FFFFFF; --surface-2:#E9EBF2; --surface-3:#DFE2EC;
+  --ink:#14161D; --ink-2:#4B5060; --muted:#7C8195; --line:#D9DCE6; --line-2:#C5C9D6;
+  --accent:#1F4BFF; --accent-ink:#FFFFFF; --accent-soft:#E4EAFF; --accent-text:#1F4BFF;
+  --win:#1F4BFF; --win-soft:#E4EAFF; --win-text:#1A3FD6;
+  --trap:#D0342C; --trap-soft:#FCE7E5; --trap-text:#B12A23;
+  --ok:#1D7A4A; --ok-soft:#DFF3E7;
+  --shadow:0 1px 2px rgba(20,22,29,.06), 0 8px 24px rgba(20,22,29,.06);
+  --display:"Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --body:"Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  --quote:"Instrument Serif", Georgia, "Times New Roman", serif;
+  --mono:"JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1116; --surface:#171A22; --surface-2:#1F2330; --surface-3:#282D3C;
+    --ink:#EEF0F6; --ink-2:#B5BACB; --muted:#8087A0; --line:#2A2F3D; --line-2:#3A4052;
+    --accent:#5F7FFF; --accent-ink:#0F1116; --accent-soft:#1C2445; --accent-text:#8FA6FF;
+    --win:#5F7FFF; --win-soft:#1C2445; --win-text:#9DB2FF;
+    --trap:#E85A4F; --trap-soft:#3A1E1C; --trap-text:#FF8B82;
+    --ok:#4CC282; --ok-soft:#173226;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1116; --surface:#171A22; --surface-2:#1F2330; --surface-3:#282D3C;
+  --ink:#EEF0F6; --ink-2:#B5BACB; --muted:#8087A0; --line:#2A2F3D; --line-2:#3A4052;
+  --accent:#5F7FFF; --accent-ink:#0F1116; --accent-soft:#1C2445; --accent-text:#8FA6FF;
+  --win:#5F7FFF; --win-soft:#1C2445; --win-text:#9DB2FF;
+  --trap:#E85A4F; --trap-soft:#3A1E1C; --trap-text:#FF8B82;
+  --ok:#4CC282; --ok-soft:#173226;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{animation:none!important;transition:none!important} }
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--accent-text)}
+button{font:inherit;color:inherit}
+h1,h2,h3,h4{font-family:var(--display);font-weight:800;letter-spacing:-.02em;line-height:1.05;margin:0;text-wrap:balance}
+h1{font-size:clamp(40px,7vw,76px);font-variation-settings:"opsz" 96}
+h2{font-size:clamp(28px,4vw,40px);font-variation-settings:"opsz" 72}
+h3{font-size:clamp(20px,2.4vw,24px);font-variation-settings:"opsz" 48;font-weight:700}
+p{margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:0 96px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:700}
+.lede{font-size:clamp(17px,1.6vw,20px);color:var(--ink-2);max-width:62ch}
+.q{font-family:var(--quote);font-style:italic;font-size:1.28em;line-height:1.3;color:var(--ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* top bar */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar .in{max-width:1080px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);display:flex;align-items:center;gap:20px;height:52px}
+.brand{font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:-.01em;white-space:nowrap}
+.brand span{color:var(--accent-text)}
+.nav{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin-left:auto}
+.nav::-webkit-scrollbar{display:none}
+.nav a{font-size:13px;font-weight:500;color:var(--ink-2);text-decoration:none;padding:6px 10px;border-radius:999px;white-space:nowrap}
+.nav a:hover{background:var(--surface-2);color:var(--ink)}
+.nav a.cta{background:var(--accent);color:var(--accent-ink);font-weight:600}
+
+/* sections */
+section{padding-block:56px 0}
+.sec-head{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;max-width:70ch}
+.sec-head p{color:var(--ink-2)}
+
+/* hero */
+.hero{padding-block:48px 0;display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:start}
+.hero .meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-bottom:22px}
+.hero h1{margin-bottom:18px}
+.hero h1 em{font-style:normal;color:var(--accent-text)}
+.thesis{display:grid;gap:14px;margin-top:22px}
+.thesis .row{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-family:var(--mono);font-size:12px;font-weight:700;white-space:nowrap}
+.pill.win{background:var(--win-soft);color:var(--win-text)}
+.pill.trap{background:var(--trap-soft);color:var(--trap-text)}
+.pill.neutral{background:var(--surface-2);color:var(--ink-2)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+
+/* 2x2 matrix */
+.matrix{position:relative;padding:26px 0 0 26px}
+.matrix .ylab,.matrix .xlab{position:absolute;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.matrix .ylab{left:0;top:26px;bottom:0;writing-mode:vertical-rl;transform:rotate(180deg);display:flex;justify-content:space-between;align-items:center}
+.matrix .xlab{left:26px;right:0;top:0;display:flex;justify-content:space-between}
+.grid2{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:6px}
+.cell{border-radius:10px;padding:14px;min-height:150px;display:flex;flex-direction:column;gap:8px;border:1px solid var(--line)}
+.cell .tag{font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:-.01em}
+.cell.win{background:var(--win-soft);border-color:transparent}
+.cell.trap{background:var(--trap-soft);border-color:transparent}
+.cell.mid{background:var(--surface)}
+.cell ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.cell li{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;line-height:1.3}
+.cell li .num{font-size:12px}
+.cell .why{font-size:12px;color:var(--ink-2);margin-top:auto}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:40px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.stat .v{font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.stat .v.win{color:var(--win-text)} .stat .v.trap{color:var(--trap-text)}
+.stat .l{font-size:13px;color:var(--ink-2)}
+
+/* leaderboard */
+.board{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px 12px;box-shadow:var(--shadow)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--ink-2);margin-bottom:14px;align-items:center}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.legend .med{display:inline-block;width:3px;height:14px;background:var(--ink);margin-right:8px;vertical-align:-3px;border-radius:1px}
+.brow{display:grid;grid-template-columns:200px 1fr;gap:14px;align-items:center;min-height:46px;border-top:1px solid var(--line)}
+.brow:first-of-type{border-top:0}
+.brow .lab{display:flex;flex-direction:column;gap:2px;padding-block:8px}
+.brow .lab b{font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:-.01em;line-height:1.15}
+.brow .lab small{font-size:12px;color:var(--muted)}
+.track{position:relative;height:46px}
+.track .base{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--line-2)}
+.track .one{border-left:2px solid var(--line-2)}
+.dot{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;transform:translate(-50%,-50%);border:2px solid var(--surface);padding:0;cursor:pointer;box-shadow:0 0 0 1px color-mix(in srgb,var(--ink) 15%,transparent)}
+.dot.win{background:var(--win)} .dot.trap{background:var(--trap)}
+.dot:hover,.dot:focus-visible{transform:translate(-50%,-50%) scale(1.35);z-index:2}
+.medtick{position:absolute;top:9px;bottom:9px;width:3px;background:var(--ink);transform:translateX(-50%);border-radius:1px;pointer-events:none}
+.axis{position:relative;height:26px;margin-left:214px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.axis span{position:absolute;transform:translateX(-50%);top:6px}
+.axis .cap{position:absolute;right:0;top:6px;transform:none;color:var(--muted)}
+.tip{position:fixed;z-index:50;max-width:320px;background:var(--ink);color:var(--bg);padding:10px 12px;border-radius:8px;font-size:13px;line-height:1.35;pointer-events:none;box-shadow:var(--shadow)}
+.tip .q{color:var(--bg);font-size:15px;margin-bottom:6px}
+.tip .num{color:var(--bg)}
+.tip[hidden]{display:none}
+.boardnote{font-size:13px;color:var(--muted);margin-top:12px}
+
+/* anatomy */
+.anatomy{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:22px}
+.anatomy .sent{display:flex;flex-wrap:wrap;gap:14px 10px;align-items:flex-start}
+.tok{display:flex;flex-direction:column;gap:6px;max-width:100%}
+.tok .w{font-family:var(--quote);font-style:italic;font-size:clamp(22px,3vw,30px);line-height:1.1;padding-bottom:6px;border-bottom:3px solid var(--line-2)}
+.tok .l{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);max-width:180px;line-height:1.35}
+.tok.a .w{border-color:var(--muted)} .tok.b .w{border-color:var(--win)} .tok.c .w{border-color:var(--ok)} .tok.d .w{border-color:var(--trap)}
+.tok.b .l{color:var(--win-text)} .tok.c .l{color:var(--ok)} .tok.d .l{color:var(--trap-text)}
+.anatomy .foot{margin-top:16px;font-size:14px;color:var(--ink-2)}
+
+/* plays */
+.plays{display:grid;gap:16px}
+.play{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;display:grid;gap:18px}
+.play.trap{border-color:color-mix(in srgb,var(--trap) 35%,var(--line))}
+.play .head{display:grid;grid-template-columns:auto 1fr auto;gap:14px 16px;align-items:center}
+.rank{font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:-.04em;color:var(--muted);line-height:1;min-width:44px}
+.play.trap .rank{color:var(--trap-text)}
+.play .title h3{margin-bottom:4px}
+.play .title small{color:var(--muted);font-size:13px}
+.medbox{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.medbox .v{font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.medbox .v.win{color:var(--win-text)} .medbox .v.trap{color:var(--trap-text)}
+.medbox small{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.formula{background:var(--surface-2);border-radius:10px;padding:14px 16px;display:grid;gap:6px}
+.formula .q{font-size:clamp(19px,2.2vw,23px)}
+.formula .q mark{background:transparent;color:var(--win-text);font-style:italic}
+.play.trap .formula .q mark{color:var(--trap-text)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px 28px}
+.blk{display:grid;gap:8px;align-content:start}
+.blk h4{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:500;color:var(--muted)}
+.blk p,.blk li{font-size:15px;color:var(--ink-2)}
+.blk ul{margin:0;padding-left:18px;display:grid;gap:6px}
+.blk li b{color:var(--ink);font-weight:600}
+.rule{border-left:3px solid var(--win);padding:4px 0 4px 14px}
+.play.trap .rule{border-color:var(--trap)}
+.rule p{color:var(--ink);font-weight:500}
+details{border-top:1px solid var(--line);padding-top:12px}
+summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--accent-text);list-style:none;display:flex;align-items:center;gap:8px}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"";width:0;height:0;border-left:6px solid currentColor;border-top:5px solid transparent;border-bottom:5px solid transparent;transition:transform .15s}
+details[open] summary::before{transform:rotate(90deg)}
+.tbl{overflow-x:auto;margin-top:12px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500;padding:6px 10px 8px 0;border-bottom:1px solid var(--line)}
+td{padding:9px 10px 9px 0;border-bottom:1px solid var(--line);vertical-align:top}
+td.q{font-size:16px}
+td .num{white-space:nowrap}
+td a{font-size:13px;white-space:nowrap}
+.egs{display:grid;gap:8px}
+.egs .q{font-size:17px;color:var(--ink-2)}
+.egs .q::before{content:"“"} .egs .q::after{content:"”"}
+
+/* rules */
+.rules{display:grid;gap:10px}
+.rl{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start}
+.rl .k{font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:-.03em;color:var(--accent-text);line-height:1.1;min-width:36px}
+.rl p{font-size:15px}
+.rl .ev{font-size:13.5px;color:var(--ink-2);margin-top:4px}
+.rl .ev .num{color:var(--ink)}
+
+/* checker */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;display:grid;gap:16px;box-shadow:var(--shadow)}
+label.f{display:grid;gap:6px;font-size:13px;font-weight:600;color:var(--ink-2)}
+textarea,input[type=text]{width:100%;border:1px solid var(--line-2);border-radius:10px;padding:12px 14px;font:inherit;background:var(--bg);color:var(--ink);resize:vertical;min-height:52px}
+textarea.qin{font-family:var(--quote);font-style:italic;font-size:22px;line-height:1.3;min-height:84px}
+textarea:focus,input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.verdict{display:grid;gap:12px}
+.verdict .top{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.flags{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.flags li{display:grid;grid-template-columns:auto 1fr;gap:10px;font-size:14px;color:var(--ink-2);background:var(--trap-soft);border-radius:8px;padding:9px 12px}
+.flags li b{color:var(--trap-text);font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding-top:3px}
+.flags li.good{background:var(--ok-soft)} .flags li.good b{color:var(--ok)}
+.flags li.neutral{background:var(--surface-2)} .flags li.neutral b{color:var(--muted)}
+
+/* generator */
+.gen{background:linear-gradient(180deg,var(--accent-soft),var(--surface) 55%);border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line));border-radius:16px;padding:26px 26px 22px;display:grid;gap:18px;box-shadow:var(--shadow)}
+.gen .fields{display:grid;grid-template-columns:1.4fr 1fr;gap:12px}
+.gen .actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{border:1px solid var(--line-2);background:var(--surface);border-radius:10px;padding:10px 16px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:8px}
+.status{font-size:13.5px;color:var(--ink-2);display:flex;align-items:center;gap:8px;min-height:22px}
+.status .spin{width:10px;height:10px;border-radius:50%;border:2px solid var(--line-2);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.mode{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)}
+.mode.live{background:var(--ok-soft);color:var(--ok)}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;gap:10px;align-content:start;animation:rise .25s ease-out}
+@keyframes rise{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card .top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.card .q{font-size:21px}
+.card .why{font-size:13.5px;color:var(--ink-2)}
+.card .chk{display:flex;flex-wrap:wrap;gap:6px;font-size:12px}
+.card .chk .pill{font-size:11px}
+.card .foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:2px}
+.card .slot{background:var(--surface-2);border-radius:4px;padding:0 4px;font-style:normal;font-family:var(--body);font-size:.75em;color:var(--ink-2);vertical-align:middle}
+.example-note{font-size:13px;color:var(--muted);font-style:italic}
+.err{background:var(--trap-soft);color:var(--trap-text);border-radius:10px;padding:12px 14px;font-size:14px}
+.err[hidden]{display:none}
+footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);display:grid;gap:4px}
+
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr;gap:30px}
+  .cols{grid-template-columns:1fr}
+  .brow{grid-template-columns:1fr;gap:0}
+  .brow .lab{padding-block:10px 0;flex-direction:row;align-items:baseline;gap:10px}
+  .axis{margin-left:0}
+  .cards{grid-template-columns:1fr}
+  .gen .fields{grid-template-columns:1fr}
+  .play .head{grid-template-columns:auto 1fr}
+  .medbox{grid-column:1 / -1;flex-direction:row;align-items:baseline;gap:10px}
+}
+@media (max-width:480px){
+  .cell{min-height:120px;padding:10px}
+  .rank{font-size:26px;min-width:34px}
+  .play,.panel,.gen,.anatomy,.board{padding-inline:16px}
+}
+</style>
+
+<div class="topbar"><div class="in">
+  <div class="brand">Hook Playbook <span>@kallawaymarketing</span></div>
+  <nav class="nav" aria-label="Sections">
+    <a href="#board">Leaderboard</a>
+    <a href="#plays">5 plays</a>
+    <a href="#traps">2 traps</a>
+    <a href="#rules">Rules</a>
+    <a href="#check">Check a hook</a>
+    <a href="#generate" class="cta">Generate hooks</a>
+  </nav>
+</div></div>
+
+<div class="wrap">
+
+<header class="hero" id="thesis">
+  <div>
+    <div class="meta">
+      <span class="eyebrow">Sandcastles hook report</span>
+      <span class="eyebrow">Instagram · 32 videos</span>
+      <span class="eyebrow">May 22 to Sep 15, 2026</span>
+    </div>
+    <h1>Promise something <em>specific</em> that nobody can disprove.</h1>
+    <p class="lede">That is the whole playbook. Every hook that blew up on this channel makes a claim the viewer can't check in three seconds but can picture instantly. Every hook that died makes a claim they can check (a number) or can't picture (a made-up label).</p>
+    <div class="thesis">
+      <div class="row"><span class="pill win" id="winMedPill">3.0× median</span><p><b id="winCount">23</b> videos used one of the five winning shapes. Pooled, they ran at <b id="winMed">3.0×</b> the channel's typical video and averaged <b id="winAvg">143K</b> views.</p></div>
+      <div class="row"><span class="pill trap" id="trapMedPill">0.8× median</span><p><b id="trapCount">9</b> videos used one of the two trap shapes. Pooled, <b id="trapMed">0.8×</b> and <b id="trapAvg">19K</b> views. Same channel, same face, same months.</p></div>
+    </div>
+  </div>
+  <div class="matrix" aria-label="Where each hook shape sits on specificity and falsifiability">
+    <div class="xlab"><span>Specific</span><span>Vague</span></div>
+    <div class="ylab"><span>Can be checked</span><span>Can't be disproven</span></div>
+    <div class="grid2">
+      <div class="cell win"><div class="tag">Where the outliers live</div>
+        <ul><li>Reaction promise <span class="num">4.8×</span></li><li>Transformation <span class="num">4.0×</span></li><li>Named framework <span class="num">4.0×</span></li><li>Diagnosis <span class="num">1.8×</span></li></ul>
+        <div class="why">"Impossible to skip" can't be measured. "Wrong story arc" can be pictured.</div></div>
+      <div class="cell trap"><div class="tag">Fake label</div>
+        <ul><li>Name before stakes <span class="num">0.6×</span></li></ul>
+        <div class="why">"Flashbang Brain" can't be disproven either, but nobody can picture it, so nobody cares.</div></div>
+      <div class="cell mid"><div class="tag">Series label</div>
+        <ul><li>Episode N of X <span class="num">1.0×</span></li></ul>
+        <div class="why">Specific and checkable ("these are crushing"). Consistent, never explosive.</div></div>
+      <div class="cell trap"><div class="tag">Bare number</div>
+        <ul><li>0 to 100K, 10×, 240 <span class="num">0.8×</span></li></ul>
+        <div class="why">A number invites the viewer to doubt it. Doubt is a scroll.</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="stats" id="stats"></div>
+
+<section id="board">
+  <div class="sec-head">
+    <span class="eyebrow">Leaderboard</span>
+    <h2>Every video, by hook shape</h2>
+    <p>One dot per video. Position is the outlier multiple, how many times the channel's typical video it did, on a log scale. The black tick is the shape's median. The dashed line at 1× is "a normal video." Hover a dot for the hook.</p>
+  </div>
+  <div class="board">
+    <div class="legend"><span><i style="background:var(--win)"></i>Winning shape</span><span><i style="background:var(--trap)"></i>Trap shape</span><span><span class="med"></span>Median</span><span style="color:var(--muted)">Log scale</span></div>
+    <div id="boardRows"></div>
+    <div class="axis" id="axis"></div>
+    <p class="boardnote">Two videos count in both Diagnosis and Named framework because they do both ("…missing one critical ingredient: the villain"). The three 1.0× series dots are stacked.</p>
+  </div>
+
+  <div class="anatomy">
+    <span class="eyebrow">Anatomy of the 36.4× hook</span>
+    <div class="sent" style="margin-top:14px">
+      <div class="tok a"><div class="w">Here's how to make your</div><div class="l">How-to opener. Promises a method, not a story.</div></div>
+      <div class="tok b"><div class="w">storytelling</div><div class="l">A specific craft the viewer already does. "Content" here did 1.3×.</div></div>
+      <div class="tok c"><div class="w">so addictive,</div><div class="l">The quality, stated as an extreme.</div></div>
+      <div class="tok d"><div class="w">it is scientifically impossible to skip.</div><div class="l">A reaction, not a result. Unfalsifiable, and a dare about the viewer's own thumb.</div></div>
+    </div>
+    <p class="foot">Swap one part and the number moves: same shape with "hook" as the craft did 17× and 4.8×; with "content" as the craft, 1.3×; delivered as a command ("You got to make your storytelling…") instead of a how-to, 1.2×.</p>
+  </div>
+</section>
+
+<section id="plays">
+  <div class="sec-head">
+    <span class="eyebrow">The five plays</span>
+    <h2>What to do, ranked by median</h2>
+    <p>Each play: the formula, why it works, the real hooks with their numbers, and the rule that comes out of the data. Medians are the honest measure; the best single video tells you the ceiling.</p>
+  </div>
+  <div class="plays" id="playList"></div>
+</section>
+
+<section id="traps">
+  <div class="sec-head">
+    <span class="eyebrow">The two traps</span>
+    <h2>What to stop doing</h2>
+    <p>Both traps are winning shapes with one part missing. The fake label is the named-framework play without the promise. The bare number is the transformation play without the mechanism.</p>
+  </div>
+  <div class="plays" id="trapList"></div>
+</section>
+
+<section id="rules">
+  <div class="sec-head">
+    <span class="eyebrow">The rules</span>
+    <h2>Eight rules, each with the number behind it</h2>
+  </div>
+  <div class="rules" id="ruleList"></div>
+</section>
+
+<section id="check">
+  <div class="sec-head">
+    <span class="eyebrow">Pre-flight</span>
+    <h2>Check a hook before you record it</h2>
+    <p>Paste a hook. It gets matched against the five shapes and the trap patterns from this report. Instant, runs in the page, no AI involved.</p>
+  </div>
+  <div class="panel">
+    <label class="f">Your hook<textarea id="chkIn" class="qin" rows="2" placeholder="The reason your cold emails get ignored is because you're burying the ask.">The reason your videos are not working is because your viewers are suffering from Flashbang Brain.</textarea></label>
+    <div class="verdict" id="chkOut"></div>
+  </div>
+</section>
+
+<section id="generate">
+  <div class="sec-head">
+    <span class="eyebrow">Generator</span>
+    <h2>Give it a topic, get ten hooks that follow the playbook</h2>
+    <p>Two hooks per winning shape, written for your topic, each run through the same pre-flight check. Claude writes them using the formulas, mechanisms, examples and traps on this page as the brief.</p>
+  </div>
+  <div class="gen">
+    <div class="fields">
+      <label class="f">Topic<input type="text" id="genTopic" placeholder="e.g. cold email, pricing your offer, YouTube thumbnails" value="YouTube thumbnails"></label>
+      <label class="f">Optional detail (the tool, the culprit, a framework name you've got)<input type="text" id="genDetail" placeholder="e.g. uses Claude; the culprit is 'title and thumbnail say the same thing'"></label>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="genBtn">Generate 10 hooks</button>
+      <button class="btn" id="stopBtn" hidden>Stop</button>
+      <span class="mode" id="genMode">Connecting…</span>
+      <span class="status" id="genStatus"></span>
+    </div>
+    <div class="err" id="genErr" hidden></div>
+    <p class="example-note" id="genNote">Example output for "YouTube thumbnails", written by hand to show the format. Hit Generate to replace it with hooks for your topic.</p>
+    <div class="cards" id="genCards"></div>
+  </div>
+</section>
+
+<footer>
+  <span>Source: Sandcastles hook-strategy report, execution 0e350cac, run Sep 18 2026, plus per-video details for the 32 referenced reels on @kallawaymarketing.</span>
+  <span>Outlier multiple = a video's views relative to the channel's typical video at the time it was posted. 1.0× is normal. Medians are computed from the videos listed under each shape.</span>
+</footer>
+
+</div>
+
+<div class="tip" id="tip" hidden></div>
+
+<script>
+/* ---------- DATA ---------- */
+const VIDEOS = [
+ {id:"9b1947da",hook:"This is how you turn Claude into a social media machine.",x:44.9,v:799821,c:26661,url:"https://www.instagram.com/reel/DZU1D_8OI62/",d:"Jun 8"},
+ {id:"8d708c54",hook:"This is how you turn Claude into a social media machine.",x:4.9,v:115541,c:3252,url:"https://www.instagram.com/reel/DbI9NOTOIFi/",d:"Jul 23"},
+ {id:"c713b70f",hook:"Most people don't know this, but you can just turn Claude into a social media machine.",x:4.8,v:101746,c:2646,url:"https://www.instagram.com/reel/Da5LyKeONUo/",d:"Jul 17"},
+ {id:"1457ac27",hook:"This is how to turn Claude into a social media savant.",x:3.1,v:62451,c:2624,url:"https://www.instagram.com/reel/DaIZlzWOV4R/",d:"Jun 28"},
+ {id:"b010d252",hook:"Here's how to turn Claude into a content idea machine.",x:1.2,v:35009,c:1137,url:"https://www.instagram.com/reel/Dc_WReCOgzC/",d:"Sep 7"},
+ {id:"80259371",hook:"This is how you turn Claude into a text hook machine.",x:1.0,v:26942,c:1996,url:"https://www.instagram.com/reel/DcBU7rUuBu1/",d:"Aug 14"},
+ {id:"e8a91af0",hook:"Here's how to make your storytelling so addictive, it is scientifically impossible to skip.",x:36.4,v:771057,c:7374,url:"https://www.instagram.com/reel/DaiCxAkOpNb/",d:"Jul 8"},
+ {id:"6f7d83e2",hook:"Here's how to write a hook so good it is scientifically impossible to skip.",x:17,v:315394,c:6563,url:"https://www.instagram.com/reel/DZZ-Lj6uwM5/",d:"Jun 10"},
+ {id:"bb942c1f",hook:"Here's how to write a hook so good, it is basically unskippable.",x:4.8,v:94046,c:2292,url:"https://www.instagram.com/reel/Dac3WJ-Ov3b/",d:"Jul 6"},
+ {id:"00ac79a3",hook:"Here is how to make content so good, it is psychologically impossible to ignore.",x:1.3,v:25974,c:308,url:"https://www.instagram.com/reel/DafeclSuRRe/",d:"Jul 7"},
+ {id:"d9aba1dc",hook:"You got to make your storytelling so good, it is impossible to scroll away.",x:1.2,v:30059,c:440,url:"https://www.instagram.com/reel/DbdRo3nuQyn/",d:"Jul 31"},
+ {id:"33b3e4a8",hook:"The reason your videos don't hold attention is because you're using the wrong story arc.",x:18.2,v:336842,c:13750,url:"https://www.instagram.com/reel/DY2BBsIuFcC/",d:"May 27"},
+ {id:"2359fdeb",hook:"The main reason your personal brand is failing is that you haven't built enough trust at scale.",x:2.4,v:48586,c:252,url:"https://www.instagram.com/reel/Da0JBbxO7TQ/",d:"Jul 15"},
+ {id:"4b013bd6",hook:"The reason your videos don't hold attention, it's because you're using the wrong hook formula.",x:2.2,v:57272,c:1736,url:"https://www.instagram.com/reel/DbyRmzAu81r/",d:"Aug 8"},
+ {id:"2eb2c276",hook:"The reason your content is flopping is because you have an originality problem.",x:1.3,v:36960,c:894,url:"https://www.instagram.com/reel/DcvnWHTOLii/",d:"Sep 1"},
+ {id:"800f3d42",hook:"The reason storytelling doesn't hold attention is because you're missing one critical ingredient: the villain.",x:1.1,v:23193,c:295,url:"https://www.instagram.com/reel/Da8RAx3OULR/",d:"Jul 18"},
+ {id:"08f1f6c5",hook:"The reason your videos don't hold attention is because your storytelling has terrible rhythm.",x:1.0,v:19437,c:625,url:"https://www.instagram.com/reel/DaNd2YxO_iM/",d:"Jun 30"},
+ {id:"cd5446a7",hook:"This is how you get people addicted to your storytelling.",x:6.5,v:127278,c:1750,url:"https://www.instagram.com/reel/DaQPVoCOptS/",d:"Jul 1",note:"then reveals the Story Ladder"},
+ {id:"effff147",hook:"Here's how to get people actually addicted to your content.",x:5.1,v:97323,c:1368,url:"https://www.instagram.com/reel/DY4l4A5u4UG/",d:"May 28",note:"then reveals the Dopamine Ladder"},
+ {id:"6325fc3a",hook:"This is the ultimate storytelling hack for educational content. It's called the double tap.",x:4.0,v:71635,c:2347,url:"https://www.instagram.com/reel/DZXdQQsuLSs/",d:"Jun 9"},
+ {id:"318f2081",hook:"This is best viral formats episode 3, Yapping. Everybody's loving yaps right now because they seem so easy to make.",x:3.0,v:58032,c:1470,url:"https://www.instagram.com/reel/DYpUDeCu9xV/",d:"May 22"},
+ {id:"12cf31e1",hook:"This is best viral formats episode 5. These are called 3 levels videos.",x:1.0,v:17946,c:234,url:"https://www.instagram.com/reel/DZkYGGKOmNk/",d:"Jun 14"},
+ {id:"2561f8ed",hook:"This is Best Viral Formats episode 4. These are A vs B videos and they are crushing right now.",x:1.0,v:17816,c:332,url:"https://www.instagram.com/reel/DZKkSCouuWp/",d:"Jun 4"},
+ {id:"96b8aeff",hook:"Here's how to make your content addictive to your content. It's called the fandom funnel.",x:0.9,v:22620,c:580,url:"https://www.instagram.com/reel/DcG7p_XOf4R/",d:"Aug 16"},
+ {id:"1fbf0b42",hook:"The reason your videos are not working is because your viewers are suffering from Flashbang Brain.",x:0.7,v:15857,c:137,url:"https://www.instagram.com/reel/DbVkHntOnxZ/",d:"Jul 28"},
+ {id:"36613483",hook:"Do you want to make a video that gets both tons of views and conversions? Yes it is.",x:0.5,v:13716,c:286,url:"https://www.instagram.com/reel/DdG4Ij3uau-/",d:"Sep 10"},
+ {id:"23e53546",hook:"This is one of the best formats for driving leads and sales.",x:0.5,v:13851,c:127,url:"https://www.instagram.com/reel/DdTxT7huFrD/",d:"Sep 15"},
+ {id:"80ef3e64",hook:"Here's how to turn one winning video into 240 unique variations.",x:0.9,v:18805,c:276,url:"https://www.instagram.com/reel/DZ-x7_use9y/",d:"Jun 24"},
+ {id:"1834ec63",hook:"How to grow a plastic surgeon account from zero to 100k followers and dollars on social media? This is exactly what I'd do.",x:0.8,v:21293,c:285,url:"https://www.instagram.com/reel/DdOu2UguHRg/",d:"Sep 13"},
+ {id:"27f55f80",hook:"I grew this channel from zero to 100k in revenue in my first three months.",x:0.8,v:22070,c:315,url:"https://www.instagram.com/reel/Dc3b7KvOFzO/",d:"Sep 4"},
+ {id:"d6e2343c",hook:"You're going to make your next three videos go ten times more viral.",x:0.8,v:20512,c:389,url:"https://www.instagram.com/reel/DcRMQUeufym/",d:"Aug 20"},
+ {id:"ff168302",hook:"This is the ultimate hack for getting 100x more productivity out of Claude. It's called memory stacking.",x:0.7,v:18856,c:444,url:"https://www.instagram.com/reel/DbnsgB_unCH/",d:"Aug 4"}
+];
+const V = Object.fromEntries(VIDEOS.map(v=>[v.id,v]));
+
+const SHAPES = [
+ {key:"skip",kind:"win",name:"Reaction promise",short:"Impossible to skip",
+  ids:["e8a91af0","6f7d83e2","bb942c1f","00ac79a3","d9aba1dc"],
+  formula:"Here's how to make your <mark>[specific craft]</mark> so <mark>[addictive / good]</mark>, it is <mark>scientifically impossible to [skip]</mark>.",
+  why:"You don't promise the reward (views, money). You promise a reaction to the content itself. A reaction can't be fact-checked and it's a dare about the viewer's own scrolling. Nobody scrolls past a dare about their scrolling.",
+  data:["<b>The craft is the variable.</b> \"Storytelling\" 36.4×, \"a hook\" 17× and 4.8×, \"content\" 1.3×. A category isn't a craft.",
+        "<b>The exact phrase matters.</b> Both monsters say \"scientifically impossible to skip.\" \"Psychologically impossible to ignore\" got 1.3×. \"Basically unskippable\" got 4.8×.",
+        "<b>How-to beats command.</b> \"You got to make your storytelling so good…\" (a command) did 1.2× on the same idea."],
+  rule:"Open with \"Here's how to make your [craft] so [extreme], it is scientifically impossible to skip.\" Name a craft the viewer does with their hands (storytelling, hooks, thumbnails, emails), and pair it with a pattern-interrupt visual. This is your biggest lever; both of your top-two videos are this shape plus a visual jolt.",
+  egs:["Here's how to write an email so good, it's basically impossible to leave unread.","This is how to make an offer so good, it feels scientifically impossible to say no to.","Here's how to build a habit so sticky, missing a day feels physically wrong."]},
+ {key:"turn",kind:"win",name:"Transformation",short:"Turn X into Y",
+  ids:["9b1947da","8d708c54","c713b70f","1457ac27","b010d252","80259371"],
+  formula:"This is how you turn <mark>[a tool they already have]</mark> into <mark>[a whole role or identity]</mark>.",
+  why:"\"Here's a Claude tutorial\" is a chore. \"Turn Claude into a social media machine\" is a character upgrade. The before/after is promised without needing proof, so curiosity carries the viewer past three seconds even on software setup.",
+  data:["<b>The destination has to be a whole job.</b> \"Social media machine\" 44.9×. \"Social media savant\" 3.1×. \"Content idea machine\" 1.2×. \"Text hook machine\" 1.0×. The narrower the role, the smaller the video.",
+        "<b>The exact same line has a shelf life.</b> The 44.9× hook re-posted word for word six weeks later did 4.9×. Still a win, but the first run was nine times bigger.",
+        "<b>A secret-reveal opener doesn't help.</b> \"Most people don't know this, but you can just turn Claude into…\" 4.8×, same ballpark as the plain repeat."],
+  rule:"Say \"This is how you turn [tool] into [a whole role].\" The role should replace a person or a department (a sales rep, a research team, a social media manager), never a feature. Run each transformation line once at full size; the second run is a 5× line, not a 45× line.",
+  egs:["This is how to turn a spreadsheet into your first sales rep.","Here's how to turn your Notes app into a content machine.","This is how to turn a $0 tool into your unfair advantage."]},
+ {key:"named",kind:"win",name:"Named framework",short:"Promise, then the name",
+  ids:["cd5446a7","effff147","6325fc3a","2359fdeb","800f3d42"],
+  formula:"This is how you <mark>[get people addicted to your craft]</mark>. It's called the <mark>[Mechanism Name]</mark>.",
+  why:"A capitalized name signals the idea has been tested and packaged, not improvised. It also gives the viewer something to repeat, which is free word of mouth. But the name is a wrapper. It only works when there's a sharp promise inside it.",
+  data:["<b>Stakes first, name second.</b> 6.5× and 5.1× open with the promise (\"get people addicted to your storytelling\") and reveal the Story Ladder / Dopamine Ladder later. 4.0× says \"ultimate storytelling hack for educational content\" before \"the double tap.\"",
+        "<b>The name should describe a mechanism.</b> Ladder, Double Tap, Villain. Compare the traps: Flashbang Brain (0.7×), Fandom Funnel (0.9×), memory stacking with a 100× number (0.7×).",
+        "<b>\"Addicted\" is doing heavy lifting.</b> Both top videos in this shape use it. It's a reaction promise wearing a framework."],
+  rule:"Never say the name before the stakes. Lead with what the viewer gets, then christen it, and make the name a two-word mechanism (Story Ladder, Double Tap), never a vibe or an invented condition.",
+  egs:["This is what I call the Follow-Up Ladder, and it's the reason my cold emails convert.","This is the Mirror Method for making any pitch sound tailor-made.","I call this the Two-Tap Explanation, and it's why my tutorials don't lose people halfway through."]},
+ {key:"diagnose",kind:"win",name:"Diagnosis",short:"The reason X fails is Y",
+  ids:["33b3e4a8","2359fdeb","4b013bd6","2eb2c276","800f3d42","08f1f6c5"],
+  formula:"The reason your <mark>[thing]</mark> doesn't <mark>[outcome]</mark> is because you're <mark>[using the wrong X]</mark>.",
+  why:"It sounds like a diagnosis from someone who already found the answer. Naming the exact culprit (not the symptom) makes the viewer feel personally caught out, and they stay to find out if it's them.",
+  data:["<b>Ceiling is huge, floor is normal.</b> 18.2× at the top, but four of six sit between 1.0× and 1.3×. Median 1.8×.",
+        "<b>The culprit has to be something the viewer already knows they do.</b> \"The wrong story arc\" is the one everyone was taught in school; 18.2×. \"Terrible rhythm\" (1.0×), \"the villain\" (1.1×), \"an originality problem\" (1.3×) are culprits the viewer can't picture themselves committing.",
+        "<b>The 18.2× also had proof on screen.</b> A failing retention graph in the first frame, then the traditional arc drawn out and crossed off."],
+  rule:"Use it when the culprit is a default the viewer recognizes instantly (the school-taught arc, the template everyone copied). Name the culprit in three words or fewer, and show the failure on screen in frame one. If you have to explain the culprit, it's not a hook, it's the body.",
+  egs:["The reason your emails don't get replies is because you're burying the ask.","The reason your product doesn't sell is because you're describing features, not a before-and-after.","The reason your posts don't get saved is because you're teaching, not giving people a tool."]},
+ {key:"series",kind:"win",name:"Numbered series",short:"Episode N of X",
+  ids:["318f2081","12cf31e1","2561f8ed"],
+  formula:"This is <mark>[Series Name]</mark>, episode <mark>[N]</mark>. These are called <mark>[format]</mark> videos. <mark>[One tension line.]</mark>",
+  why:"A series borrows credibility from every previous episode instead of earning it in three seconds, and it trains repeat viewers to expect the next one. It only works because the label and phrasing stay identical every time.",
+  data:["<b>Consistent, not explosive.</b> 3.0×, 1.0×, 1.0×. Median 1.0×. This shape doesn't make outliers; it makes a floor.",
+        "<b>The tension line is worth 3×.</b> Episode 3 added \"Everybody's loving yaps right now because they seem so easy to make\" (a setup for a contradiction) and did 3.0×. Episodes 4 and 5 were the label alone and did 1.0×."],
+  rule:"Keep the series for consistency and habit, never for reach. Every episode gets the identical label, then one line of tension right after it (\"everybody thinks these are easy\"). No tension line, no lift.",
+  egs:["This is Cold Outreach Playbook, episode 1. These are called pattern-break DMs.","This is Pricing Psychology, episode 2. These are called anchor-drop offers.","This is Hook Breakdown, episode 3. These are called the wrong-answer-first videos."]},
+ {key:"label",kind:"trap",name:"Fake label",short:"A name with nothing in it",
+  ids:["96b8aeff","1fbf0b42","36613483","23e53546"],
+  formula:"<mark>[Soft promise]</mark>. It's called the <mark>[Invented Term]</mark>.",
+  why:"A made-up term with no immediate stakes attached. The viewer hears a proper noun, gets nothing to picture, shrugs, and scrolls. It's the named-framework play with the framework removed.",
+  data:["<b>Below the channel's own floor.</b> 0.9×, 0.7×, 0.5×, 0.5×. Median 0.6×, the worst shape in the set.",
+        "<b>Two more things died in this bucket.</b> A yes/no question opener (\"Do you want to make a video that gets both tons of views and conversions?\") 0.5×, and a hedge (\"one of the best formats\") 0.5×.",
+        "<b>The 0.9× one had a garbled promise.</b> \"Make your content addictive to your content\" then \"the fandom funnel.\" Vague subject, broken sentence, name on top."],
+  rule:"If the sentence before \"it's called\" wouldn't work as a hook on its own, don't record it. And never open with a yes/no question or a hedge like \"one of the best.\"",
+  egs:["This is called the Momentum Loop, and it changes how you post.","Meet the Silent Scroller Effect killing your reach.","I call this the Trust Ladder for social proof."]},
+ {key:"number",kind:"trap",name:"Bare number",short:"A stat with no mechanism",
+  ids:["80ef3e64","1834ec63","27f55f80","d6e2343c","ff168302"],
+  formula:"<mark>[0 to 100K / 10× / 240 / 100×]</mark> as the entire promise.",
+  why:"The number does the bragging but the sentence gives no reason to believe it applies to this viewer right now. It reads as a claim to be skeptical of, not a hook to lean into. It's a transformation play without the transformation.",
+  data:["<b>Tight, low band.</b> 0.9×, 0.8×, 0.8×, 0.8×, 0.7×. Median 0.8×. Five tries, zero above normal.",
+        "<b>Even \"turn X into\" can't save it.</b> \"Turn one winning video into 240 unique variations\" is the transformation formula with a number as the destination; 0.9×.",
+        "<b>Proof on screen didn't help.</b> The $100K-in-three-months video showed the revenue chart in frame one and still did 0.8×. Proof of your result isn't a promise about their result."],
+  rule:"A number is a claim; a mechanism is a hook. If a number is in the first sentence, the named mechanism has to be in the same sentence, or cut the number.",
+  egs:["I went from 0 to 50k followers doing this one thing.","This turns one post into 300 content ideas.","This will 10x your engagement rate overnight."]}
+];
+
+const RULES = [
+ {k:"01",p:"Promise a reaction or a transformation, never a metric.",ev:"Reaction promises 4.8× median, transformations 4.0×. Metric-led hooks 0.8×."},
+ {k:"02",p:"Name a craft, not a category. Storytelling, hooks, thumbnails, emails. Never \"content.\"",ev:"Same shape, \"storytelling\" 36.4× vs \"content\" 1.3×."},
+ {k:"03",p:"Keep the phrase \"scientifically impossible to skip.\" Don't paraphrase it.",ev:"Both of your two biggest videos (36.4×, 17×) use it verbatim. The paraphrases did 1.2× to 4.8×."},
+ {k:"04",p:"In \"turn X into Y,\" Y is a whole job, not a feature.",ev:"\"Social media machine\" 44.9× vs \"text hook machine\" 1.0×."},
+ {k:"05",p:"Stakes first, name second. The framework name never leads.",ev:"Promise-first named hooks 4.0× to 6.5×. Name-first 0.5× to 0.9×."},
+ {k:"06",p:"A diagnosis only works when the culprit is a default the viewer already recognizes. Name it in three words.",ev:"\"The wrong story arc\" 18.2×. \"Terrible rhythm,\" \"the villain,\" \"originality problem\" 1.0× to 1.3×."},
+ {k:"07",p:"A number in the hook needs its mechanism in the same sentence, or it goes.",ev:"Five bare-number hooks, five results between 0.7× and 0.9×."},
+ {k:"08",p:"Don't repeat a winning line expecting the same result. Rotate the craft or the tool, keep the shape.",ev:"The 44.9× line reposted verbatim: 4.9×. Same shape with a new craft (hooks → storytelling): 17× → 36.4×."}
+];
+
+/* ---------- HELPERS ---------- */
+const $ = s=>document.querySelector(s);
+const fmt = n=>n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?Math.round(n/1e3)+"K":String(n);
+const x = n=>(Math.round(n*10)/10).toFixed(1)+"×";
+const median = a=>{const s=[...a].sort((p,q)=>p-q);const m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+const esc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+SHAPES.forEach(s=>{s.vids=s.ids.map(i=>V[i]).sort((a,b)=>b.x-a.x);s.med=median(s.vids.map(v=>v.x));s.best=s.vids[0]});
+
+/* ---------- STATS ---------- */
+(function(){
+  const uniq=kind=>{const seen=new Set();const out=[];SHAPES.filter(s=>s.kind===kind).forEach(s=>s.ids.forEach(i=>{if(!seen.has(i)){seen.add(i);out.push(V[i])}}));return out};
+  const W=uniq("win"),T=uniq("trap");
+  const wm=median(W.map(v=>v.x)),tm=median(T.map(v=>v.x));
+  const wa=W.reduce((a,v)=>a+v.v,0)/W.length,ta=T.reduce((a,v)=>a+v.v,0)/T.length;
+  $("#winCount").textContent=W.length;$("#trapCount").textContent=T.length;
+  $("#winMed").textContent=x(wm);$("#trapMed").textContent=x(tm);
+  $("#winMedPill").textContent=x(wm)+" median";$("#trapMedPill").textContent=x(tm)+" median";
+  $("#winAvg").textContent=fmt(wa);$("#trapAvg").textContent=fmt(ta);
+  const top=[...VIDEOS].sort((a,b)=>b.x-a.x)[0];
+  $("#stats").innerHTML=[
+    ["win",x(top.x),"biggest single video ("+fmt(top.v)+" views): \"turn Claude into a social media machine\""],
+    ["win",x(SHAPES.find(s=>s.key==="skip").med),"best shape median: the reaction promise"],
+    ["",Math.round(wa/ta)+"×","more views per video for a winning shape than a trap shape"],
+    ["trap",x(SHAPES.find(s=>s.key==="label").med),"worst shape median: a name with nothing behind it"]
+  ].map(([k,v,l])=>'<div class="stat"><div class="v '+k+'">'+v+'</div><div class="l">'+l+'</div></div>').join("");
+})();
+
+/* ---------- LEADERBOARD ---------- */
+(function(){
+  const XMIN=0.4,XMAX=60;const lg=Math.log10;
+  const pct=v=>((lg(v)-lg(XMIN))/(lg(XMAX)-lg(XMIN))*100);
+  const rows=[...SHAPES].sort((a,b)=>b.med-a.med);
+  const jit=[0,-9,9,-4,4,-13,13];
+  $("#boardRows").innerHTML=rows.map(s=>{
+    const dots=s.vids.map((v,i)=>{
+      // stack identical values
+      const same=s.vids.filter((o,j)=>j<i&&o.x===v.x).length;
+      const dy=jit[same]||0;
+      return '<button class="dot '+s.kind+'" style="left:'+pct(v.x).toFixed(2)+'%;margin-top:'+dy+'px" data-id="'+v.id+'" aria-label="'+esc(v.hook)+' '+x(v.x)+'"></button>';
+    }).join("");
+    return '<div class="brow"><div class="lab"><b>'+s.name+'</b><small>'+s.vids.length+' videos · median '+x(s.med)+'</small></div>'+
+      '<div class="track"><div class="base one" style="left:'+pct(1).toFixed(2)+'%"></div>'+
+      [0.5,2,5,10,20,50].map(t=>'<div class="base" style="left:'+pct(t).toFixed(2)+'%"></div>').join("")+
+      dots+'<div class="medtick" style="left:'+pct(s.med).toFixed(2)+'%"></div></div></div>';
+  }).join("");
+  $("#axis").innerHTML=[0.5,1,2,5,10,20,50].map(t=>'<span style="left:'+pct(t).toFixed(2)+'%">'+(t===1?"1× normal":t+"×")+'</span>').join("");
+  const tip=$("#tip");
+  const show=(btn,ev)=>{const v=V[btn.dataset.id];tip.innerHTML='<div class="q">'+esc(v.hook)+'</div><span class="num">'+x(v.x)+'</span> · '+fmt(v.v)+' views · '+fmt(v.c)+' comments · '+v.d+(v.note?' · '+esc(v.note):'');tip.hidden=false;
+    const r=btn.getBoundingClientRect();let left=r.left+r.width/2-tip.offsetWidth/2;left=Math.max(8,Math.min(left,window.innerWidth-tip.offsetWidth-8));let top=r.top-tip.offsetHeight-10;if(top<8)top=r.bottom+10;tip.style.left=left+"px";tip.style.top=top+"px"};
+  document.querySelectorAll(".dot").forEach(b=>{b.addEventListener("mouseenter",e=>show(b,e));b.addEventListener("focus",e=>show(b,e));b.addEventListener("mouseleave",()=>tip.hidden=true);b.addEventListener("blur",()=>tip.hidden=true);b.addEventListener("click",()=>window.open(V[b.dataset.id].url,"_blank","noopener"))});
+})();
+
+/* ---------- PLAY CARDS ---------- */
+function playCard(s,rank){
+  const tbl='<details><summary>Show the '+s.vids.length+' videos with their numbers</summary><div class="tbl"><table><thead><tr><th>Spoken hook</th><th>Outlier</th><th>Views</th><th>Posted</th><th></th></tr></thead><tbody>'+
+    s.vids.map(v=>'<tr><td class="q">'+esc(v.hook)+(v.note?' <small style="font-family:var(--body);font-style:normal;font-size:12px;color:var(--muted)">('+esc(v.note)+')</small>':'')+'</td><td><span class="num">'+x(v.x)+'</span></td><td><span class="num">'+fmt(v.v)+'</span></td><td style="white-space:nowrap">'+v.d+'</td><td><a href="'+v.url+'" target="_blank" rel="noopener">Watch</a></td></tr>').join("")+
+    '</tbody></table></div></details>';
+  return '<article class="play '+s.kind+'" id="play-'+s.key+'"><div class="head"><div class="rank">'+rank+'</div><div class="title"><h3>'+s.name+'</h3><small>'+s.short+' · '+s.vids.length+' videos · best '+x(s.best.x)+' ('+fmt(s.best.v)+' views)</small></div><div class="medbox"><div class="v '+s.kind+'">'+x(s.med)+'</div><small>median outlier</small></div></div>'+
+    '<div class="formula"><span class="eyebrow">'+(s.kind==="win"?"Formula":"The pattern")+'</span><div class="q">'+s.formula+'</div></div>'+
+    '<div class="cols"><div class="blk"><h4>Why it '+(s.kind==="win"?"works":"fails")+'</h4><p>'+s.why+'</p><div class="rule" style="margin-top:6px"><h4>'+(s.kind==="win"?"Do this":"Stop this")+'</h4><p>'+s.rule+'</p></div></div>'+
+    '<div class="blk"><h4>What your numbers add</h4><ul>'+s.data.map(d=>'<li>'+d+'</li>').join("")+'</ul></div></div>'+
+    tbl+
+    '<div class="blk"><h4>'+(s.kind==="win"?"The same shape on other topics":"How it sounds when it goes wrong")+'</h4><div class="egs">'+s.egs.map(e=>'<div class="q">'+esc(e)+'</div>').join("")+'</div></div></article>';
+}
+$("#playList").innerHTML=SHAPES.filter(s=>s.kind==="win").sort((a,b)=>b.med-a.med).map((s,i)=>playCard(s,String(i+1).padStart(2,"0"))).join("");
+$("#trapList").innerHTML=SHAPES.filter(s=>s.kind==="trap").sort((a,b)=>a.med-b.med).map((s,i)=>playCard(s,"✕")).join("");
+$("#ruleList").innerHTML=RULES.map(r=>'<div class="rl"><div class="k">'+r.k+'</div><div><p>'+r.p+'</p><div class="ev">'+r.ev.replace(/(\d+(?:\.\d+)?×)/g,'<span class="num">$1</span>')+'</div></div></div>').join("");
+
+/* ---------- CHECKER ---------- */
+const SHAPE_NAME={skip:"Reaction promise",turn:"Transformation",named:"Named framework",diagnose:"Diagnosis",series:"Numbered series"};
+function analyzeHook(h){
+  const t=h.trim();const low=t.toLowerCase();const flags=[];let shape=null;
+  if(/impossible (to|not to)|unskippable|can'?t (skip|ignore|scroll|look away)|impossible to scroll/.test(low)) shape="skip";
+  else if(/\bturns? (your |a |an |the |one |my )?[\w\s'-]+ into\b/.test(low)) shape="turn";
+  else if(/^(the )?(main |real |number one |#1 )?reason\b[\s\S]*\b(is|it'?s) (because|that)\b/.test(low)) shape="diagnose";
+  else if(/it'?s called|i call (this|it)|addicted to your|this is (what i call )?the [\w\s-]+ (method|ladder|effect|system|loop|stack|formula)/.test(low)) shape="named";
+  else if(/episode \d+|\bep\.? ?\d+\b/.test(low)) shape="series";
+  const numRe=/(\b\d+\s?x\b|\b(ten|twenty|hundred|\d+) times\b|\b(zero|0) to \$?\d+k?\b|\b\d{2,3}k\b|\$\d[\d,]*k?\b|\b\d{3,}\b|\b100x\b)/i;
+  const mechRe=/\b(because|called|using|by|with|through|formula|method|ladder|system|arc)\b/i;
+  if(t.split(/(?<=[.!?])\s+/).some(sn=>numRe.test(sn)&&!mechRe.test(sn))) flags.push(["Bare number","A number is doing the promising and there's no mechanism in the same sentence. Your five bare-number hooks did 0.7× to 0.9×."]);
+  const ni=low.search(/it'?s called|i call (this|it)|this is called|^meet the\b|^introducing\b/);
+  if(ni>-1){const before=low.slice(0,ni);const bw=before.split(/\s+/).filter(Boolean).length;if(bw<6||!/here'?s how|this is how|how to|how you|get people|make your|turn .+ into|impossible|addict|reason|so good|never|stop|hold attention|ultimate|hack|secret|best/.test(before)) flags.push(["Name before stakes","The framework name arrives before any real promise. Promise first, christen second. Name-first hooks did 0.5× to 0.9×."]);}
+  if(/suffering from|syndrome|\b(?!(?:your|the|my|their|our|a|human|lizard|monkey)\b)\w+ brain\b/.test(low)) flags.push(["Invented condition","A coined condition as the culprit. The viewer can't picture themselves doing it, so it never feels like them. \"Flashbang Brain\" did 0.7×."]);
+  if(/^(do you|are you|is it|have you|want to|would you|did you)\b/.test(low)) flags.push(["Question opener","A yes/no question hands the viewer an exit. Your one question-opener did 0.5×."]);
+  if(/\bone of the (best|most|top)\b/.test(low)) flags.push(["Hedge","\"One of the best\" is a promise with the air let out. That hook did 0.5×."]);
+  const craft=/\b(storytelling|story|stories|hook|hooks|script|scripts|thumbnail|thumbnails|email|emails|title|titles|caption|captions|offer|offers|pitch|ads?|newsletter|dm|dms|funnel|landing page|video|videos|reel|reels|post|posts|carousel|website|copy|headline|headlines|onboarding|outreach|cold email|pricing|proposal|deck|slides|tutorials?|explainer|edit|editing|b-roll|voiceover|intro|intros|outro|cta|ctas)\b/;
+  if(/\b(content|engagement|reach|results|growth|productivity|brand)\b/.test(low)&&!craft.test(low)) flags.push(["Vague subject","The subject is a category, not a craft. \"Make content so good…\" did 1.3×. \"Make your storytelling so addictive…\" did 36.4×."]);
+  const words=t.split(/\s+/).filter(Boolean).length;
+  if(words>26) flags.push(["Too long",words+" words. Your top three hooks were 11 to 16 words."]);
+  if(/!/.test(t)) flags.push(["Exclamation mark","Reads as hype. None of the 23 winning hooks used one."]);
+  if(/^(you got to|you need to|you have to|you're going to|you should)\b/.test(low)) flags.push(["Command opener","A command instead of a how-to. \"You got to make your storytelling so good…\" did 1.2× on the same idea that did 36.4× as \"Here's how to…\""]);
+  return {shape,flags,words};
+}
+function renderVerdict(el,h){
+  if(!h.trim()){el.innerHTML='<p class="example-note">Type a hook to check it.</p>';return}
+  const r=analyzeHook(h);
+  const s=r.shape?SHAPES.find(q=>q.key===r.shape):null;
+  let top='';
+  if(r.flags.length) top='<span class="pill trap">Fix first</span>';
+  else if(s) top='<span class="pill ok">Ships</span>';
+  else top='<span class="pill neutral">No proven shape</span>';
+  top+=s?'<span class="pill win">'+SHAPE_NAME[r.shape]+' · median '+x(s.med)+' · best '+x(s.best.x)+'</span>':'';
+  top+='<span class="pill neutral">'+r.words+' words</span>';
+  let list='';
+  if(r.flags.length) list=r.flags.map(f=>'<li><b>'+f[0]+'</b><span>'+f[1]+'</span></li>').join("");
+  else if(s) list='<li class="good"><b>Clear</b><span>Matches the '+SHAPE_NAME[r.shape].toLowerCase()+' shape and trips none of the trap patterns. '+(s.key==="diagnose"?"Make sure the culprit is a default the viewer already recognizes; that's the difference between 18.2× and 1.0× in this shape.":s.key==="series"?"Add one tension line after the label; that's the difference between 3.0× and 1.0× here.":s.key==="named"?"Check that the name describes a mechanism and comes after the promise.":s.key==="turn"?"Check that the destination is a whole role, not a feature.":"Pair it with a pattern-interrupt visual in frame one.")+'</span></li>';
+  else list='<li class="neutral"><b>Unmatched</b><span>This doesn\'t match any of the five shapes that outperform on your channel. It might still work, but you\'d be off the map. Try rewriting it as a reaction promise or a diagnosis.</span></li>';
+  el.innerHTML='<div class="top">'+top+'</div><ul class="flags">'+list+'</ul>';
+}
+(function(){const i=$("#chkIn"),o=$("#chkOut");let t;i.addEventListener("input",()=>{clearTimeout(t);t=setTimeout(()=>renderVerdict(o,i.value),120)});renderVerdict(o,i.value)})();
+
+/* ---------- GENERATOR ---------- */
+const ORDER=["skip","skip","turn","turn","named","named","diagnose","diagnose","series","series"];
+const EXAMPLE={topic:"YouTube thumbnails",cards:[
+ {shape:"skip",hook:"Here's how to make a thumbnail so good, it is scientifically impossible not to click.",why:"Promises the viewer's own reaction, not a click-through rate, so there's nothing to doubt."},
+ {shape:"skip",hook:"Here's how to write a title so sticky, it is basically impossible to scroll past.",why:"Same reaction dare, aimed at the title instead of the image."},
+ {shape:"turn",hook:"This is how you turn Claude into a thumbnail machine.",why:"A tool they already have becomes a whole job, not a feature."},
+ {shape:"turn",hook:"Here's how to turn your camera roll into a thumbnail factory.",why:"Transformation of something worthless into an asset, before/after with no proof needed."},
+ {shape:"named",hook:"This is how you get people to click your video before they even read the title. It's called the Three-Second Thumbnail.",why:"Stakes first, then a two-word mechanism name."},
+ {shape:"named",hook:"This is the ultimate thumbnail hack for educational channels. It's called the Double Face.",why:"Mirrors the 4.0× double-tap line: audience-specific promise, then the name."},
+ {shape:"diagnose",hook:"The reason your videos don't get clicked is because your thumbnail and your title are saying the same thing.",why:"A culprit the viewer can check against their last upload in one second."},
+ {shape:"diagnose",hook:"The reason your thumbnails don't work is because you're showing the topic instead of the tension.",why:"Names a default everyone was taught (show what it's about) as the mistake."},
+ {shape:"series",hook:"This is Best Viral Thumbnails, episode 1. These are called wrong-answer thumbnails. Everybody thinks they're clickbait, and they're the most honest ones on YouTube.",why:"Identical label every episode, then one tension line."},
+ {shape:"series",hook:"This is Best Viral Thumbnails, episode 2. These are called before-and-after thumbnails. Everybody's copying them right now and most are copying them wrong.",why:"Label plus tension; the tension line is what lifted episode 3 to 3.0×."}
+]};
+const TEMPL={
+ skip:[t=>"Here's how to make your "+t+" so good, it is scientifically impossible to skip.",t=>"Here's how to make your "+t+" so addictive, it is basically impossible to scroll past."],
+ turn:[t=>"This is how you turn [a tool they already use] into a "+t+" machine.",t=>"Here's how to turn [something worthless they already have] into your unfair advantage in "+t+"."],
+ named:[t=>"This is how you get people addicted to your "+t+". It's called the [Mechanism] Ladder.",t=>"This is the ultimate "+t+" hack for [audience]. It's called the [Two-Word Mechanism]."],
+ diagnose:[t=>"The reason your "+t+" isn't working is because you're using the wrong [default everyone was taught].",t=>"The reason your "+t+" doesn't [outcome] is because you're missing one critical ingredient: [the ingredient]."],
+ series:[t=>"This is Best "+t.replace(/^\w/,c=>c.toUpperCase())+" Formats, episode 1. These are called [format name] videos. Everybody thinks these are easy, and that's exactly why most of them flop.",t=>"This is Best "+t.replace(/^\w/,c=>c.toUpperCase())+" Formats, episode 2. These are called [format name] videos. Everybody's copying them right now and most are copying them wrong."]
+};
+const TEMPL_WHY={skip:"Reaction promise: a dare about the viewer's own scrolling, unfalsifiable.",turn:"Transformation: a tool becomes a whole role. Make the bracket a whole job.",named:"Named framework: promise first, then a two-word mechanism name.",diagnose:"Diagnosis: the bracket must be a default the viewer already recognizes doing.",series:"Series label plus one tension line; the label alone is a 1.0×."};
+
+let sampleFn=null, genCtl=null;
+const gTopic=$("#genTopic"),gDetail=$("#genDetail"),gBtn=$("#genBtn"),sBtn=$("#stopBtn"),gMode=$("#genMode"),gStatus=$("#genStatus"),gErr=$("#genErr"),gNote=$("#genNote"),gCards=$("#genCards");
+
+function buildPrompt(topic,detail){
+  const win=SHAPES.filter(s=>s.kind==="win");
+  const lines=[];
+  lines.push("You write spoken opening lines (hooks) for short-form videos on the Instagram channel @kallawaymarketing (Kallaway). The channel teaches creators and business owners content strategy: hooks, storytelling, formats, and AI workflows. A Sandcastles analysis of 32 of the channel's own videos found five hook shapes that reliably outperform and two that reliably underperform. Write new hooks for the topic below using ONLY the five winning shapes.");
+  lines.push("");
+  lines.push("THE FIVE WINNING SHAPES (median outlier multiple vs the channel's typical video, plus the best real example):");
+  lines.push("1. skip - Reaction promise (4.8x median). Promise a reaction to the content itself, not the result. Formula: \"Here's how to make your [specific craft] so [addictive/good], it is scientifically impossible to [skip / scroll past]\". Best real hook: \"Here's how to make your storytelling so addictive, it is scientifically impossible to skip.\" (36.4x). Keep the phrase \"scientifically impossible to skip\" or a very close variant. The subject must be a specific craft the viewer does with their hands (storytelling, hooks, thumbnails, cold emails); never the word \"content\" (that version did 1.3x). Use a how-to opener, never a command.");
+  lines.push("2. turn - Transformation (4.0x median). Formula: \"This is how you turn [a tool or thing they already have] into [a whole role or identity]\". Best real hook: \"This is how you turn Claude into a social media machine.\" (44.9x). The destination must be a whole job or identity (a machine, a sales rep, a research team), never a sub-task (\"a text hook machine\" did 1.0x).");
+  lines.push("3. named - Named framework (4.0x median). Make the promise FIRST, then christen it. Formulas: \"This is how you get people addicted to your [craft].\" (reveal the name in the video) or \"This is the ultimate [craft] hack for [audience]. It's called the [Name].\" Best real hook: \"This is how you get people addicted to your storytelling.\" (6.5x, teasing the Story Ladder). The name must describe a mechanism (Ladder, Double Tap, Loop, Stack), two words max, never a vibe or an invented condition (\"Flashbang Brain\" did 0.7x).");
+  lines.push("4. diagnose - Diagnosis (1.8x median, 18.2x at best). Formula: \"The reason your [thing] doesn't [outcome] is because you're [using the wrong X / missing X]\". Best real hook: \"The reason your videos don't hold attention is because you're using the wrong story arc.\" (18.2x). The culprit must be a default the viewer already recognizes themselves doing (something they were taught or copied), named in three words or fewer. Vague or invented culprits (\"an originality problem\", \"terrible rhythm\") did 1.0x to 1.3x.");
+  lines.push("5. series - Numbered series (1.0x median, 3.0x with a tension line). Formula: \"This is [Series Name], episode [N]. These are called [format name] videos.\" followed by ONE tension line such as \"Everybody's loving these right now because they seem so easy to make.\" The label alone did 1.0x; with the tension line 3.0x.");
+  lines.push("");
+  lines.push("THE TWO TRAPS (never do these):");
+  lines.push("A. A capitalized name on a thin idea, or the name before the stakes (\"It's called the Momentum Loop\" with no sharp promise: 0.5x to 0.9x). Also never hedge (\"one of the best\") and never open with a yes/no question (0.5x).");
+  lines.push("B. A big round number floating alone as the promise (\"0 to 100K\", \"10x\", \"240 variations\", \"100x productivity\": 0.7x to 0.9x). A number is allowed only if the mechanism is in the same sentence.");
+  lines.push("");
+  lines.push("VOICE: spoken, first person, present tense, 10 to 24 words, plain words. Start with \"This is how\", \"Here's how\", \"The reason your\", \"This is the ultimate\", or \"This is [Series], episode [N]\". No hashtags, no emojis, no exclamation marks, no em dashes, no questions. Every hook must be specific to the topic below, with a real craft, a real culprit, or a real tool from that topic; never a generic template with the topic pasted in. The two hooks in each shape must take different angles.");
+  lines.push("");
+  lines.push("TOPIC: "+topic);
+  lines.push("EXTRA DETAIL FROM THE CREATOR (use it if useful): "+(detail||"none"));
+  lines.push("");
+  lines.push("OUTPUT: exactly 10 lines, one JSON object per line, no array brackets, no code fence, no other text before or after. Two lines per shape in this order: skip, skip, turn, turn, named, named, diagnose, diagnose, series, series. Each object has exactly these keys: {\"shape\": \"skip|turn|named|diagnose|series\", \"hook\": \"the hook\", \"why\": \"one sentence, max 18 words, naming the mechanism that should make this line work\"}");
+  return lines.join("\n");
+}
+
+function cardHTML(c){
+  const s=SHAPES.find(q=>q.key===c.shape)||SHAPES[0];
+  const r=analyzeHook(c.hook);
+  const chk=r.flags.length?r.flags.map(f=>'<span class="pill trap">'+esc(f[0])+'</span>').join(""):'<span class="pill ok">Passes pre-flight</span>';
+  const hookHtml=esc(c.hook).replace(/\[([^\]]+)\]/g,'<span class="slot">$1</span>');
+  return '<div class="card" data-shape="'+esc(c.shape)+'"><div class="top"><span class="pill win">'+esc(SHAPE_NAME[c.shape]||c.shape)+'</span><span class="eyebrow">median '+x(s.med)+'</span></div><div class="q">'+hookHtml+'</div><div class="why">'+esc(c.why||"")+'</div><div class="foot"><div class="chk">'+chk+'</div><button class="btn sm copy" data-hook="'+esc(c.hook)+'">Copy</button></div></div>';
+}
+function renderCards(cards){gCards.innerHTML=cards.map(cardHTML).join("");}
+function addCard(c){if(!c||!c.hook)return;gCards.insertAdjacentHTML("beforeend",cardHTML(c));}
+gCards.addEventListener("click",async e=>{const b=e.target.closest(".copy");if(!b)return;const t=b.dataset.hook;try{await navigator.clipboard.writeText(t);b.textContent="Copied";}catch(_){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");b.textContent="Copied"}catch(__){b.textContent="Select and copy"}document.body.removeChild(ta)}setTimeout(()=>b.textContent="Copy",1400)});
+
+function safeParse(line){let s=line.trim().replace(/^```(json)?/,"").replace(/```$/,"").replace(/^[\[,]\s*/,"").replace(/[,\]]\s*$/,"").trim();if(!s.startsWith("{"))return null;try{const o=JSON.parse(s);if(o&&typeof o.hook==="string"&&o.shape)return o}catch(_){}return null}
+function setStatus(txt,busy){gStatus.innerHTML=(busy?'<span class="spin"></span>':'')+esc(txt)}
+function setMode(){if(sampleFn){gMode.textContent="Live · Claude writes them";gMode.classList.add("live")}else{gMode.textContent="Template mode";gMode.classList.remove("live")}}
+function save(state){try{localStorage.setItem("hookgen.v1",JSON.stringify(state))}catch(_){}}
+function load(){try{const s=localStorage.getItem("hookgen.v1");return s?JSON.parse(s):null}catch(_){return null}}
+
+function runTemplates(topic,detail,reason){
+  const cards=ORDER.map((k,i)=>({shape:k,hook:TEMPL[k][i%2](topic),why:TEMPL_WHY[k]}));
+  renderCards(cards);
+  gNote.textContent=(reason||"Claude isn't available in this view, so these are skeleton hooks built from the formulas.")+" Fill the highlighted brackets yourself; the brackets are the parts the data says decide the result.";
+  gNote.hidden=false;
+  save({topic,detail,cards,mode:"template",at:Date.now()});
+}
+
+async function generate(){
+  const topic=gTopic.value.trim(),detail=gDetail.value.trim();
+  gErr.hidden=true;
+  if(!topic){gTopic.focus();gErr.textContent="Give it a topic first.";gErr.hidden=false;return}
+  if(!sampleFn){runTemplates(topic,detail);return}
+  genCtl=new AbortController();
+  gBtn.disabled=true;sBtn.hidden=false;gNote.hidden=true;gCards.innerHTML="";
+  setStatus("Thinking… (first use asks you to allow this page to use Claude; usually 10 to 40 seconds)",true);
+  let pending="",got=[],full="";
+  const eat=({text,delta})=>{full=text;if(got.length===0)setStatus("Writing…",true);const parts=(pending+delta).split("\n");pending=parts.pop();for(const ln of parts){const o=safeParse(ln);if(o){got.push(o);addCard(o)}}};
+  try{
+    const res=await sampleFn(buildPrompt(topic,detail),{signal:genCtl.signal,cache:false,modelTier:"default",onText:eat});
+    if(pending.trim()){const o=safeParse(pending);if(o){got.push(o);addCard(o)}}
+    if(got.length===0){
+      // last resort: whole answer as an array
+      try{const m=res.text.match(/\[[\s\S]*\]/);const arr=m?JSON.parse(m[0]):null;if(Array.isArray(arr)){arr.forEach(o=>{if(o&&o.hook){got.push(o);addCard(o)}})}}catch(_){}
+    }
+    if(got.length===0){gErr.textContent="Claude answered but not in a shape this page could read. Hit Generate again.";gErr.hidden=false;setStatus("",false)}
+    else{setStatus(got.length+" hooks for \""+topic+"\""+(res.truncated?" (cut short; hit Regenerate for the rest)":""),false);gBtn.textContent="Regenerate";save({topic,detail,cards:got,mode:"live",at:Date.now()})}
+  }catch(e){
+    const code=e&&e.code;
+    if(code==="cancelled"){setStatus(got.length?"Stopped with "+got.length+" hooks.":"Stopped.",false);if(got.length)save({topic,detail,cards:got,mode:"live",at:Date.now()})}
+    else if(code==="not_granted"||code==="sampling_disabled"||code==="not_declared"||code==="capability_disabled"){sampleFn=null;setMode();setStatus("",false);runTemplates(topic,detail,"Claude isn't allowed for this page in this view, so these are skeleton hooks built from the formulas.")}
+    else if(code==="rate_limited"){setStatus("",false);gErr.textContent="Claude is rate-limited for you right now. Wait a minute and try again.";gErr.hidden=false}
+    else if(code==="refused"){gCards.innerHTML="";setStatus("",false);gErr.textContent="Claude declined this topic. Reword it and try again.";gErr.hidden=false}
+    else{setStatus("",false);gErr.textContent="Something went wrong on Claude's side ("+(code||"error")+"). Try again.";gErr.hidden=false}
+  }finally{gBtn.disabled=false;sBtn.hidden=true;genCtl=null}
+}
+gBtn.addEventListener("click",generate);
+sBtn.addEventListener("click",()=>genCtl&&genCtl.abort());
+gTopic.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();generate()}});
+gDetail.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();generate()}});
+
+// first paint: saved generation or the hand-written example
+(function(){
+  const s=load();
+  if(s&&Array.isArray(s.cards)&&s.cards.length){gTopic.value=s.topic||"";gDetail.value=s.detail||"";renderCards(s.cards);gNote.textContent="Your last run, for \""+(s.topic||"")+"\""+(s.mode==="template"?" (template mode)":"")+". Hit Generate for a fresh set.";gBtn.textContent="Regenerate"}
+  else renderCards(EXAMPLE.cards);
+})();
+(async()=>{
+  try{ if(window.claude&&typeof window.claude.use==="function"){ sampleFn=await window.claude.use("sample"); } }catch(_){ sampleFn=null }
+  setMode();
+})();
+</script>
+
+</body>
+</html>

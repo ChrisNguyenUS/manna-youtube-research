@@ -1,0 +1,508 @@
+<title>__TITLE__</title>
+<!--
+  CTA Strategist report template · house style (dark navy, Bricolage / DM Sans / JetBrains Mono, heat ramp).
+  build_report.py fills __TITLE__ __HANDLE__ __PLATFORM__ __BUILT__ and __DATA__ (analysis.json).
+  Every element renders from DATA; nothing channel-specific lives in this file.
+  Colour meaning (shared across the seven reports):
+    heat ramp r5 navy → r1 red     = conversion climbing the recipe ladder
+    --open green                    = a lever this channel's data supports ("try this")
+    --violet                        = the secondary series (pooled rate)
+    50% opacity, never red          = a feature that hurts or does nothing
+    --r1 + white                    = the channel's own baseline marker
+  Every number is a link: click it and the Explorer at the bottom filters to the videos behind it.
+-->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#0F172A; --bg2:#131D33; --surface:#1A2540; --line:#26324D; --line2:#33405E;
+  --text:#E6EBF5; --muted:#94A3B8; --faint:#64748B;
+  --r1:#EF4444; --r2:#F97316; --r3:#F59E0B; --r4:#38BDF8; --r5:#3B5A8A;
+  --open:#34D399; --violet:#A78BFA;
+  --display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
+  --body:"DM Sans","Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:0 64px;-webkit-font-smoothing:antialiased}
+a{color:var(--r4)}
+.wrap{max-width:1200px;margin:0 auto}
+h1,h2,h3,h4{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.08;letter-spacing:-.01em}
+h1{font-size:clamp(32px,4.4vw,52px);font-weight:800}
+h2{font-size:clamp(22px,2.6vw,28px);font-weight:700}
+h3{font-size:16px;font-weight:700}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)} .faint{color:var(--faint)}
+.lede{color:var(--muted);max-width:66ch;font-size:15.5px}
+.note{font-size:13px;color:var(--muted);max-width:72ch}
+.gloss{color:var(--faint);font-size:12.5px}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--r4);outline-offset:2px}
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.numlink{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--text);border-bottom:1px dotted var(--line2);cursor:pointer}
+.numlink:hover{color:var(--r4);border-bottom-color:var(--r4)}
+
+/* header */
+header{padding-block:40px 22px;border-bottom:1px solid var(--line);display:grid;gap:12px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:13px;font-family:var(--mono)}
+.meta .handle{color:var(--text)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:22px 0 28px}
+.tile{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:4px}
+.tile .v{font-family:var(--mono);font-size:30px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.tile .v .numlink{font-size:inherit;font-weight:inherit;border-bottom-width:2px}
+.tile .l{color:var(--muted);font-size:12.5px}
+.tile.you{border-color:var(--r1);box-shadow:0 0 0 1px rgba(239,68,68,.25)}
+.tile.you .v{color:var(--r1)}
+
+/* signature visual */
+.sig{margin-bottom:22px}
+.sigcard{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:26px}
+@media (max-width:980px){.sigcard{grid-template-columns:1fr}}
+.sig .eyebrow{margin-bottom:8px}
+.sig h2{margin-bottom:8px}
+.ladder{--barmax:190px;position:relative;display:grid;gap:8px;align-items:end;height:290px;padding-top:28px;margin-top:18px}
+.rung{display:flex;flex-direction:column;justify-content:flex-end;height:100%;gap:6px;text-align:center;cursor:pointer}
+.rung .bar{border-radius:6px 6px 0 0;position:relative;transition:height .5s ease;min-height:6px;height:calc(var(--barmax) * var(--h))}
+.rung:hover .bar{filter:brightness(1.15)}
+.rung .bar span{position:absolute;top:-24px;left:0;right:0;font-family:var(--mono);font-weight:600;font-size:16px;font-variant-numeric:tabular-nums}
+.rung .cap{font-size:10.5px;color:var(--muted);line-height:1.3;font-family:var(--mono);display:grid}
+.rung .cap b{color:var(--text);font-size:12.5px;font-family:var(--body)}
+.rung .cap i{font-style:normal;color:var(--faint)}
+.baseline{position:absolute;left:0;right:0;border-top:1px dashed var(--r1);pointer-events:none;z-index:2}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px;font-family:var(--mono)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.ingredients{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:16px}
+.ing{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:13px;display:grid;gap:5px;align-content:start}
+.ing .tag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--open)}
+.ing b{font-family:var(--display);font-size:15px;font-weight:700}
+.ing .lift{font-family:var(--mono);font-size:12px;color:var(--open)}
+.ing .lift .numlink{color:var(--open)}
+/* ranked feature bars */
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.controls input,.controls select{font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--line2);border-radius:6px;background:var(--surface);color:var(--text)}
+.chip{font-family:var(--mono);font-size:11.5px;padding:5px 10px;border-radius:999px;border:1px solid var(--line2);background:var(--surface);color:var(--muted);cursor:pointer}
+.chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.fbars{display:grid;gap:2px}
+@media (min-width:981px){.fbars{max-height:720px;overflow-y:auto;padding-right:8px;scrollbar-width:thin}}
+.frow{display:grid;grid-template-columns:minmax(150px,230px) minmax(120px,1fr) auto;gap:12px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+.frow:last-child{border-bottom:0}
+.frow .lab{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+.frow .lab b{font-weight:600;font-size:13.5px}
+.frow .lab small{color:var(--faint);font-size:11px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.frow .lab .pill{align-self:flex-start;margin-top:3px}
+.divtrack{position:relative;height:18px;background:var(--surface);border-radius:3px}
+.divtrack::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:var(--r1);box-shadow:0 0 0 1px rgba(255,255,255,.35);border-radius:1px}
+.divfill{position:absolute;top:3px;bottom:3px;border-radius:2px}
+.frow .stats{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
+.frow .stats .lift{font-size:14px;font-weight:600;color:var(--text)}
+.pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:999px;border:1px solid var(--line2);color:var(--muted);white-space:nowrap}
+.pill.recipe{border-color:var(--open);color:var(--open)}
+.pill.sig{border-color:var(--text);color:var(--text)}
+@media (max-width:640px){.frow{grid-template-columns:1fr}.frow .stats{flex-direction:row;align-items:center;gap:10px;white-space:normal}}
+
+/* do this next */
+.next{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:44px}
+.next .card{display:grid;gap:8px;align-content:start;border-color:var(--line2)}
+.next .card h3{font-size:18px}
+.next .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--open)}
+.fixrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:12.5px;min-width:0}
+.fixrow > div{min-width:0}
+.fixrow .q{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fixrow .miss{font-family:var(--mono);font-size:10.5px;color:var(--faint);white-space:normal}
+.next .card{min-width:0}
+.thumb{position:relative;display:inline-block;width:40px;height:54px;border-radius:4px;overflow:hidden;background:var(--surface);flex:none}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .ob{position:absolute;left:0;bottom:0;right:0;font-family:var(--mono);font-size:9px;font-weight:600;padding:1px 3px;background:rgba(15,23,42,.85);color:var(--text);text-align:center;line-height:1.2}
+.thumb.lg{width:64px;height:86px}
+
+/* sections */
+section{margin:0 0 44px}
+.sec-head{display:grid;gap:6px;margin-bottom:16px}
+.secnum{font-family:var(--mono);font-size:12px;color:var(--r2);letter-spacing:.12em}
+.bars{display:grid;gap:8px}
+.brow{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:12px;align-items:center;font-size:13.5px}
+.brow .lab{display:flex;flex-direction:column;line-height:1.2;text-align:left;min-width:0}
+.brow .lab span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .lab small{color:var(--faint);font-size:11px;font-family:var(--mono)}
+.brow:hover .lab span{color:var(--r4)}
+.track{position:relative;height:20px;background:var(--surface);border-radius:4px;overflow:hidden}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0;background:var(--r2);transition:width .5s ease}
+.fill.w2{background:var(--r5)}
+.fill.pooled{background:var(--violet)}
+.brow .val{font-family:var(--mono);font-size:12.5px;min-width:60px;text-align:right}
+.brow .val .p2{color:var(--violet)}
+.ctl{display:grid;gap:8px}
+.ctl .big{font-family:var(--mono);font-size:28px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.ctl .big small{font-size:12px;font-weight:500;color:var(--muted);font-family:var(--body)}
+.ctl .row{display:flex;gap:12px;align-items:center}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;cursor:pointer;user-select:none;white-space:nowrap;background:var(--bg2);position:sticky;top:0}
+th.sorted{color:var(--text)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:12.5px}
+.tscroll{overflow-x:auto;max-height:70vh;overflow-y:auto;border:1px solid var(--line);border-radius:8px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13px;margin-top:10px}
+.kv span:nth-child(odd){color:var(--faint);font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;padding-top:3px}
+.holds{font-weight:600}
+.holds.yes{color:var(--open)} .holds.weak{color:var(--muted)} .holds.no{color:var(--muted);opacity:.7}
+
+/* explorer */
+.filterbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px;min-height:28px}
+.xf{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;padding:5px 6px 5px 10px;border-radius:999px;border:1px solid var(--open);color:var(--open)}
+.xf button{color:var(--open);font-size:13px;line-height:1;padding:0 4px}
+.vrow{cursor:pointer}
+.vrow:hover td{background:var(--surface)}
+.vrow td{padding:6px 10px}
+.hook{max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+.tag{font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:4px;background:var(--surface);border:1px solid var(--line);color:var(--faint);white-space:nowrap}
+.tag.on{color:var(--text);border-color:var(--line2)}
+.tag.score{color:var(--open);border-color:var(--open);font-weight:600}
+.detail td{background:var(--surface);padding:16px 18px}
+.detail .cta{font-size:14px;max-width:80ch;white-space:pre-wrap}
+.detail .lines{display:grid;gap:6px;margin-top:10px;font-size:13px}
+.detail .lines div{padding:6px 10px;background:var(--bg2);border:1px solid var(--line);border-radius:6px}
+.convbar{display:inline-block;height:8px;border-radius:2px;background:var(--r2);vertical-align:middle;margin-right:6px}
+ol.method{margin:0;padding-left:20px;display:grid;gap:8px;font-size:14px;max-width:80ch}
+footer{padding-top:36px;text-align:center}
+.mantra{font-family:var(--display);font-weight:700;font-size:clamp(18px,2.6vw,24px)}
+.mantra em{font-style:normal;color:var(--r2)}
+footer .small{margin-top:8px;font-size:12px;color:var(--faint);font-family:var(--mono)}
+@media (max-width:640px){.ladder{--barmax:140px;height:236px;gap:5px}.rung .cap i{display:none}.rung .cap{font-size:10px}.rung .cap b{font-size:11.5px}.rung .bar span{font-size:13px;top:-20px}.brow{grid-template-columns:100px 1fr auto}.hook{max-width:200px}}
+@media (prefers-reduced-motion:reduce){.fill,.rung .bar{transition:none}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">CTA Lab · __HANDLE__ · __PLATFORM__</div>
+  <h1>__TITLE__</h1>
+  <div class="meta"><span class="handle">__HANDLE__</span><span>built __BUILT__</span><span id="m-range"></span><span id="m-count"></span><span id="m-source"></span></div>
+  <p class="lede">Every video's closing CTA, scored by how many people asked for the lead magnet. Leads are estimated as <span class="mono">comments ÷ 2</span> (one viewer comment + one auto-reply), and conversion is <b>leads per 1,000 views</b> so a viral banger and a quiet flop are compared on equal footing. Click any number to see the videos behind it.</p>
+</header>
+
+<div class="tiles" id="tiles"></div>
+
+<!-- ===== signature visual: the recipe ladder + every feature as a ranked bar ===== -->
+<section class="sig">
+  <div class="card sigcard">
+    <div class="sig-l">
+      <div class="eyebrow">Your recipe · picked by your own data</div>
+      <h2 id="ladder-h2"></h2>
+      <p class="lede" id="ladder-lede" style="font-size:14px"></p>
+      <div class="ladder" id="ladder"></div>
+      <div class="legend"><span><i style="background:var(--r5)"></i><i style="background:var(--r3);margin-left:-4px"></i><i style="background:var(--r1);margin-left:-4px"></i>cold → hot as levers stack · bar = median leads per 1K</span><span><i style="border-top:1px dashed var(--r1);height:0;width:14px"></i>your median <b id="lg-base"></b></span><span>n = videos on that rung · pooled = total leads ÷ total views · click a rung to see them</span></div>
+      <div class="ingredients" id="ingredients"></div>
+      <p class="note" style="margin-top:12px" id="ladder-note"></p>
+    </div>
+    <div class="sig-r">
+      <div class="eyebrow">Feature by feature · ranked by lift</div>
+      <p class="note" style="margin-bottom:10px">Each row splits the videos into "has this" vs "doesn't" and compares the <b>median</b> leads per 1K. Lift = with ÷ without; the red tick is 1.0×, your baseline. p is a Mann-Whitney test — under 0.05 the gap is unlikely to be luck at this sample size.</p>
+      <div class="controls">
+        <button class="chip on" data-f="all">All features</button>
+        <button class="chip" data-f="sig">Significant (p &lt; 0.05)</button>
+        <button class="chip" data-f="up">Helps (≥ 1.15×)</button>
+        <button class="chip" data-f="down">Hurts (≤ 0.85×)</button>
+        <button class="chip" data-f="flat">No effect</button>
+        <select id="fsort"><option value="lift">sort: lift</option><option value="p">sort: p-value</option><option value="n_with">sort: n with</option></select>
+      </div>
+      <div class="fbars" id="fbars"></div>
+      <div class="legend"><span><i style="background:var(--r2)"></i>helps</span><span><i style="background:var(--faint);opacity:.5"></i>hurts / no effect</span><span>faded = p above 0.15 (noise)</span><span style="color:var(--open)">green pill = in your recipe</span><span>bar spans 0.5×–2.0×</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== do this next ===== -->
+<div class="next" id="next"></div>
+
+<section id="control-sec">
+  <div class="sec-head"><div class="secnum">01</div><h2>First, does the proxy hold?</h2><p class="lede">Videos with no comment CTA should get almost no comments — if they do, "comments ÷ 2" isn't counting leads.</p></div>
+  <div class="grid3" id="control"></div>
+  <p class="note" style="margin-top:10px" id="control-note"></p>
+</section>
+
+<section>
+  <div class="sec-head"><div class="secnum">02</div><h2>Do the winners still win when you hold the others constant?</h2><p class="lede">Each recipe lever is re-tested only inside the videos that lack the strongest lever, and the strongest lever is re-tested inside the two most common hook styles (a rough topic control).</p></div>
+  <div class="grid2" id="confounds"></div>
+</section>
+
+<section>
+  <div class="sec-head"><div class="secnum">03</div><h2>Wording, structure, delivery</h2><p class="lede">Median leads per 1K views by category. The thin violet bar is the pooled rate (total leads ÷ total views), which lets the big videos vote.</p></div>
+  <div class="grid2" id="groups"></div>
+</section>
+
+<section>
+  <div class="sec-head"><div class="secnum">04</div><h2 id="nulls-h2">The things that don't matter</h2><p class="lede">This matters as much as the wins: anything within ±15% of baseline with p above 0.15 is noise, and time spent polishing it is time not spent on the levers above.</p></div>
+  <div class="grid2" id="nulls"></div>
+</section>
+
+<section id="explorer">
+  <div class="sec-head"><div class="secnum">05</div><h2>Every reel</h2><p class="lede">Click any row for the exact CTA block, every keyword mention and the feature tags; sort any column; filter to test your own hunches. Numbers elsewhere on the page land here.</p></div>
+  <div class="card">
+    <div class="filterbar" id="filterbar"></div>
+    <div class="controls">
+      <input id="q" placeholder="Search hook, keyword, CTA…" style="min-width:220px">
+      <select id="f-magnet"><option value="">Any magnet</option></select>
+      <select id="f-send"><option value="">Any delivery phrase</option></select>
+      <select id="f-mentions"><option value="">Any mention count</option><option value="1">1 mention</option><option value="2">2+ mentions</option></select>
+      <select id="f-set"><option value="main">Analyzable videos (CTA + visible script)</option><option value="all">All videos</option></select>
+      <span class="note mono" id="f-count"></span>
+    </div>
+    <div class="tscroll"><table id="vtable"><thead><tr>
+      <th></th><th data-k="date">Date</th><th data-k="hook_line">Hook</th><th data-k="kw">Keyword</th><th class="num" data-k="views">Views</th><th class="num" data-k="comments">Comments</th><th class="num" data-k="leads">Leads</th><th class="num sorted" data-k="conv">Leads / 1K</th><th data-k="magnet">Magnet</th><th>Features</th>
+    </tr></thead><tbody></tbody></table></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><div class="secnum">06</div><h2>How to read this honestly</h2><p class="lede">The method in six lines, including where it can be wrong.</p></div>
+  <div class="card"><ol class="method" id="method"></ol></div>
+</section>
+
+<footer>
+  <p class="mantra">Rewrite the <em>architecture</em>, not the adjectives.</p>
+  <p class="small" id="foot"></p>
+</footer>
+</div>
+
+<script>
+const A = __DATA__;
+const LADDER = A.ladder, S = A.summary, V = A.videos;
+const fmt = n => n.toLocaleString('en-US');
+const f1 = n => (Math.round(n*10)/10).toFixed(1);
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const MAG = {video:'Video / deep dive', doc_guide:'Doc / guide / playbook', database:'Database', claude_skill:'Claude skill / plugin', links_setup:'Links / setup instructions', system:'"My system / framework"', unspecified_it:'Unnamed ("I\'ll send it through")', other:'Other', offer_1on1:'1:1 offer', none:'No CTA'};
+const SEND = {through:'"send it through"', to_you:'"send you / send it to you"', over:'"send it over"', for:'"Comment X for my…"', share:'"I\'ll share"', get:'"get access"', other:'other'};
+const PLACE = {end_only:'Close only', bookend:'Bookend (hook + close)', hook_only:'Hook only', mid:'Mid-script', caption_only:'Caption only (podcast clip)', none:'No CTA'};
+const RAMP = ['var(--r1)','var(--r2)','var(--r3)','var(--r4)','var(--r5)'];   // hot → cold
+const ASSET = ['doc_guide','database','claude_skill','links_setup'];
+// the same predicates analyze.py uses (LEVERS) — keep in sync
+const PRED = {
+  multi_mention: v=>v.mentions>=2, bookend: v=>v.placement==='bookend', send_through: v=>v.send_style==='through',
+  imperative: v=>!!v.imperative, conditional: v=>!!v.conditional, asset_magnet: v=>ASSET.includes(v.magnet), video_magnet: v=>v.magnet==='video',
+  magnet_named: v=>!!v.magnet_named, for_free: v=>!!v.for_free, quantified: v=>!!v.quantified, tease_remainder: v=>!!v.tease_remainder, totality: v=>!!v.totality,
+  exact: v=>!!v.exact, possessive_my: v=>!!v.possessive_my, effort: v=>!!v.effort, benefit: v=>!!v.benefit, with_examples: v=>!!v.with_examples, ai_feed: v=>!!v.ai_feed,
+  kw_caps: v=>!!v.kw_caps, kw_in_body: v=>!!v.kw_in_body, kw_short: v=>(v.kw_len ?? (v.kw||'').length)<=5, long_cta: v=>v.cta_words>=30, short_final: v=>v.final_line_words<=12, power3: v=>v.power_count>=3,
+};
+const R = S.recipe, RL = S.recipe_labels;
+const score = v => R.reduce((t,k)=>t+(PRED[k]&&PRED[k](v)?1:0),0);
+const isMain = v => v.has_cta && v.script_visible;
+const findV = (date, views) => V.find(v => v.date===date && v.views===views);
+const thumb = (v, cls='') => v ? `<span class="thumb ${cls}"><img src="${v.thumb}" alt="" loading="lazy"><span class="ob">${v.outlier ? f1(v.outlier)+'x' : ''}</span></span>` : '';
+
+// ---- explorer filter (every number on the page lands here) ----
+let XF = null;  // {label, pred, set}
+function setFilter(label, pred, set='main'){
+  XF = {label, pred};
+  document.getElementById('f-set').value = set;
+  ['q','f-magnet','f-send','f-mentions'].forEach(id => document.getElementById(id).value = '');
+  renderV();
+  document.getElementById('explorer').scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'start'});
+}
+function clearFilter(){ XF = null; renderV(); }
+const NL = (txt, label, pred, set) => `<button class="numlink" data-nl="${esc(label)}" data-set="${set||'main'}">${txt}</button>`;
+const NLREG = {};  // label → pred
+function nl(txt, label, pred, set){ NLREG[label] = pred; return NL(txt, label, pred, set); }
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-nl]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  setFilter(b.dataset.nl, NLREG[b.dataset.nl], b.dataset.set);
+});
+
+// ---- header meta + tiles ----
+document.getElementById('m-range').textContent = S.date_range[0] + ' → ' + S.date_range[1];
+document.getElementById('m-count').textContent = S.n_total + ' videos pulled · ' + S.n_main + ' analyzed';
+document.getElementById('m-source').textContent = S.manual ? 'source: scripts pasted by the creator' : 'source: Sandcastles';
+document.getElementById('tiles').innerHTML = [
+  ['you', nl(f1(S.base_med), 'all analyzable videos', isMain), 'median leads per 1K views — your baseline; every lift is measured against it'],
+  ['', nl(f1(S.pooled), 'all analyzable videos', isMain), 'leads per 1K views, pooled (total leads ÷ total views)'],
+  ['', nl(fmt(S.total_leads), 'all analyzable videos', isMain), 'estimated lead-magnet requests across ' + S.n_main + ' videos'],
+  ['', fmt(S.total_views), 'views on those videos'],
+].map(([c,v,l]) => `<div class="tile ${c}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+
+// ---- ladder + recipe ----
+const ING_COPY = {
+  multi_mention: ['Say the keyword twice', 'Drop the CTA in the first three lines and again at the close. A second ask catches the people who were sold by line two and forgot by the end.'],
+  bookend: ['Bookend the CTA', 'Keyword in the hook and again at the close.'],
+  send_through: ['"…and I\'ll send it through"', 'Beats "I\'ll send you" / "send it to you". Same promise, different verb.'],
+  imperative: ['Open the close with "Comment X"', 'The imperative beats "If you want…, comment X". A conditional hands the viewer an exit; the imperative doesn\'t.'],
+  asset_magnet: ['Hand over an asset, not a video', 'Docs, databases, skill files and links beat "a deeper video". People want a thing to keep, not more to watch.'],
+  magnet_named: ['Name the thing you\'re sending', 'A concrete deliverable beats "I\'ll send it through".'],
+  for_free: ['Say "for free"', 'Removes the last hesitation before they comment.'],
+  quantified: ['Put a number on it', '"47 hooks", "18 pages" — specificity reads as real.'],
+  benefit: ['Add a benefit clause', '"…so you can / so you never have to…" tells them what changes after they get it.'],
+  effort: ['Show the effort', '"I put together / I built…" — effort signals value.'],
+  with_examples: ['Promise examples', 'Examples make an abstract magnet feel usable.'],
+  kw_caps: ['Write the keyword in CAPS', 'Visually marks the word to type.'],
+  totality: ['Use totality words', '"the entire / whole / full…" frames the magnet as complete.'],
+  exact: ['Say "exact"', '"the exact system I use" signals a copyable recipe.'],
+  tease_remainder: ['Tease the remainder', '"…the other 7" — the video covers some, the magnet covers the rest.'],
+  possessive_my: ['Make it yours', '"my doc / our database" — personal ownership.'],
+  ai_feed: ['Make it AI-usable', '"feed this into Claude/GPT", a skill file — a magnet that does work for them.'],
+  kw_in_body: ['Use a topic word as the keyword', 'A keyword that is also the video\'s subject is easier to remember and type.'],
+  short_final: ['Keep the final line short', 'A ≤12-word closing ask is easier to act on.'],
+};
+const lc = s => s.charAt(0).toLowerCase()+s.slice(1);
+document.getElementById('ladder-h2').textContent = R.length >= 3 ? `${['Two','Three','Four'][R.length-2]} CTA choices stack. Each one you add steps conversion up a rung.` : 'The CTA choices that stack on this channel';
+document.getElementById('ladder-lede').innerHTML = `Score every video 0–${R.length} on whether it ${R.map((k,i)=>`(${i+1}) ${lc((ING_COPY[k]||[RL[i]])[0])}`).join(', ')}, then group by score. Picked by this channel's own data — the levers with the biggest, best-supported lift.`;
+const maxL = Math.max(...LADDER.map(l => l.med), S.base_med, 0.1);
+const k = R.length;
+document.getElementById('ladder').innerHTML = `<div class="baseline" style="bottom:calc(var(--barmax) * ${(S.base_med/maxL).toFixed(4)} + var(--capH))"></div>` +
+  LADDER.map(l => { const col = RAMP[Math.max(0,Math.min(4,4-Math.round(l.score/k*4)))]; const lab = `${l.score} of ${k} levers`;
+    NLREG[lab] = v => isMain(v) && score(v)===l.score;
+    return `<button class="rung" data-nl="${lab}" data-set="main"><div class="bar" style="--h:${(l.med/maxL).toFixed(4)};background:${col}"><span>${l.n?f1(l.med):'–'}</span></div><div class="cap"><b>${l.score} of ${k}</b><span>n ${l.n}</span><i>pooled ${f1(l.pooled)}</i></div></button>`; }).join('');
+document.getElementById('ladder').style.gridTemplateColumns = `repeat(${LADDER.length},1fr)`;
+document.getElementById('lg-base').textContent = f1(S.base_med);
+(function(){ const cap = document.querySelector('.rung .cap'); const setCap = () => document.getElementById('ladder').style.setProperty('--capH', (cap ? cap.getBoundingClientRect().height + 6 : 52) + 'px'); setCap(); addEventListener('resize', setCap); })();
+const F = Object.fromEntries(A.features.map(f => [f.feature, f]));
+document.getElementById('ingredients').innerHTML = R.map((key,i) => { const f = F[key]; const c = ING_COPY[key] || [RL[i], S.recipe_desc[i]];
+  return `<div class="ing"><span class="tag">lever ${i+1}</span><b>${c[0]}</b><span class="lift">${f.lift.toFixed(2)}× · ${nl(f1(f.med_with), f.with_label, PRED[key])} vs ${nl(f1(f.med_without), 'without: '+f.with_label, v=>!PRED[key](v))} · n ${f.n_with}/${f.n_without} · p ${f.p<0.001?'<0.001':f.p.toFixed(3)}</span><span class="note">${c[1]}</span></div>`; }).join('');
+const mono = LADDER.every((l,i) => i===0 || !l.n || !LADDER[i-1].n || l.med >= LADDER[i-1].med);
+const topRung = LADDER[LADDER.length-1];
+document.getElementById('ladder-note').textContent = `Read it like a recipe, not a law: the levers are correlated with each other, and the top rung holds only ${topRung.n} video${topRung.n===1?'':'s'}. ${mono ? 'The staircase is monotonic from bottom to top' : 'The staircase is not perfectly monotonic — treat the top rungs as roughly equal'} (trend p = ${S.recipe_p}). Section 02 shows which levers survive when you hold the strongest one constant.`;
+
+// ---- ranked feature bars ----
+let fsort = 'lift', ffilter = 'all';
+function renderF(){
+  let rows = A.features.slice();
+  if (ffilter==='sig') rows = rows.filter(r => r.p < 0.05);
+  if (ffilter==='up') rows = rows.filter(r => r.lift >= 1.15);
+  if (ffilter==='down') rows = rows.filter(r => r.lift <= 0.85);
+  if (ffilter==='flat') rows = rows.filter(r => r.lift > 0.85 && r.lift < 1.15);
+  rows.sort((a,b) => fsort==='lift' ? b.lift-a.lift : fsort==='p' ? a.p-b.p : b.n_with-a.n_with);
+  document.getElementById('fbars').innerHTML = rows.map(r => {
+    const pos = Math.log2(Math.min(2, Math.max(0.5, r.lift)));   // -1..1
+    const w = Math.abs(pos)*50, left = pos >= 0 ? 50 : 50 - w;
+    const op = r.p < 0.05 ? 1 : r.p < 0.15 ? .7 : .45;
+    const col = r.lift >= 1 ? 'var(--r2)' : 'var(--faint)';
+    const inR = R.includes(r.feature);
+    const pv = r.p < 0.001 ? '<0.001' : r.p.toFixed(3);
+    return `<div class="frow"><div class="lab"><b>${r.with_label}</b><small title="${esc(r.desc)}">${r.desc}</small>${inR?'<span class="pill recipe">in your recipe</span>':(r.p<0.05?'<span class="pill sig">p &lt; 0.05</span>':'')}</div>
+      <div class="divtrack" title="${r.lift.toFixed(2)}×"><div class="divfill" style="left:${left}%;width:${w}%;background:${col};opacity:${op}"></div></div>
+      <div class="stats"><span class="lift">${r.lift.toFixed(2)}×</span><span>${nl(f1(r.med_with), r.with_label, PRED[r.feature])} vs ${nl(f1(r.med_without), 'without: '+r.with_label, v=>!PRED[r.feature](v))}</span><span>n ${r.n_with}/${r.n_without} · p ${pv}</span></div></div>`;
+  }).join('') || '<p class="note">No features match this filter.</p>';
+}
+document.querySelectorAll('.chip[data-f]').forEach(c => c.addEventListener('click', () => { ffilter = c.dataset.f; document.querySelectorAll('.chip[data-f]').forEach(x=>x.classList.toggle('on', x===c)); renderF(); }));
+document.getElementById('fsort').addEventListener('input', e => { fsort = e.target.value; renderF(); });
+renderF();
+
+// ---- do this next ----
+(function(){
+  const fix = V.filter(v => isMain(v) && v.views >= 3000).sort((a,b)=>a.conv-b.conv).slice(0,3);
+  const recent = V.filter(isMain).sort((a,b)=>a.date<b.date?1:-1).slice(0,15);
+  const rmed = recent.length ? f1(recent.map(v=>v.conv).sort((a,b)=>a-b)[Math.floor(recent.length/2)]) : '–';
+  const missing = v => R.filter(key => !PRED[key](v)).map(key => (ING_COPY[key]||[RL[R.indexOf(key)]])[0]).join(' · ');
+  const bestRung = LADDER.filter(l=>l.n>=3).sort((a,b)=>b.med-a.med)[0];
+  NLREG['last 15 videos'] = v => recent.includes(v);
+  document.getElementById('next').innerHTML = `
+    <div class="card"><span class="k">Do this next · 1</span><h3>Run the recipe on every new video</h3><p class="note">${R.map((key,i)=>lc((ING_COPY[key]||[RL[i]])[0])).join(', ')}. Videos with ${bestRung.score} of ${k} sit at ${nl(f1(bestRung.med), bestRung.score+' of '+k+' levers', v=>isMain(v)&&score(v)===bestRung.score)} per 1K vs ${nl(f1(LADDER[0].med), '0 of '+k+' levers', v=>isMain(v)&&score(v)===0)} with none.</p></div>
+    <div class="card"><span class="k">Do this next · 2</span><h3>Fix these first</h3><p class="note">Your lowest-converting CTAs with 3,000+ views, and the levers each one is missing. Rewrite with only the levers above.</p>
+      ${fix.map(v => `<a class="fixrow" href="${v.url}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">${thumb(v)}<div><div class="q">“${esc(v.final_line)}”</div><div class="miss">missing: ${missing(v) || 'nothing — check the topic'}</div></div><span class="mono" style="font-weight:600">${f1(v.conv)}</span></a>`).join('')}</div>
+    <div class="card"><span class="k">Do this next · 3</span><h3>Re-run after 20–30 more posts</h3><p class="note">This is correlation on ${S.n_main} videos, not a split test. Your last 15 videos run at a median of ${nl(rmed, 'last 15 videos', NLREG['last 15 videos'])} per 1K against a channel median of ${f1(S.base_med)} — when the new CTAs land, that number should climb above the baseline. Same pull, same rules, same report.</p></div>`;
+})();
+
+// ---- 01 control ----
+(function(){
+  const sec = document.getElementById('control-sec');
+  if (!S.nocta_conv.length && !S.caption_only) { sec.hidden = true; return; }
+  let cards = S.nocta_conv.map(c => { const v = findV(c.date, c.views);
+    return `<div class="card ctl"><div class="eyebrow">${c.date} · no keyword CTA</div><div class="row">${thumb(v,'lg')}<div><div class="big">${f1(c.conv)} <small>per 1K</small></div><div class="note">${fmt(c.views)} views · ${c.comments} comments</div></div></div><div class="note">“${esc(c.hook)}”</div>${v?`<div class="note"><a href="${v.url}" target="_blank" rel="noopener">open the post</a> · <a href="${v.sc_url}" target="_blank" rel="noopener">Sandcastles</a></div>`:''}</div>`; }).join('');
+  if (S.caption_only) { NLREG['caption-only CTA'] = v => v.has_cta && !v.script_visible;
+    cards += `<div class="card ctl"><div class="eyebrow">Caption-only CTA · script not visible</div><div class="big">${nl(f1(S.caption_only.med), 'caption-only CTA', NLREG['caption-only CTA'], 'all')} <small>per 1K</small></div><div class="note">${S.caption_only.n} videos where the keyword lives only in the caption (no transcript available). A benchmark, excluded from the feature analysis.</div></div>`; }
+  document.getElementById('control').innerHTML = cards;
+  const ratio = S.nocta_med ? Math.round(S.base_med / Math.max(S.nocta_med, 0.05)) : null;
+  document.getElementById('control-note').textContent = S.nocta_conv.length
+    ? `If comments were mostly organic chatter, CTA-less videos would still get plenty. The no-CTA videos on this channel sit at a median ${f1(S.nocta_med)} per 1K — ${ratio ? ratio + '× below' : 'far below'} the ${f1(S.base_med)} median for CTA videos. That gap is the evidence that "comments ÷ 2" is a real lead count. (A CTA-less video with lots of comments usually means a link-in-bio or "DM me" CTA that can't be tracked the same way.)`
+    : `Every video on this channel carries a keyword CTA, so there is no no-CTA control group. The proxy rests on the ManyChat pattern itself: one viewer comment + one auto-reply per lead.`;
+})();
+
+// ---- 02 confounds ----
+(function(){
+  const topK = R[0];
+  const LBL = Object.fromEntries(A.features.map(f => [f.with_label, f.feature]));
+  document.getElementById('confounds').innerHTML = A.confounds.length ? A.confounds.map((c,ci) => {
+    const mx = Math.max(...c.rows.map(r=>r[1])); const pv = c.p < 0.001 ? '< 0.001' : '= ' + c.p.toFixed(3);
+    const cls = c.holds ? (c.p < 0.15 ? 'yes' : 'weak') : 'no';
+    const m = c.title.match(/only among "(.+)" hook videos/); const cat = m && m[1];
+    const rowPred = (i) => { const key = LBL[c.rows[0][0]] || topK; const on = i===0;
+      return cat ? (v => isMain(v) && v.hook_cat===cat && PRED[topK](v)===on) : (v => isMain(v) && !PRED[topK](v) && PRED[key](v)===on); };
+    return `<div class="card"><h3>${c.title}</h3><p class="note" style="margin:2px 0 12px">${c.sub} · p ${pv} · <span class="holds ${cls}">${c.holds ? (c.p < 0.15 ? 'holds' : 'holds, but weakly') : 'does not hold'}</span></p><div class="bars">${c.rows.map((r,i)=>{ const lab = `${r[0]} (${cat?'"'+cat+'" hook':'without '+RL[0]})`; NLREG[lab] = rowPred(i);
+      return `<button class="brow" data-nl="${esc(lab)}" data-set="main"><div class="lab"><span>${r[0]}</span><small>n = ${r[2]}</small></div><div class="track"><div class="fill ${i?'w2':''}" style="width:${r[1]/mx*100}%"></div></div><div class="val">${f1(r[1])}</div></button>`; }).join('')}</div></div>`; }).join('')
+    : '<div class="card note">Not enough videos to run confound checks (each needs 4+ videos on both sides).</div>';
+})();
+
+// ---- 03 groups ----
+function groupCard(title, sub, rows, labels, key){
+  const mx = Math.max(...rows.map(r=>Math.max(r.med, r.pooled)));
+  return `<div class="card"><h3>${title}</h3><p class="note" style="margin:2px 0 12px">${sub}</p><div class="bars">${rows.map(r=>{ const lab = `${title}: ${labels ? (labels[r.group]||r.group) : r.group}`; NLREG[lab] = v => isMain(v) && String(v[key])===r.group;
+    return `<button class="brow" data-nl="${esc(lab)}" data-set="main"><div class="lab"><span>${labels ? (labels[r.group]||r.group) : r.group}</span><small>n = ${r.n}</small></div><div><div class="track"><div class="fill" style="width:${r.med/mx*100}%"></div></div><div class="track" style="height:6px;margin-top:2px"><div class="fill pooled" style="width:${r.pooled/mx*100}%"></div></div></div><div class="val">${f1(r.med)}<br><span class="p2">${f1(r.pooled)}</span></div></button>`; }).join('')}</div></div>`;
+}
+const G = A.groups;
+document.getElementById('groups').innerHTML =
+  groupCard('What you promise to send', 'The kind of lead magnet named in the closing CTA.', G.magnet, MAG, 'magnet') +
+  groupCard('The delivery verb', 'Same promise, different phrasing on the final line.', G.send_style.filter(g=>g.n>=3), SEND, 'send_style') +
+  groupCard('Where the CTA sits', 'Bookend = keyword in the first three lines and again at the close.', G.placement, PLACE, 'placement') +
+  (G.hook_cat.length ? groupCard('Spoken hook style of the video', 'Not a CTA feature, but it sets up who\'s still watching when the CTA lands.', G.hook_cat, null, 'hook_cat') : '') +
+  (G.format_cat.length > 1 ? groupCard('Video format', 'From Sandcastles analysis.', G.format_cat, null, 'format_cat') : '') +
+  (G.kw.filter(g=>g.n>=3).length ? groupCard('Repeated keywords', 'Keywords used on 3+ videos — does repetition wear them out?', G.kw.filter(g=>g.n>=3).sort((a,b)=>b.med-a.med), null, 'kw') : '');
+
+// ---- 04 nulls ----
+(function(){
+  const L = A.length_buckets, mxL = Math.max(...L.map(b=>b.med));
+  const RANGE = {'≤15 words':[0,15],'16–30':[16,30],'31–50':[31,50],'51+':[51,99999]};
+  const NUM = A.numeric.filter(n => ['cta_words','final_line_words','power_count','kw_len','script_words'].includes(n.key));
+  document.getElementById('nulls').innerHTML =
+    `<div class="card"><h3>Closing CTA length</h3><p class="note" style="margin:2px 0 12px">Median leads per 1K by word count of the closing CTA block.</p><div class="bars">${L.map(b=>{ const lab = `CTA length ${b.bucket}`; const [lo,hi] = RANGE[b.bucket]||[0,99999]; NLREG[lab] = v => isMain(v) && v.cta_words>=lo && v.cta_words<=hi;
+      return `<button class="brow" data-nl="${esc(lab)}" data-set="main"><div class="lab"><span>${b.bucket}</span><small>n = ${b.n}</small></div><div class="track"><div class="fill" style="width:${b.med/mxL*100}%"></div></div><div class="val">${f1(b.med)}</div></button>`; }).join('')}</div>
+     <h3 style="margin-top:18px">Rank correlations with conversion</h3><p class="note" style="margin:2px 0 8px">Spearman ρ. Anything between −0.15 and 0.15 is noise at this sample size.</p><div class="kv">${NUM.map(n=>`<span>${n.feature}</span><span class="mono">ρ = ${n.rho > 0 ? '+' : ''}${n.rho.toFixed(2)} · p = ${n.p.toFixed(2)}${Math.abs(n.rho)>=0.2 && n.p<0.05 ? (n.rho<0?' ← lower is better here':' ← higher is better here'):''}</span>`).join('')}</div></div>
+     <div class="card"><h3>Power words in the CTA</h3><p class="note" style="margin:2px 0 12px">Median lift vs the ${f1(S.base_med)} baseline for each word appearing in 4+ CTAs. Only words with n ≥ 8 and lift outside 0.8–1.25 deserve attention.</p><div class="tscroll" style="max-height:none;border:0"><table><thead><tr><th>Word</th><th class="num">n</th><th class="num">median</th><th class="num">lift</th></tr></thead><tbody>${A.power_table.map(p=>{ const lab = `power word “${p.word}”`; NLREG[lab] = v => isMain(v) && (v.power_words||[]).includes(p.word);
+       return `<tr><td>“${p.word}”</td><td class="num">${p.n}</td><td class="num">${nl(f1(p.med), lab, NLREG[lab])}</td><td class="num"><span class="pill ${p.lift>=1.2?'sig':''}" style="${p.lift<=0.85?'opacity:.5':''}">${f1(p.lift)}×</span></td></tr>`; }).join('')}</tbody></table></div></div>`;
+})();
+
+// ---- 05 explorer ----
+const selM = document.getElementById('f-magnet'), selS = document.getElementById('f-send');
+[...new Set(V.map(v=>v.magnet))].filter(m=>m!=='none').forEach(m => selM.insertAdjacentHTML('beforeend', `<option value="${m}">${MAG[m]||m}</option>`));
+[...new Set(V.map(v=>v.send_style))].forEach(s => selS.insertAdjacentHTML('beforeend', `<option value="${s}">${SEND[s]||s}</option>`));
+let vsort = {k:'conv', dir:-1}, open = null;
+const FEATS = [['multi_mention','2× mention'],['send_through','"through"'],['imperative','imperative'],['asset_magnet','asset'],['ai_feed','AI-usable'],['for_free','free'],['quantified','number'],['tease_remainder','"other N"'],['benefit','benefit'],['effort','"I built"']];
+const maxConv = Math.max(...V.map(v=>v.conv));
+function renderV(){
+  const q = document.getElementById('q').value.toLowerCase();
+  const set = document.getElementById('f-set').value, m = selM.value, s = selS.value, mm = document.getElementById('f-mentions').value;
+  let rows = V.filter(v => set==='all' || isMain(v));
+  if (XF) rows = rows.filter(XF.pred);
+  if (q) rows = rows.filter(v => (v.hook_line+' '+(v.kw||'')+' '+v.cta_block+' '+v.topic).toLowerCase().includes(q));
+  if (m) rows = rows.filter(v => v.magnet===m);
+  if (s) rows = rows.filter(v => v.send_style===s);
+  if (mm==='1') rows = rows.filter(v => v.mentions===1);
+  if (mm==='2') rows = rows.filter(v => v.mentions>=2);
+  rows.sort((a,b) => { let x=a[vsort.k], y=b[vsort.k]; if (x==null) x=''; if (y==null) y=''; return (x>y?1:x<y?-1:0)*vsort.dir; });
+  const leads = rows.reduce((t,v)=>t+v.leads,0), views = rows.reduce((t,v)=>t+v.views,0);
+  document.getElementById('filterbar').innerHTML = XF ? `<span class="xf">showing: ${esc(XF.label)} <button type="button" id="xf-clear" aria-label="clear filter">×</button></span>` : '<span class="note">No filter — click any number on the page to filter to its videos.</span>';
+  const xc = document.getElementById('xf-clear'); if (xc) xc.addEventListener('click', clearFilter);
+  document.getElementById('f-count').textContent = `${rows.length} reels · ${fmt(Math.round(leads))} leads · ${views?f1(leads/views*1000):'–'} per 1K pooled`;
+  document.querySelector('#vtable tbody').innerHTML = rows.map(v => `<tr class="vrow" data-id="${v.uuid}"><td>${thumb(v)}</td><td class="mono" style="white-space:nowrap;font-size:12px">${v.date}</td><td><span class="hook" title="${esc(v.hook_line)}">${esc(v.hook_line)}</span></td><td class="mono" style="font-size:12px">${v.kw ? '“'+esc(v.kw)+'”' : '<span class="faint">—</span>'}</td><td class="num">${fmt(v.views)}</td><td class="num">${fmt(v.comments)}</td><td class="num">${fmt(v.leads)}</td><td class="num"><span class="convbar" style="width:${Math.max(2,v.conv/maxConv*60)}px"></span><b>${f1(v.conv)}</b></td><td style="font-size:12px;white-space:nowrap">${MAG[v.magnet]||v.magnet}</td><td><div class="tags">${isMain(v)?`<span class="tag score">${score(v)}/${k}</span>`:''}${FEATS.map(([key,l])=>`<span class="tag ${PRED[key](v)?'on':''}">${l}</span>`).join('')}</div></td></tr>` +
+    (open===v.uuid ? `<tr class="detail"><td colspan="10"><div class="eyebrow">Closing CTA block · ${v.cta_words} words · ${v.mentions} mention${v.mentions>1?'s':''} · ${PLACE[v.placement]||v.placement}</div><div class="cta" style="margin-top:6px">${v.cta_block ? esc(v.cta_block) : '<i>No comment CTA in this script.</i>'}</div>${v.all_cta_lines.length>1?`<div class="eyebrow" style="margin-top:14px">Every keyword mention, in script order</div><div class="lines">${v.all_cta_lines.map(l=>`<div>${esc(l)}</div>`).join('')}</div>`:''}<div class="kv"><span>topic</span><span>${esc(v.topic)}</span><span>hook style</span><span>${esc(v.hook_cat)}</span><span>outlier</span><span>${v.outlier}× channel average</span><span>recipe</span><span>${isMain(v)?`${score(v)} of ${k} — ${R.filter(key=>PRED[key](v)).map(key=>(ING_COPY[key]||[RL[R.indexOf(key)]])[0]).join(', ')||'none'}`:'—'}</span><span>power words</span><span>${v.power_words.length?esc(v.power_words.join(', ')):'none'}</span><span>links</span><span><a href="${v.url}" target="_blank" rel="noopener">open the post</a> · <a href="${v.sc_url}" target="_blank" rel="noopener">Sandcastles</a></span></div></td></tr>` : '')).join('');
+  document.querySelectorAll('.vrow').forEach(tr => tr.addEventListener('click', e => { if (e.target.tagName==='A') return; open = open===tr.dataset.id ? null : tr.dataset.id; renderV(); }));
+}
+['q','f-magnet','f-send','f-mentions','f-set'].forEach(id => document.getElementById(id).addEventListener('input', renderV));
+document.querySelectorAll('#vtable th[data-k]').forEach(th => th.addEventListener('click', () => { const kk = th.dataset.k; vsort = {k:kk, dir: vsort.k===kk ? -vsort.dir : (['date','hook_line','kw','magnet'].includes(kk)?1:-1)}; document.querySelectorAll('#vtable th').forEach(t=>t.classList.toggle('sorted', t===th)); renderV(); }));
+renderV();
+
+// ---- 06 method ----
+const mmx = S.kw_mismatch || [];
+document.getElementById('method').innerHTML = [
+  '<b>Leads = comments ÷ 2.</b> Assumes one auto-reply per keyword comment and negligible organic chatter. Videos with reply threads will be slightly overcounted.',
+  '<b>Conversion = leads per 1,000 views.</b> Raw lead count mostly tracks views; per-1K removes that so the CTA copy gets judged on its own.',
+  S.manual ? '<b>Scripts were pasted by the creator</b>, so hook style, format and outlier data are unavailable.' : '<b>The script is the Sandcastles transcript</b> where available, otherwise the caption. Caption-only keyword lines are merged in, since the ManyChat keyword often lives only in the caption.' + (mmx.length ? ` <b>${mmx.length} video${mmx.length>1?'s':''} use a different keyword in the caption than on camera</b> (${mmx.map(m=>m.date).join(', ')}) — that quietly leaks leads.` : ''),
+  '<b>Medians, not means.</b> One viral video would dominate any average. Pooled rates (total leads ÷ total views) are shown alongside so the big videos still count.',
+  '<b>Correlation, not a split test.</b> Topic and hook style are the biggest confounders; section 02 controls for the strongest lever and hook style, nothing controls for everything.',
+  `<b>Sample sizes.</b> ${S.n_main} analyzable videos (${S.date_range[0]} → ${S.date_range[1]}). Groups under ~10 videos are directional only; under 30 total the whole report is directional.`,
+  '<b>Reproducible.</b> Same pull + same scoring rules = same report. Re-run after 20–30 more posts to see whether a CTA change actually moved the number.',
+].map(s => `<li>${s}</li>`).join('');
+document.getElementById('foot').textContent = `CTA Lab · built __BUILT__ · from ${S.n_total} ${S.handle} videos${S.manual ? '' : ' indexed in Sandcastles'} · leads are estimates, not ManyChat exports`;
+</script>

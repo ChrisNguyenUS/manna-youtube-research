@@ -1,0 +1,395 @@
+<!--
+  Format Finder v2 — house-style report template (master spec, "House style").
+  Written for the Artifact tool: no html/head/body wrapper. build_report.py replaces __DATA__ with the
+  analysis JSON (+ picks), __TITLE__, __WORKSPACE__, __NICHE__, __DATE__. Every fill point is marked DATA:.
+  Single-theme by design (the Sep 13 Positioning Canvas commits to dark navy); every color is painted explicitly.
+-->
+<title>__TITLE__</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root{
+    --bg:#0F172A; --bg2:#131D33; --surface:#1A2540; --line:#26324D; --line2:#33405E;
+    --text:#E6EBF5; --muted:#94A3B8; --faint:#64748B;
+    --r1:#EF4444; --r2:#F97316; --r3:#F59E0B; --r4:#38BDF8; --r5:#3B5A8A;
+    --open:#34D399; --violet:#A78BFA;
+    --display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
+    --body:"DM Sans","Helvetica Neue",Arial,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:0 64px}
+  a{color:var(--r4);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1080px;margin:0 auto}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1,h2,h3,h4{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.05}
+  h1{font-size:clamp(28px,4.4vw,44px);font-weight:800;letter-spacing:-.01em;margin:10px 0 12px}
+  h2{font-size:28px;font-weight:700}
+  h3{font-size:17px;font-weight:700}
+  h4{font-size:15px;font-weight:700}
+  p{margin:0}
+  .muted{color:var(--muted)} .faint{color:var(--faint)} .small{font-size:13px} .mono{font-family:var(--mono)}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+  :focus-visible{outline:2px solid var(--r4);outline-offset:2px}
+  img{max-width:100%;display:block}
+
+  header{padding-block:36px 24px;border-bottom:1px solid var(--line)}
+  .sub{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px}
+  .lead{max-width:72ch;font-size:16.5px;margin-top:16px}
+  .lead b{color:var(--text);font-weight:600}
+
+  section{padding-block:36px;border-bottom:1px solid var(--line)}
+  .phead{display:flex;align-items:baseline;gap:14px;margin-bottom:6px}
+  .pnum{font-family:var(--mono);font-size:12px;color:var(--r2);letter-spacing:.1em}
+  .pdesc{max-width:68ch;color:var(--muted);margin-bottom:22px}
+
+  /* ---- signature visual: the matrix ---- */
+  .legend{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-family:var(--mono);font-size:11px;color:var(--muted);margin:14px 0 12px}
+  .legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-3px;margin-right:6px;border:1px solid var(--line2)}
+  .gridwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--bg2)}
+  table.matrix{border-collapse:separate;border-spacing:0;min-width:900px;width:100%}
+  .matrix th{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:8px 6px;vertical-align:bottom;text-align:left;border-bottom:1px solid var(--line);background:var(--bg2)}
+  .matrix th.col{text-align:center;width:80px}
+  .matrix th .cat{display:block;font-size:9px;letter-spacing:.1em;color:var(--r4);margin-bottom:2px;opacity:.9}
+  .matrix th .nm{display:block;font-family:var(--body);text-transform:none;letter-spacing:0;color:var(--text);font-weight:500;font-size:12.5px;line-height:1.25}
+  .matrix th .tot{display:block;color:var(--faint);font-weight:400;margin-top:3px}
+  .matrix th.row{width:160px;padding-left:12px;border-right:1px solid var(--line);position:sticky;left:0;z-index:2}
+  .matrix .info{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--line2);color:var(--muted);font-size:9.5px;font-family:var(--mono);margin-left:5px;vertical-align:1px}
+  .matrix .info:hover{border-color:var(--r4);color:var(--r4)}
+  .matrix td{padding:0;border-bottom:1px solid var(--line);border-right:1px solid var(--line);vertical-align:top}
+  .matrix td:last-child{border-right:0}
+  .cell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:100%;height:96px;padding:6px 4px;position:relative;border:1px solid transparent;transition:transform .12s;height:84px}
+  .cell.filled:hover,.cell.ws:hover{transform:scale(1.03);z-index:1}
+  .cell.sel{outline:2px solid var(--text);outline-offset:-2px}
+  .cell img{width:36px;height:48px;object-fit:cover;border-radius:4px;background:var(--surface)}
+  .cell .meta{display:flex;gap:5px;align-items:baseline;font-family:var(--mono);font-size:11px;white-space:nowrap}
+  .cell .meta b{font-weight:600;color:var(--text)}
+  .cell .badge{padding:1px 5px;border-radius:999px;font-size:10px;font-weight:600;color:#0F172A;background:var(--r3)}
+  .t-r1{background:rgba(239,68,68,.20)} .t-r2{background:rgba(249,115,22,.16)} .t-r3{background:rgba(245,158,11,.13)} .t-r4{background:rgba(56,189,248,.11)} .t-r5{background:rgba(59,90,138,.28)}
+  .t-r1 .badge{background:var(--r1);color:#fff} .t-r2 .badge{background:var(--r2)} .t-r3 .badge{background:var(--r3)} .t-r4 .badge{background:var(--r4)} .t-r5 .badge{background:var(--r5);color:var(--text)}
+  .cell.ws{border-color:rgba(52,211,153,.55);box-shadow:inset 0 0 0 1px rgba(52,211,153,.35),0 0 14px -2px rgba(52,211,153,.45)}
+  .cell.ws .lab{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--open)}
+  .cell.ws .ex{font-family:var(--mono);font-size:10px;color:var(--muted)}
+  .cell.wsB{border-style:dashed}
+  .cell.empty .lab{font-family:var(--mono);font-size:9.5px;color:var(--faint);letter-spacing:.06em;text-align:center;line-height:1.3}
+  .cell.incompat{opacity:.35}
+  .cell.incompat .lab{color:var(--faint)}
+  tr.thin .cell{height:40px}
+  tr.thin .cell img{display:none}
+  .absent{margin-top:14px;font-size:12.5px;color:var(--faint);line-height:1.8}
+  .absent .chip{border-style:dashed}
+  @media (prefers-reduced-motion:no-preference){
+    .cell.ws{animation:glow 2.4s ease-in-out infinite alternate}
+    @keyframes glow{from{box-shadow:inset 0 0 0 1px rgba(52,211,153,.25),0 0 8px -2px rgba(52,211,153,.25)}to{box-shadow:inset 0 0 0 1px rgba(52,211,153,.5),0 0 18px -2px rgba(52,211,153,.6)}}
+  }
+
+  /* cell detail panel */
+  .panel{margin-top:14px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);padding:16px 18px}
+  .panel .ptop{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline;margin-bottom:10px}
+  .panel .ptop h3{font-size:19px}
+  .stats{display:flex;flex-wrap:wrap;gap:6px 18px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .stats b{color:var(--text);font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{font-family:var(--mono);font-size:10.5px;padding:3px 7px;border-radius:999px;border:1px solid var(--line2);color:var(--muted);white-space:nowrap}
+  .chip.open{border-color:rgba(52,211,153,.6);color:var(--open)}
+  .chip.hot{border-color:var(--r3);color:var(--text)}
+  .vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:14px}
+  .vcard{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:8px;font-size:12px;min-width:0}
+  .vcard a.th{position:relative;display:block;border-radius:6px;overflow:hidden;aspect-ratio:3/4;background:var(--bg)}
+  .vcard a.th img{width:100%;height:100%;object-fit:cover}
+  .vcard .ob{position:absolute;left:6px;top:6px;padding:2px 6px;border-radius:999px;background:var(--r3);color:#0F172A;font-family:var(--mono);font-size:10.5px;font-weight:600}
+  .vcard .ob.big{background:var(--r1);color:#fff}
+  .vcard .h{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:6px}
+  .vcard .cap{color:var(--muted);font-size:12px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .vcard .cap.q{color:var(--text)}
+  .vcard .sc{font-family:var(--mono);font-size:10px;color:var(--faint)}
+
+  /* try these 3 first */
+  .strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+  .pick{border:1px solid var(--line);border-radius:10px;background:var(--bg2);padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+  .pick.ws{border-color:rgba(52,211,153,.55);box-shadow:0 0 0 1px rgba(52,211,153,.2)}
+  .pick .tag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--r3)}
+  .pick.ws .tag{color:var(--open)}
+  .pick h3{font-size:19px}
+  .pick .combo{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .pick ol{margin:0;padding-left:18px;font-size:13.5px;display:flex;flex-direction:column;gap:3px}
+  .pick .recipe{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px}
+  .pick .recipe b{color:var(--text);font-weight:500}
+  .models{display:flex;gap:8px;margin-top:2px}
+  .models a{position:relative;flex:1;aspect-ratio:3/4;border-radius:6px;overflow:hidden;background:var(--surface)}
+  .models a img{width:100%;height:100%;object-fit:cover}
+  .models .ob{position:absolute;left:5px;top:5px;padding:1px 5px;border-radius:999px;background:var(--r3);color:#0F172A;font-family:var(--mono);font-size:10px;font-weight:600}
+  .models .hd{position:absolute;left:0;right:0;bottom:0;padding:3px 5px;font-family:var(--mono);font-size:9.5px;color:#fff;background:linear-gradient(transparent,rgba(15,23,42,.9))}
+  .wild{margin-top:14px;border:1px dashed rgba(52,211,153,.5);border-radius:10px;padding:12px 14px;font-size:13.5px;color:var(--muted);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .wild b{color:var(--open);font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+
+  /* channels */
+  .chan{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+  .ccard{border:1px solid var(--line);border-radius:10px;background:var(--bg2);padding:12px;display:grid;grid-template-columns:72px 1fr;gap:12px}
+  .ccard a.th{position:relative;display:block;aspect-ratio:3/4;border-radius:6px;overflow:hidden;background:var(--surface)}
+  .ccard a.th img{width:100%;height:100%;object-fit:cover}
+  .ccard .ob{position:absolute;left:4px;top:4px;padding:1px 5px;border-radius:999px;background:var(--r1);color:#fff;font-family:var(--mono);font-size:10px;font-weight:600}
+  .ccard .hd{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+  .ccard .hd a{font-family:var(--display);font-weight:700;font-size:15px;color:var(--text)}
+  .ccard .st{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px}
+  .ccard .heroes{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+  .hero{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;line-height:1.3}
+  .hero button{text-align:left;color:var(--text)}
+  .hero button:hover{color:var(--r4)}
+  .hero .n{font-family:var(--mono);font-size:10.5px;color:var(--muted);white-space:nowrap}
+  .more{margin-top:12px;font-size:13px;color:var(--muted);line-height:1.8}
+  .more button{color:var(--text);border-bottom:1px dotted var(--line2)}
+
+  /* white space */
+  .wsgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+  .wscard{border:1px solid rgba(52,211,153,.45);border-radius:10px;background:var(--bg2);padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+  .wscard.B{border-style:dashed}
+  .wscard .rank{font-family:var(--mono);font-size:10.5px;color:var(--open);letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between}
+  .wscard h3{font-size:16px}
+  .wscard .why{font-size:13px;color:var(--muted)}
+  .wscard .exlab{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:4px}
+  .exrow{display:flex;gap:8px}
+  .exrow a{position:relative;width:64px;aspect-ratio:3/4;border-radius:6px;overflow:hidden;background:var(--surface);flex:none}
+  .exrow a img{width:100%;height:100%;object-fit:cover}
+  .exrow .ob{position:absolute;left:4px;top:4px;padding:1px 5px;border-radius:999px;background:var(--r3);color:#0F172A;font-family:var(--mono);font-size:9.5px;font-weight:600}
+  .exrow .hd{position:absolute;left:0;right:0;bottom:0;padding:2px 4px;font-family:var(--mono);font-size:9px;color:#fff;background:linear-gradient(transparent,rgba(15,23,42,.9));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* explainers */
+  .exp{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+  .ecard{border:1px solid var(--line);border-radius:10px;background:var(--bg2);padding:14px 16px;display:grid;grid-template-columns:1fr 64px;gap:12px;scroll-margin-top:16px}
+  .ecard.flash{border-color:var(--r4);box-shadow:0 0 0 1px rgba(56,189,248,.35)}
+  .ecard.add{border-color:rgba(167,139,250,.6)}
+  .ecard .k{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);display:flex;justify-content:space-between;gap:6px}
+  .ecard .k .st{color:var(--muted)}
+  .ecard h4{margin:4px 0 4px;font-size:16px}
+  .ecard .what{font-size:13px;color:var(--text)}
+  .ecard .ex12{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+  .ecard .ex12 b{color:var(--muted);font-weight:600;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+  .ecard a.th{position:relative;display:block;aspect-ratio:3/4;border-radius:6px;overflow:hidden;background:var(--surface);align-self:start}
+  .ecard a.th img{width:100%;height:100%;object-fit:cover}
+  .ecard .ob{position:absolute;left:4px;top:4px;padding:1px 5px;border-radius:999px;background:var(--r3);color:#0F172A;font-family:var(--mono);font-size:9.5px;font-weight:600}
+  .ecard .none{font-family:var(--mono);font-size:10px;color:var(--faint);text-align:center;padding-top:20px}
+  .draft{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--violet);border:1px dashed var(--violet);padding:2px 6px;border-radius:4px}
+
+  /* method */
+  .method{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  .mcard{border:1px solid var(--line);border-radius:10px;background:var(--bg2);padding:12px 14px;font-size:13px;color:var(--muted)}
+  .mcard .big{font-family:var(--display);font-size:26px;font-weight:800;color:var(--text);line-height:1.1}
+  .mcard .lab{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:4px}
+  .mcard ul{margin:6px 0 0;padding-left:16px;display:flex;flex-direction:column;gap:2px}
+
+  footer{padding-top:36px;text-align:center}
+  .mantra{font-family:var(--display);font-weight:700;font-size:clamp(18px,2.6vw,24px);color:var(--text)}
+  .mantra em{font-style:normal;color:var(--r2)}
+  footer .small{margin-top:8px}
+
+  @media (max-width:720px){
+    h2{font-size:24px}
+    .panel{padding:12px}
+    .ccard{grid-template-columns:64px 1fr}
+    .ecard{grid-template-columns:1fr 56px}
+    .matrix th.row{width:120px}
+  }
+</style>
+
+<div class="wrap">
+<header>
+  <!-- DATA: eyebrow = "Format Finder · <workspace>" -->
+  <div class="eyebrow">Format Finder · __WORKSPACE__</div>
+  <!-- DATA: title = the question, in the niche's words -->
+  <h1 id="h1"></h1>
+  <!-- DATA: sub = channels · videos · window · date · credits -->
+  <div class="sub" id="sub"></div>
+  <!-- DATA: lead = the finding in one or two sentences, with numbers -->
+  <p class="lead" id="lead"></p>
+</header>
+
+<!-- ============ SIGNATURE VISUAL: STRUCTURE × LAYOUT ============ -->
+<section id="sig">
+  <div class="phead"><span class="pnum">THE MAP</span><h2>Format × editing style</h2></div>
+  <p class="pdesc">Rows are Sandcastles <b style="color:var(--text)">Formats</b> (how the words are organized). Columns are Sandcastles <b style="color:var(--text)">Editing Styles</b> (how it's shot), grouped under their Studio/Set · Greenscreen · Faceless · In-World categories. A video lives in one square. Tint = how much of the niche's outlier performance lives there (count × size of the wins, capped at 50x each). Number = the typical multiple. Green = a proven row meets a proven column and nobody has put them together. Tap any square.</p>
+  <div class="legend">
+    <span><i style="background:rgba(239,68,68,.35)"></i>hottest fifth</span>
+    <span><i style="background:rgba(249,115,22,.3)"></i></span>
+    <span><i style="background:rgba(245,158,11,.25)"></i></span>
+    <span><i style="background:rgba(56,189,248,.22)"></i></span>
+    <span><i style="background:rgba(59,90,138,.5)"></i>rare</span>
+    <span><i style="border-color:var(--open);box-shadow:0 0 8px -1px var(--open)"></i>white space (both halves proven)</span>
+    <span><i style="border-style:dashed;border-color:var(--open)"></i>proven next door</span>
+    <span><i style="opacity:.35"></i>can't exist</span>
+  </div>
+  <!-- DATA: the matrix is rendered from DATA.matrix by JS -->
+  <div class="gridwrap"><table class="matrix" id="matrix"></table></div>
+  <!-- DATA: cell detail panel (default = hottest cell) -->
+  <div class="panel" id="panel"></div>
+</section>
+
+<!-- ============ DO THIS NEXT ============ -->
+<section id="next">
+  <div class="phead"><span class="pnum">DO THIS NEXT</span><h2>Try these 3 first</h2></div>
+  <p class="pdesc">Two proven formats and one white-space bet. Make each one twice before you judge it; after two or three batches the data crowns your one or two hero formats and testing ends.</p>
+  <!-- DATA: picks from picks.json -->
+  <div class="strip" id="picks"></div>
+  <div class="wild" id="wild"></div>
+</section>
+
+<!-- ============ 01 CHANNELS ============ -->
+<section id="channels">
+  <div class="phead"><span class="pnum">01</span><h2>The top channels in the niche and what they win with</h2></div>
+  <p class="pdesc">Ranked by how much outlier performance each channel put on the board in the last year. A hero format is a square that carries most of a channel's wins. Click a hero to see it on the map.</p>
+  <div class="chan" id="chan"></div>
+  <div class="more" id="chanmore"></div>
+</section>
+
+<!-- ============ 02 WHITE SPACE ============ -->
+<section id="whitespace">
+  <div class="phead"><span class="pnum">02</span><h2>The empty squares</h2></div>
+  <p class="pdesc" id="ws-desc">Solid green: both halves are proven in this niche and no one has combined them. Dashed: unused here, but the same watchlist has outlier examples of it next door. Ranked by the strength of the two halves; the first twelve get cards.</p>
+  <div class="wsgrid" id="ws"></div>
+</section>
+
+<!-- ============ 03 EXPLAINERS ============ -->
+<section id="explain">
+  <div class="phead"><span class="pnum">03</span><h2>What every row and column means</h2></div>
+  <p class="pdesc">Sandcastles' own names, what each one is, how the video opens, and the cleanest real example from this niche. The ⓘ marks on the map jump here.</p>
+  <h3 style="margin:6px 0 10px">Formats — how the words are organized</h3>
+  <div class="exp" id="exp-s"></div>
+  <div class="absent" id="absent-s"></div>
+  <h3 style="margin:22px 0 10px">Editing styles — how it's shot and edited</h3>
+  <div class="exp" id="exp-l"></div>
+  <div class="absent" id="absent-l"></div>
+</section>
+
+<!-- ============ 04 METHOD ============ -->
+<section id="method">
+  <div class="phead"><span class="pnum">04</span><h2>How this was built</h2></div>
+  <p class="pdesc">Free data only, screened the same way every workflow screens, so a square here means the same thing in the other reports.</p>
+  <div class="method" id="method-cards"></div>
+</section>
+
+<footer>
+  <p class="mantra">A format is two parts. <em>Prove each half.</em> Then own the empty square.</p>
+  <!-- DATA: date line -->
+  <p class="small muted" id="foot"></p>
+</footer>
+</div>
+
+<script>
+const DATA = __DATA__;
+const A = DATA.analysis, P = DATA.picks, META = DATA.meta;
+const SN = Object.fromEntries(A.explain.structures.map(s=>[s.key,s]));
+const LN = Object.fromEntries(A.explain.layouts.map(l=>[l.key,l]));
+const name = (s,l)=> `${SN[s].name} · ${LN[l].name}`;
+const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const THUMBS = DATA.thumbs || {};            // uuid → embedded data URI (fetch_thumbs.py); falls back to the Sandcastles URL
+const T = v => THUMBS[v.uuid] || esc(v.thumb);
+const ob = v => `<span class="ob${v.outlier>=8?' big':''}">${v.outlier}x</span>`;
+const thumb = (v,cls='th') => `<a class="${cls}" href="${esc(v.url)}" target="_blank" rel="noopener" title="${esc((v.spoken_hook||v.caption||'').slice(0,140))}"><img src="${T(v)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">${ob(v)}</a>`;
+const vcard = (v, note) => `<div class="vcard">${thumb(v)}<div class="h"><span>@${esc(v.handle)}</span><a class="sc" href="${esc(v.sc_url)}" target="_blank" rel="noopener">SC ↗</a></div><div class="cap${v.spoken_hook?' q':''}">${esc(v.spoken_hook ? '“'+v.spoken_hook+'”' : v.caption)}</div>${note?`<div class="sc">${esc(note)}</div>`:''}</div>`;
+const WS = Object.fromEntries(A.white_space.map(w=>[w.structure+'|'+w.layout,w]));
+const INCOMPAT = new Set((A.incompatible||[]).map(x=>x.join('|')));
+
+// header
+document.getElementById('h1').textContent = `What wins in ${META.niche}, and where the empty square is`;
+document.getElementById('sub').innerHTML = [`${A.meta.n_channels} channels`, `${A.meta.n_in} outlier videos (${A.meta.min_outlier}x+)`, `${META.lookback_days} days`, `built ${META.date}`, `${META.credits} credits spent`].map(s=>`<span>${s}</span>`).join('');
+document.getElementById('lead').innerHTML = P.lead;
+document.getElementById('foot').textContent = `Format Finder · ${META.workspace} · ${META.date} · other people's channels only; your own channel is the Formula Miner's job · the full system lives at shortform.academy`;
+
+// matrix
+const S = A.structures, L = A.layouts;
+const rowTot = A.row_totals, colTot = A.col_totals;
+const CAT = A.layout_categories || {};
+let html = '<thead><tr><th class="row"></th>' + L.map(l=>`<th class="col"><span class="cat">${esc(CAT[l]||'')}</span><span class="nm">${LN[l].name}</span><span class="tot">${colTot[l]||0} · ${A.col_medians[l]??'–'}${A.col_medians[l]?'x':''}</span><button class="info" data-exp="l-${l}" aria-label="explain">i</button></th>`).join('') + '</tr></thead><tbody>';
+for (const s of S){
+  const thin = (rowTot[s]||0) < 3;
+  html += `<tr class="${thin?'thin':''}"><th class="row"><span class="nm">${SN[s].name}</span><span class="tot">${rowTot[s]||0} · ${A.row_medians[s]??'–'}${A.row_medians[s]?'x':''}</span><button class="info" data-exp="s-${s}" aria-label="explain">i</button></th>`;
+  for (const l of L){
+    const c = A.matrix[s+'|'+l], key = s+'|'+l, w = WS[key];
+    if (c.count){
+      html += `<td><button class="cell filled t-${c.tier}" data-cell="${key}"><img src="${T(c.specimen)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="meta"><b>${c.count}</b><span class="badge">${c.median}x</span></span></button></td>`;
+    } else if (w){
+      html += `<td><button class="cell ws ${w.tier==='B'?'wsB':''}" data-cell="${key}"><span class="lab">${w.tier==='B'?'next door':'open'}</span><span class="ex">${w.examples.length?w.examples.length+' example'+(w.examples.length>1?'s':''):'no one yet'}</span></button></td>`;
+    } else if (INCOMPAT.has(key)){
+      html += `<td><button class="cell incompat" data-cell="${key}"><span class="lab">—</span></button></td>`;
+    } else {
+      html += `<td><button class="cell empty" data-cell="${key}"><span class="lab">${thin?'·':'nobody\'s<br>doing this'}</span></button></td>`;
+    }
+  }
+  html += '</tr>';
+}
+html += '</tbody>';
+document.getElementById('matrix').innerHTML = html;
+
+function showCell(key){
+  document.querySelectorAll('.cell.sel').forEach(e=>e.classList.remove('sel'));
+  const btn = document.querySelector(`.cell[data-cell="${key}"]`); if (btn) btn.classList.add('sel');
+  const [s,l] = key.split('|'); const c = A.matrix[key]; const w = WS[key]; const el = document.getElementById('panel');
+  if (c.count){
+    el.innerHTML = `<div class="ptop"><h3>${name(s,l)}</h3><span class="stats"><span><b>${c.count}</b> winners</span><span>median <b>${c.median}x</b></span><span>best <b>${c.best}x</b></span><span><b>${c.share}%</b> of the niche's outlier performance</span></span></div>
+      <p class="small muted">${SN[s].what}, shot as ${LN[l].name.toLowerCase()} — ${LN[l].what.toLowerCase()}.</p>
+      <div class="chips">${c.channels.map(([h,n])=>`<span class="chip${n>=3?' hot':''}">@${esc(h)} · ${n}</span>`).join('')}</div>
+      <div class="chips"><span class="chip" style="border:0;padding-left:0;color:var(--faint)">editing styles inside:</span>${c.flavors.map(([f,n])=>`<span class="chip">${esc(f)} · ${n}</span>`).join('')}</div>
+      <div class="vgrid">${c.videos.map(v=>vcard(v)).join('')}</div>${c.count>c.videos.length?`<p class="small faint" style="margin-top:8px">Showing the top ${c.videos.length} of ${c.count} by outlier score.</p>`:''}`;
+  } else if (w){
+    const parents = [SN[s].specimen, LN[l].specimen].filter(Boolean);
+    el.innerHTML = `<div class="ptop"><h3>${name(s,l)}</h3><span class="chip open">${w.tier==='A'?'white space':'proven next door'}</span></div>
+      <p class="small">${esc(w.why)}</p>
+      ${w.examples.length?`<div class="exlab eyebrow" style="margin-top:10px">Examples of this exact combo (same watchlist, other niches)</div><div class="vgrid">${w.examples.map(v=>vcard(v,'@'+v.handle+' · '+v.screen)).join('')}</div>`:''}
+      ${parents.length?`<div class="eyebrow" style="margin-top:12px">Each half, done well in this niche</div><div class="vgrid">${parents.map((v,i)=>vcard(v, i===0?`the structure: ${SN[s].name}`:`the layout: ${LN[l].name}`)).join('')}</div>`:''}`;
+  } else if (INCOMPAT.has(key)){
+    el.innerHTML = `<div class="ptop"><h3>${name(s,l)}</h3></div><p class="small muted">This combination can't really exist — ${SN[s].what.toLowerCase()} needs something on screen that ${LN[l].name.toLowerCase()} doesn't give it.</p>`;
+  } else {
+    el.innerHTML = `<div class="ptop"><h3>${name(s,l)}</h3></div><p class="small muted">Nobody in the niche is doing this, and ${rowTot[s]?'the layout':'the structure'} isn't proven here either (${rowTot[s]||0} winners in the row, ${colTot[l]||0} in the column). Not white space yet — a bet with no evidence on either side.</p>`;
+  }
+  return el;
+}
+document.querySelectorAll('.cell').forEach(b=>b.addEventListener('click',()=>{showCell(b.dataset.cell).scrollIntoView({behavior:'smooth',block:'nearest'});}));
+document.querySelectorAll('.info').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const t=document.getElementById('exp-'+b.dataset.exp); if(!t) return; t.scrollIntoView({behavior:'smooth',block:'center'}); t.classList.add('flash'); setTimeout(()=>t.classList.remove('flash'),1800);}));
+const hottest = Object.values(A.matrix).filter(c=>c.count).sort((a,b)=>b.heat-a.heat)[0];
+showCell(hottest.structure+'|'+hottest.layout);
+
+// picks
+const byUuid = {}; Object.values(A.matrix).forEach(c=>c.videos.forEach(v=>byUuid[v.uuid]=v)); A.white_space.forEach(w=>w.examples.forEach(v=>byUuid[v.uuid]=v)); A.explain.structures.concat(A.explain.layouts).forEach(e=>{if(e.specimen) byUuid[e.specimen.uuid]=e.specimen}); (DATA.extra_videos||[]).forEach(v=>byUuid[v.uuid]=v);
+document.getElementById('picks').innerHTML = P.picks.map((p,i)=>{
+  const c = A.matrix[p.structure+'|'+p.layout];
+  const stat = c && c.count ? `${c.count} winners · median ${c.median}x · best ${c.best}x` : `0 winners here · row ${rowTot[p.structure]||0} · column ${colTot[p.layout]||0}`;
+  return `<div class="pick ${p.kind==='whitespace'?'ws':''}"><span class="tag">${i+1} · ${esc(p.label)}</span><h3>${name(p.structure,p.layout)}</h3><button class="combo" data-cell="${p.structure}|${p.layout}">${stat} · see it on the map ↑</button><p class="small">${esc(p.why)}</p><ol>${p.skeleton.map(s=>`<li>${esc(s)}</li>`).join('')}</ol><p class="recipe"><b>Shoot it:</b> ${esc(p.recipe)}</p><div class="models">${p.models.map(u=>byUuid[u]).filter(Boolean).map(v=>`<a href="${esc(v.url)}" target="_blank" rel="noopener" title="${esc(v.spoken_hook||v.caption)}"><img src="${T(v)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="ob">${v.outlier}x</span><span class="hd">@${esc(v.handle)}</span></a>`).join('')}</div>${p.model_note?`<p class="small faint">${esc(p.model_note)}</p>`:''}</div>`;
+}).join('');
+document.querySelectorAll('.pick .combo, .hero button').forEach(b=>b.addEventListener('click',()=>{showCell(b.dataset.cell); document.getElementById('sig').scrollIntoView({behavior:'smooth'});}));
+if (P.wildcard){ const w = WS[P.wildcard.structure+'|'+P.wildcard.layout]; document.getElementById('wild').innerHTML = `<b>Wildcard</b><span>${name(P.wildcard.structure,P.wildcard.layout)} — ${esc(P.wildcard.note)}</span>${w&&w.examples.length?`<span class="exrow">${w.examples.slice(0,3).map(v=>`<a href="${esc(v.url)}" target="_blank" rel="noopener"><img src="${T(v)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="ob">${v.outlier}x</span><span class="hd">@${esc(v.handle)}</span></a>`).join('')}</span>`:''}`; }
+
+// channels
+const TOPN = 12;
+const chanCard = c => `<div class="ccard">${thumb(c.best)}<div><div class="hd"><a href="https://www.${c.platforms[0]==='tiktok'?'tiktok.com/@':c.platforms[0]==='youtube-shorts'?'youtube.com/@':'instagram.com/'}${esc(c.handle)}" target="_blank" rel="noopener">@${esc(c.handle)}</a><span class="num small muted">${c.n} · ${c.median}x</span></div><div class="st">${c.platforms.join(' + ')} · ${c.distinct_cells} format${c.distinct_cells>1?'s':''} tried</div><div class="heroes">${c.heroes.map(h=>`<div class="hero"><button data-cell="${h.structure}|${h.layout}">${name(h.structure,h.layout)}</button><span class="n">${h.count} · ${h.median}x · ${h.share}%</span></div>`).join('')}</div></div></div>`;
+document.getElementById('chan').innerHTML = A.channels.slice(0,TOPN).map(chanCard).join('');
+document.getElementById('chanmore').innerHTML = A.channels.length>TOPN ? `<span class="eyebrow">Also in the pool</span><br>` + A.channels.slice(TOPN).map(c=>`<span>@${esc(c.handle)} <span class="num faint">${c.n} · ${c.median}x</span> → <button data-cell="${c.heroes[0].structure}|${c.heroes[0].layout}">${name(c.heroes[0].structure,c.heroes[0].layout)}</button></span>`).join(' &nbsp;·&nbsp; ') : '';
+document.querySelectorAll('.hero button, .more button').forEach(b=>b.addEventListener('click',()=>{showCell(b.dataset.cell); document.getElementById('sig').scrollIntoView({behavior:'smooth'});}));
+
+// white space cards
+const WSCARDS = 12;
+document.getElementById('ws').innerHTML = A.white_space.slice(0, WSCARDS).map((w,i)=>{
+  const parents = [SN[w.structure].specimen, LN[w.layout].specimen].filter(Boolean);
+  const exs = w.examples.length ? w.examples : [];
+  return `<div class="wscard ${w.tier}"><div class="rank"><span>${w.tier==='A'?'white space':'proven next door'} · #${i+1}</span><button data-cell="${w.structure}|${w.layout}" style="color:var(--muted)">map ↑</button></div><h3>${name(w.structure,w.layout)}</h3><p class="why">${esc(w.why)}</p>
+    ${exs.length?`<div class="exlab">the combo, next door</div><div class="exrow">${exs.slice(0,3).map(v=>`<a href="${esc(v.url)}" target="_blank" rel="noopener" title="${esc(v.spoken_hook||v.caption)}"><img src="${T(v)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="ob">${v.outlier}x</span><span class="hd">@${esc(v.handle)}</span></a>`).join('')}</div>`:''}
+    <div class="exlab">each half, done well here</div><div class="exrow">${parents.map((v,j)=>`<a href="${esc(v.url)}" target="_blank" rel="noopener" title="${j===0?'the structure':'the layout'} — ${esc(v.spoken_hook||v.caption)}"><img src="${T(v)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="ob">${v.outlier}x</span><span class="hd">@${esc(v.handle)}</span></a>`).join('')}</div></div>`;
+}).join('') + (A.white_space.length > WSCARDS ? `<div class="wscard" style="border-style:dotted;grid-column:1/-1"><div class="rank"><span>also open · ${A.white_space.length - WSCARDS} more</span></div><div class="chips">${A.white_space.slice(WSCARDS).map(w=>`<button class="chip ${w.tier==='A'?'open':''}" data-cell="${w.structure}|${w.layout}">${name(w.structure,w.layout)}${w.examples.length?' · '+w.examples.length+' ex':''}</button>`).join('')}</div></div>` : '');
+document.querySelectorAll('.wscard button').forEach(b=>b.addEventListener('click',()=>{showCell(b.dataset.cell); document.getElementById('sig').scrollIntoView({behavior:'smooth'});}));
+
+// explainers
+const ecard = (e, axis) => {
+  const v = e.specimen;
+  const open = v ? (v.spoken_hook ? `Opens with “${v.spoken_hook}”` : `Opens on “${(v.caption||'').split('\n')[0].slice(0,90)}”`) : '';
+  const types = (e.types||[]).map(([k,n])=>`${k} · ${n}`).join(', ');
+  return `<div class="ecard" id="exp-${axis}-${e.key}"><div><div class="k"><span>${axis==='s'?'format':'editing style · '+esc(e.category||'')}</span><span class="st">${e.n||0} winners${e.median?' · '+e.median+'x':''}</span></div><h4>${e.name}</h4><p class="what">${esc(e.what)}</p>${types?`<p class="ex12 faint" style="margin-top:4px">Sandcastles types inside: ${esc(types)}</p>`:''}${v?`<p class="ex12"><b>12 seconds in</b> ${esc(open)} — @${esc(v.handle)}, ${v.outlier}x.</p>`:`<p class="ex12 faint">Nobody in the niche's outliers uses this yet${e.pool?' (seen next door only)':''}.</p>`}</div>${v?thumb(v):'<div class="none">no specimen</div>'}</div>`;
+};
+document.getElementById('exp-s').innerHTML = A.explain.structures.map(e=>ecard(e,'s')).join('');
+document.getElementById('exp-l').innerHTML = A.explain.layouts.map(e=>ecard(e,'l')).join('');
+const absent = (list, what) => list.length ? `<span class="eyebrow">Also in Sandcastles' ${what}, none in this pool</span><br>` + list.map(e=>`<span class="chip" title="${esc(e.what)}">${esc(e.name)}${e.category?' · '+esc(e.category):''}</span>`).join(' ') : '';
+document.getElementById('absent-s').innerHTML = absent(A.explain.absent_structures||[], 'Formats');
+document.getElementById('absent-l').innerHTML = absent(A.explain.absent_layouts||[], 'Editing Styles');
+
+// method
+document.getElementById('method-cards').innerHTML = (META.method||[]).map(m=>`<div class="mcard"><div class="lab">${esc(m.label)}</div>${m.big?`<div class="big">${esc(m.big)}</div>`:''}${m.text?`<div>${m.text}</div>`:''}${m.items?`<ul>${m.items.map(i=>`<li>${i}</li>`).join('')}</ul>`:''}</div>`).join('');
+</script>

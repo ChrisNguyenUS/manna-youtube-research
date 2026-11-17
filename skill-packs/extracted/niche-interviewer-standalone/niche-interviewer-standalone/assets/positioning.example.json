@@ -1,0 +1,60 @@
+{
+  "person": "Maya Chen",
+  "business_name": "Reset Physio",
+  "date": "September 17, 2026",
+  "business": {
+    "offer": "A 12-week one-on-one rehab and strength program for runners, delivered in-clinic in Austin with weekly check-ins",
+    "price_point": "$2,400 per program, paid up front or in three installments",
+    "buyer": "The runner themselves — no insurance, no referrals, they find the clinic on Instagram and book a free 20-minute assessment",
+    "viewer_is_buyer": true,
+    "note": "Viewer and buyer are the same person, so content can speak straight to the runner."
+  },
+  "bullseye": {
+    "outer": "Anyone who runs",
+    "middle": "Injured runners in their 30s and 40s",
+    "center_label": "The Comeback Runner"
+  },
+  "avatar": {
+    "name": "Comeback Chris",
+    "portrait": "A 38-year-old marketing manager who ran his first marathon at 33, got hooked, and has been fighting a knee that flares up past mile 10 for the last eighteen months. He has a Garmin, a foam roller he ignores, and a race registration he is scared he will have to defer again.",
+    "believes": ["Rest is the only real fix", "PTs just hand you a sheet of clamshells", "Strength training makes runners slow"],
+    "fears": ["Being told to stop running for good", "Wasting another $150 on a session that changes nothing", "Deferring the race a second time"],
+    "tried": ["Two rounds of insurance PT", "YouTube mobility routines", "New shoes, twice", "A chiropractor"],
+    "complains_about": ["Nobody watched me actually run", "I did the exercises and it still hurts", "Every answer online contradicts the last one"]
+  },
+  "dream_outcome": "Cross the finish line of his next marathon pain-free, and know he can keep running into his 50s.",
+  "pain_points": [
+    {"text": "Why does my knee only hurt after mile 10?", "type": "tactical", "pain": 5},
+    {"text": "Do I actually have to stop running to heal?", "type": "broad", "pain": 5},
+    {"text": "Why did two rounds of PT not fix this?", "type": "broad", "pain": 4},
+    {"text": "Should I run through pain or rest until it's gone?", "type": "tactical", "pain": 4},
+    {"text": "Is it my shoes, my form, or my hips?", "type": "tactical", "pain": 3},
+    {"text": "How much strength work does a runner really need?", "type": "broad", "pain": 3},
+    {"text": "Can I still hit my goal time after an injury?", "type": "broad", "pain": 3},
+    {"text": "What should a return-to-running week look like?", "type": "tactical", "pain": 2}
+  ],
+  "authority_statement": {
+    "recommended": "I help injured marathoners get back to pain-free running without giving up the race.",
+    "alternates": [
+      "I help runners in their 30s and 40s with knee and hip injuries that keep coming back.",
+      "Comeback plans for injured marathoners."
+    ],
+    "why": "It names the person (injured marathoners), the outcome (pain-free running), and the fear it removes (giving up the race). The alternates are either narrower on the injury or too short to carry the outcome."
+  },
+  "hypothesis": {
+    "attributes": [
+      {"name": "Topic", "strength": "strong", "evidence": "Return-to-running for injured marathoners is far narrower than the generic 'runner's knee' content that dominates the space."},
+      {"name": "Substance", "strength": "strong", "evidence": "Twelve years treating runners plus her own two marathon comebacks; she can show gait video, not just exercises."},
+      {"name": "Avatar", "strength": "strong", "evidence": "One person, one situation: the 30s-40s marathoner scared of deferring again."},
+      {"name": "Format", "strength": "possible", "evidence": "Filming real gait assessments with patients is unusual, but she hasn't tested it on camera yet."},
+      {"name": "Visuals", "strength": "no", "evidence": "Standard clinic setting, nothing distinctive yet on screen."}
+    ],
+    "lane": "The lane is 'the physio who watches you run.' Most competitors post exercise lists filmed in a gym; Maya can post real gait breakdowns of real comeback runners, tied to a single promise: back to the start line, pain-free. That is a topic, substance, and avatar lane, and the format may become the visual signature if the gait footage lands."
+  },
+  "one_thing": "When someone needs to get back to running after an injury, I want to be the first name they think of.",
+  "filter_questions": [
+    "Would this be worth Comeback Chris's time?",
+    "Would it make him trust me more?"
+  ],
+  "footer": "Built with the Niche Interviewer"
+}
