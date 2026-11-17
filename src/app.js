@@ -26,6 +26,7 @@ import { makeFollows } from './features/follows.js';
 import { makeCommentData } from './features/tiktok/comment-data.js';
 import { createOpenRouter } from './llm/openrouter.js';
 import { makeComment5w1h } from './features/ai/comment-5w1h.js';
+import { makeSoulprint } from './features/soulprint.js';
 
 const KNOWLEDGE_DIR = path.join(ROOT, 'src', 'features', 'ai', 'knowledge');
 /** The owner's course notes for AI prompts: every .md in the folder, or '' when there is none (the folder is not in git). */
@@ -83,6 +84,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
     videoAnalysisHistory: makeVideoAnalysisHistory({ store, ws }),
     tiktokChannel: makeTikTokChannelAnalysis({ tiktok, records: base.records, now: base.now, settings }),
     comment5w1h: makeComment5w1h({ llm, records: base.records, settings, knowledge, readComments: (ids) => features.commentData.comments(ids) }),
+    soulprint: makeSoulprint({ repo: store.soulprint, ws, llm }),
   };
 
   /** Job kind → handler. ctx.progress throws after cancel, which is how jobs stop. */
