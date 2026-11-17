@@ -1,6 +1,6 @@
 # Thử nghiệm: cho model xem và nghe video
 
-> Ngày: 2026-11-16 · Trạng thái: chờ duyệt · Phạm vi: giai đoạn 8 trong [kế hoạch tổng](../plans/2026-11-16-master-plan.md)
+> Ngày: 2026-11-16 · Trạng thái: đã duyệt, có [kế hoạch thử](../plans/2026-11-17-video-watch-spike.md) · Phạm vi: giai đoạn 8 trong [kế hoạch tổng](../plans/2026-11-16-master-plan.md)
 > Đây là thử nghiệm, không phải tính năng. Kết quả là một bản báo cáo; code viết ra là code tạm và không giữ lại.
 
 ## Câu hỏi cần trả lời
@@ -14,7 +14,7 @@
 
 - 5 video TikTok tiếng Việt do chủ app chọn, khác nhau về kiểu: quay mặt nói, có chữ lớn trên màn hình, nhiều cảnh cắt nhanh, có nhạc nền, lồng tiếng máy.
 - Chủ app viết trước, cho từng video, đáp án của khoảng 10 câu hỏi cụ thể (ví dụ "có mấy người", "chữ đầu tiên trên màn hình là gì", "có nhạc nền không").
-- Chạy hai model: MiMo V2.6 Flash (theo OpenRouter nhận hình và tiếng) và GLM 5.3 Flash (chỉ nhận hình). Cùng một bộ câu hỏi, trả lời theo JSON.
+- Chạy bốn model: MiMo V2.6 Flash (nhận hình và tiếng), GLM 5.3 Flash (chỉ nhận hình), Qwen 3.8 Omni Flash (nhận hình và tiếng) và Gemini 3.1 Flash Lite (nhận hình và tiếng, làm mốc so). Cùng một bộ 11 câu hỏi, trả lời theo JSON.
 - So câu trả lời với đáp án, đếm số câu đúng theo từng nhóm: hình, chữ trên màn hình, nhịp cảnh, âm thanh.
 - Ghi số token, số tiền, thời gian cho mỗi video.
 
