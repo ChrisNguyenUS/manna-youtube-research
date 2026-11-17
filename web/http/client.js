@@ -159,4 +159,13 @@ export const ideas = {
   exportUrl: (batch) => `${BASE}/ideas/export.md${q({ batch })}`,
   /** One AI helper on the card on screen; returns a suggestion and saves nothing. @param {'draft'|'titles'} action @param {number} id @param {any} card */
   assist: (action, id, card) => api('/ideas/assist', { method: 'POST', body: { action, id, card } }),
+    /** @param {number} id @param {any} outline */
+    saveOutline: (id, outline) => api(`/ideas/${id}/outline`, { method: 'POST', body: { outline } }),
+    /** @param {number} id @param {string} text */
+    saveScript: (id, text) => api(`/ideas/${id}/script`, { method: 'POST', body: { text } }),
+    /** @param {string} text @param {number} length @param {string} leadMagnet */
+    lint: (text, length, leadMagnet) => api('/ideas/lint', { method: 'POST', body: { text, length, leadMagnet } }),
+    /** @param {number} id @param {string} action @param {{outline: any, card: any, archetype?: string}} input */
+    outlineAssist: (id, action, input) => api(`/ideas/${id}/outline/assist`, { method: 'POST', body: { action, ...input } }),
+    outlineUrl: (id) => `${BASE}/ideas/${id}/outline.md`,
 };

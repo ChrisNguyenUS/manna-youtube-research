@@ -5,7 +5,7 @@ import { ideas } from '../http/client.js';
 import { esc, icon, toast, ago, errorCallout, emptyState, setUrl } from '../lib.js';
 
 const PATH = '/board';
-const TABS = [['idea', 'Ý tưởng', 'bulb'], ['checks', 'Chấm', 'check'], ['source', 'Gạch gốc', 'target']];
+const TABS = [['idea', 'Ý tưởng', 'bulb'], ['checks', 'Chấm', 'check'], ['source', 'Gạch gốc', 'target'], ['outline', 'Dàn ý', 'bars']];
 const OK = { yes: ['có', 'on'], no: ['chưa', ''], unknown: ['chưa rõ', ''], skip: ['không áp dụng', 'skip'] };
 const ORIGIN = { self: 'Tự nghĩ', brick: 'Từ thư viện gạch', pain: 'Từ nỗi đau', '5w1h': 'Từ 5W1H' };
 /** Where a card came from; a library video counts as "đã thắng" only at or above the library threshold. */
@@ -14,6 +14,15 @@ const originOf = (x) => {
   if (x.fromWinner) return 'Từ video đã thắng';
   return x.card.origin.kind === 'brick' && s?.score != null ? `${ORIGIN.brick} (video ${s.score}×)` : ORIGIN[x.card.origin.kind];
 };
+const LENGTHS = [30, 45, 60, 90];
+const SCENES = [['face', 'Quay mặt nói'], ['screen', 'Quay màn hình'], ['demo', 'Làm thật, thí nghiệm'], ['beforeAfter', 'Trước và sau'], ['broll', 'Cảnh minh hoạ'], ['interview', 'Phỏng vấn người khác']];
+const ARCHETYPES = ['Fortune Teller', 'Experimenter', 'Teacher', 'Magician', 'Investigator', 'Contrarian'];
+const BLOCKS = [['lockin', 'Lock-in', 'Hứa cụ thể, bằng chứng sớm, hoặc câu hỏi lớn'], ['body1', 'Thân 1', 'Ý mạnh nhất'], ['rehook1', 'Rehook 1', 'Mở câu hỏi mới trước khi ý 1 đóng'], ['body2', 'Thân 2', 'Có cú đánh lạc hướng hoặc ví dụ cụ thể'],
+  ['rehook2', 'Rehook 2', 'Tuỳ chọn, khi còn Thân 3'], ['body3', 'Thân 3', 'Tuỳ chọn'], ['closing', 'Câu chốt', 'Tuỳ chọn, một câu đáng nhớ'], ['cta', 'CTA', 'Mời làm một việc, dẫn về lead magnet']];
+const FOUR_S = [['subject', 'Subject', 'Nói rõ ai hoặc cái gì?'], ['stakes', 'Stakes', 'Được mất gì?'], ['simple', 'Simple', 'Đơn giản không?'], ['superclear', 'Superclear', 'Rõ tới mức không cần nghĩ?']];
+const LOOP = [['stakes', 'Cái đang bị đe doạ'], ['question', 'Câu hỏi lớn'], ['headfake', 'Cú đánh lạc hướng'], ['newLoop', 'Chỗ mở vòng mới']];
+const clock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+const emptyHook = () => ({ archetype: null, lean: '', interjection: '', snapback: '', text: '', visual: '' });
 const UNSAVED = 'Thẻ đang sửa chưa lưu. Bỏ các thay đổi?';
 
 const get = (o, path) => path.split('.').reduce((v, k) => v?.[k], o);
@@ -31,10 +40,11 @@ export async function mount(root, params) {
     root.innerHTML = errorCallout(e);
     return;
   }
-  const state = { open: /** @type {any} */ (null), draft: /** @type {any} */ (null), tab: 'idea', dirty: false, suggestion: /** @type {any} */ (null), busy: '' };
+  const state = { open: /** @type {any} */ (null), draft: /** @type {any} */ (null), tab: 'idea', dirty: false, suggestion: /** @type {any} */ (null), busy: '', outline: /** @type {any} */ (null), script: '', lint: /** @type {any} */ (null), outlineDirty: false };
   const label = (pairs, k) => pairs.find((x) => x[0] === k)?.[1] ?? k;
   const chip = (t, cls = '') => (t ? `<span class="fw-chip ${cls}">${esc(t)}</span>` : '');
   const aiBtn = (action, text) => (b.ai ? `<button type="button" class="btn sm" data-ai="${action}" ${state.busy ? 'disabled' : ''}>${icon('bolt')} ${state.busy === action ? 'Đang hỏi AI…' : text}</button>` : '');
+  const outlineBtn = (action, text) => (b.ai ? `<button type="button" class="btn sm" data-outline-ai="${action}" ${state.busy ? 'disabled' : ''}>${icon('bolt')} ${state.busy === action ? 'Đang hỏi AI…' : text}</button>` : '');
   const cap = (t) => `<div class="fw-cap">${t}</div>`;
   const input = (path, capText, ph = '') => `<div class="fw-field">${cap(capText)}<input class="input" data-path="${path}" value="${esc(get(state.draft, path) ?? '')}" placeholder="${esc(ph)}"></div>`;
   const area = (path, capText, ph = '') => `<div class="fw-field">${cap(capText)}<textarea class="input" rows="2" data-path="${path}" placeholder="${esc(ph)}">${esc(get(state.draft, path) ?? '')}</textarea></div>`;
@@ -74,7 +84,7 @@ export async function mount(root, params) {
 
   function suggestionHtml() {
     const s = state.suggestion;
-    if (!s) return '';
+    if (!s || s.outline) return '';
     const v = s.value;
     const body = s.action === 'titles'
       ? v.titles.map((t, i) => `<label class="check"><input type="radio" name="bd-title" value="${i}" ${i === 0 ? 'checked' : ''}> <span><b>${esc(t.text)}</b><span class="muted small"> ${esc([t.d, t.i, t.c, t.k].filter(Boolean).join(' · '))}</span></span></label>`).join('')
@@ -82,6 +92,54 @@ export async function mount(root, params) {
         ${v.keep.length ? `<div class="small"><b>Giữ:</b> ${esc(v.keep.map((k) => label(b.lists.lego, k)).join(', '))}</div>` : ''}${v.remix.length ? `<div class="small"><b>Làm lại:</b> ${esc(v.remix.map((k) => label(b.lists.lego, k)).join(', '))}</div>` : ''}
         ${v.why ? `<div class="small muted">${esc(v.why)}</div>` : ''}`;
     return `<div class="callout info"><div class="fw-cap">AI đề xuất</div>${body}<div class="row" style="margin-top:8px"><button type="button" class="btn sm primary" data-accept>${icon('check')} Nhận</button><button type="button" class="btn sm" data-reject>Bỏ</button></div><div class="muted small">Nhận chỉ điền vào thẻ đang mở; bấm Lưu để giữ lại.</div></div>`;
+  }
+
+  function outlineTab() {
+    const o = state.outline;
+    const x = state.open;
+    const oIn = (path, ph = '') => `<input class="input" data-o="${path}" value="${esc(path.split('.').reduce((v, k) => v?.[k], o) ?? '')}" placeholder="${esc(ph)}">`;
+    const hookCard = (h, i) => `<div class="bd-hook ${o.chosenHook === i ? 'on' : ''}">
+        <div class="row"><label class="check"><input type="radio" name="bd-hook" data-pick-hook="${i}" ${o.chosenHook === i ? 'checked' : ''}> Dùng hook này</label>
+          <select class="select input" data-o="hooks.${i}.archetype" style="width:auto"><option value="">Kiểu hook</option>${ARCHETYPES.map((a) => `<option ${h.archetype === a ? 'selected' : ''}>${a}</option>`).join('')}</select>
+          <span class="spacer"></span><button type="button" class="icon-btn" data-del-hook="${i}" aria-label="Xoá hook">${icon('x')}</button></div>
+        <div class="fw-field">${cap('NGHIÊNG VỀ')}${oIn(`hooks.${i}.lean`, '1–2 dòng nêu rõ chủ đề')}</div>
+        <div class="fw-field">${cap('NGẮT')}${oIn(`hooks.${i}.interjection`, 'Nhưng, thế mà, ai dè…')}</div>
+        <div class="fw-field">${cap('BẬT NGƯỢC')}${oIn(`hooks.${i}.snapback`, 'Một câu đi ngược hẳn')}</div>
+        <div class="fw-field">${cap('CHỮ TRÊN MÀN HÌNH')}${oIn(`hooks.${i}.text`, '3–5 chữ lớn')}</div>
+        <div class="fw-field">${cap('HÌNH MỞ ĐẦU')}${oIn(`hooks.${i}.visual`, 'Khung hình đầu tiên')}</div></div>`;
+    const times = Object.fromEntries(x.timeline.map((t) => [t.key, t]));
+    return `<p class="muted small">App dựng dàn ý, không viết lời thoại. Lời thoại bạn tự viết, hoặc tải Markdown đưa cho Claude.</p>
+      ${x.gaps.length ? `<div class="callout">Còn thiếu: ${esc(x.gaps.join('; '))}</div>` : ''}
+      <div class="row">${outlineBtn('outline', 'Dựng dàn ý')}<a class="btn sm" href="${ideas.outlineUrl(x.id)}">${icon('download')} Markdown cho Claude</a>${b.ai ? '' : '<span class="muted small">Có API key OpenRouter thì AI dựng nháp giúp được.</span>'}</div>
+      ${outlineSuggestionHtml()}
+      <div class="fw-field">${cap('ĐỘ DÀI')}<div class="cx-seg" role="group">${LENGTHS.map((n) => `<button type="button" data-length="${n}" class="${o.length === n ? 'on' : ''}">${n} giây</button>`).join('')}</div></div>
+      <div class="fw-field">${cap('CẢNH QUAY ĐƯỢC')}<div class="bd-lego">${SCENES.map(([k, l]) => `<label class="check"><input type="checkbox" data-scene="${k}" ${o.scenes.includes(k) ? 'checked' : ''}> ${l}</label>`).join('')}</div>${oIn('sceneNote', 'Ghi thêm: bối cảnh, đồ vật có sẵn')}</div>
+      <div class="fw-field">${cap('HOOK')}<div class="row">${outlineBtn('hooks', 'Gợi ý 3 hook')}<select class="select input" data-hook-archetype style="width:auto"><option value="">Mọi kiểu</option>${ARCHETYPES.map((a) => `<option>${a}</option>`).join('')}</select>
+          ${o.hooks.length < 3 ? `<button type="button" class="btn sm" data-add-hook>${icon('plus')} Thêm hook</button>` : ''}</div>
+        ${o.hooks.map(hookCard).join('')}</div>
+      <div class="fw-field">${cap('4 CHỮ S')} ${outlineBtn('fourS', 'Chấm hook đang chọn')}${FOUR_S.map(([k, l, q]) => `<div class="row bd-four"><b>${l}</b><span class="muted small">${q}</span>
+          <select class="select input" data-o="fourS.${k}.ok" style="width:auto"><option value="">Chưa chấm</option><option value="yes" ${o.fourS[k].ok === 'yes' ? 'selected' : ''}>Đạt</option><option value="no" ${o.fourS[k].ok === 'no' ? 'selected' : ''}>Chưa đạt</option></select>${oIn(`fourS.${k}.note`, 'Ghi chú')}</div>`).join('')}</div>
+      <div class="fw-field">${cap('DÀN Ý')}${BLOCKS.map(([k, l, hint]) => `<div class="bd-block"><div class="muted small">${times[k] ? `${clock(times[k].from)}–${clock(times[k].to)} · ` : ''}<b>${l}</b> · ${esc(hint)}</div>
+          ${oIn(`blocks.${k}.point`, 'Ý chính, một câu')}${['body1', 'body2', 'body3'].includes(k) ? oIn(`blocks.${k}.example`, 'Ví dụ cụ thể') : ''}</div>`).join('')}</div>
+      <div class="fw-field">${cap('VÒNG LẶP')}${LOOP.map(([k, l]) => `<div class="bd-block"><div class="muted small">${l}</div>${oIn(`loop.${k}`)}</div>`).join('')}</div>
+      <div class="fw-field">${cap('SOÁT LỜI THOẠI')}<p class="muted small">Dán lời bạn đã viết. App chỉ bắt lỗi đếm được: từ nên tránh, ký hiệu, nhịp câu đều, câu dài không ngắt, thiếu lời kêu gọi, quá nhiều chữ so với ${o.length} giây.</p>
+        <textarea class="input" rows="6" data-script>${esc(state.script)}</textarea>
+        <div class="row" style="margin-top:6px"><button type="button" class="btn sm" data-lint>Soát</button><button type="button" class="btn sm" data-save-script>${icon('check')} Lưu lời thoại</button></div>
+        ${state.lint ? lintHtml(state.lint) : ''}</div>`;
+  }
+  function lintHtml(l) {
+    return `<div class="bd-lint"><div class="small">${l.words}/${l.maxWords} chữ · ${l.sentences} câu${l.cut ? ' · chỉ soát 20.000 ký tự đầu' : ''}</div>
+      ${l.issues.length ? l.issues.map((i) => `<div class="bd-issue"><span class="fw-chip soft">${esc(i.label)}</span>${i.word ? ` <b>${esc(i.word)}</b>` : ''}${i.sentence ? ` <i>"${esc(i.sentence)}"</i>` : ''}${i.suggest ? `<div class="muted small">Gợi ý: ${esc(i.suggest)}</div>` : ''}</div>`).join('') : '<div class="small">Không thấy lỗi nào đếm được.</div>'}</div>`;
+  }
+  function outlineSuggestionHtml() {
+    const s = state.suggestion;
+    if (!s || !s.outline) return '';
+    const v = s.value;
+    const body = s.action === 'fourS'
+      ? FOUR_S.map(([k, l]) => `<div class="small"><b>${l}:</b> ${v.fourS[k].ok === 'yes' ? 'đạt' : v.fourS[k].ok === 'no' ? 'chưa đạt' : 'chưa rõ'}. ${esc(v.fourS[k].note)}</div>`).join('')
+      : `${v.hooks.map((h, i) => `<div class="small"><b>Hook ${i + 1}${h.archetype ? ` (${esc(h.archetype)})` : ''}:</b> ${esc(h.lean)} / ${esc(h.interjection)} / ${esc(h.snapback)} · chữ: ${esc(h.text)} · hình: ${esc(h.visual)}</div>`).join('')}
+        ${v.blocks ? BLOCKS.filter(([k]) => v.blocks[k].point).map(([k, l]) => `<div class="small"><b>${l}:</b> ${esc(v.blocks[k].point)}${v.blocks[k].example ? ` (ví dụ: ${esc(v.blocks[k].example)})` : ''}</div>`).join('') : ''}`;
+    return `<div class="callout info"><div class="fw-cap">AI đề xuất</div>${body}<div class="row" style="margin-top:8px"><button type="button" class="btn sm primary" data-accept>${icon('check')} Nhận</button><button type="button" class="btn sm" data-reject>Bỏ</button></div><div class="muted small">Nhận chỉ điền vào dàn ý đang mở; bấm Lưu để giữ lại.</div></div>`;
   }
 
   function checksTab() {
@@ -121,7 +179,7 @@ export async function mount(root, params) {
         <button type="button" class="btn sm primary" data-save>${icon('check')} Lưu${state.dirty ? ' *' : ''}</button>
         <button type="button" class="btn sm" data-drop>${x.status === 'dropped' ? 'Đưa lại vào lô' : 'Bỏ thẻ'}</button>
         <button type="button" class="btn sm" data-remove>${icon('trash')}</button></div>
-      <div class="fw-body" data-ai-slot>${state.tab === 'idea' ? ideaTab() : state.tab === 'checks' ? checksTab() : sourceTab()}</div></div>`;
+      <div class="fw-body" data-ai-slot>${state.tab === 'idea' ? ideaTab() : state.tab === 'checks' ? checksTab() : state.tab === 'source' ? sourceTab() : outlineTab()}</div></div>`;
   }
 
   function render() {
@@ -157,6 +215,10 @@ export async function mount(root, params) {
     state.draft = { status: x.status, card: structuredClone(x.card) };
     state.dirty = false;
     state.suggestion = null;
+    state.outline = structuredClone(x.outline);
+    state.script = x.script;
+    state.lint = null;
+    state.outlineDirty = false;
     setUrl(PATH, { batch: b.batch.id, card: x.id });
     render();
   }
@@ -166,9 +228,14 @@ export async function mount(root, params) {
     if (cardId) openCard(cardId);
     else render();
   }
+  const touchOutline = () => {
+      state.outlineDirty = true;
+      if (!state.dirty) { state.dirty = true; const s = root.querySelector('[data-save]'); if (s) s.append(' *'); }
+    };
   async function save(patch) {
     try {
       const x = await ideas.update(state.open.id, patch ?? { status: state.draft.status, ...state.draft.card });
+      if (!patch && state.outlineDirty) await ideas.saveOutline(x.id, state.outline);
       await reload(b.batch.id, x.id);
       toast('Đã lưu thẻ');
     } catch (e) { fail(e); }
@@ -181,7 +248,19 @@ export async function mount(root, params) {
       const [key, k] = el.dataset.lego.split(':');
       const list = state.draft.card[key];
       state.draft.card[key] = el.checked ? [...new Set([...list, k])] : list.filter((y) => y !== k);
-    } else return;
+    } else if (el.dataset.o) {
+      const v = el.value;
+      set(state.outline, el.dataset.o, el.dataset.o.endsWith('.ok') || el.dataset.o.endsWith('.archetype') ? v || null : v);
+      touchOutline();
+      return;
+    } else if (el.dataset.scene) {
+      const k = el.dataset.scene;
+      state.outline.scenes = el.checked ? [...new Set([...state.outline.scenes, k])] : state.outline.scenes.filter((y) => y !== k);
+      touchOutline();
+      return;
+    } else if (el.dataset.pickHook !== undefined) { state.outline.chosenHook = Number(el.dataset.pickHook); touchOutline(); return; }
+    else if (el.dataset.script !== undefined) { state.script = el.value; return; }
+    else return;
     if (!state.dirty) { state.dirty = true; const s = root.querySelector('[data-save]'); if (s) s.append(' *'); }
   });
   root.addEventListener('change', async (e) => {
@@ -213,6 +292,15 @@ export async function mount(root, params) {
           const r = await ideas.assist(d.ai, state.open.id, state.draft.card);
           state.suggestion = { action: d.ai, value: r.suggestion };
         } finally { state.busy = ''; render(); }
+      } else if (d.accept !== undefined && state.suggestion?.outline) {
+        const s = state.suggestion;
+        const o = state.outline;
+        if (s.action === 'fourS') o.fourS = s.value.fourS;
+        else if (s.action === 'hooks') { o.hooks = s.value.hooks; o.chosenHook = null; }
+        else { o.hooks = s.value.hooks; o.chosenHook = null; o.blocks = s.value.blocks; o.loop = s.value.loop; }
+        state.suggestion = null;
+        touchOutline();
+        render();
       } else if (d.accept !== undefined) {
         const s = state.suggestion;
         const c = state.draft.card;
@@ -226,6 +314,33 @@ export async function mount(root, params) {
         state.dirty = true;
         render();
       } else if (d.reject !== undefined) { state.suggestion = null; render(); }
+      else if (d.length) { state.outline.length = Number(d.length); touchOutline(); render(); }
+      else if (d.addHook !== undefined) { state.outline.hooks.push(emptyHook()); touchOutline(); render(); }
+      else if (d.delHook !== undefined) {
+        const i = Number(d.delHook);
+        state.outline.hooks.splice(i, 1);
+        const c = state.outline.chosenHook;
+        state.outline.chosenHook = c == null || c === i ? null : c > i ? c - 1 : c;
+        touchOutline();
+        render();
+      } else if (d.outlineAi) {
+        state.busy = d.outlineAi;
+        state.suggestion = null;
+        render();
+        try {
+          const archetype = /** @type {HTMLSelectElement|null} */ (root.querySelector('[data-hook-archetype]'))?.value || undefined;
+          const r = await ideas.outlineAssist(state.open.id, d.outlineAi, { outline: state.outline, card: state.draft.card, archetype });
+          state.suggestion = { outline: true, action: d.outlineAi, value: r.suggestion };
+        } finally { state.busy = ''; render(); }
+      } else if (d.lint !== undefined) {
+        state.lint = await ideas.lint(state.script, state.outline.length, state.draft.card.leadMagnet);
+        render();
+      } else if (d.saveScript !== undefined) {
+        const r = await ideas.saveScript(state.open.id, state.script);
+        state.lint = r.lint;
+        toast('Đã lưu lời thoại');
+        render();
+      }
       else if (d.new !== undefined) { if (!leaveOk()) return; const x = await ideas.create('self'); await reload(x.batchId, x.id); }
       else if (d.newBatch !== undefined) {
         // The batch that gets closed is the open one, which may not be the one on screen: say which.
