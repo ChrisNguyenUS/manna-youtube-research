@@ -1,6 +1,6 @@
 # Soulprint (hồ sơ gốc của content): thiết kế
 
-> Ngày: 2026-11-16 · Trạng thái: chờ duyệt · Phạm vi: giai đoạn 2 trong [kế hoạch tổng](../plans/2026-11-16-master-plan.md)
+> Ngày: 2026-11-16 · Trạng thái: đã duyệt · Phạm vi: giai đoạn 2 trong [kế hoạch tổng](../plans/2026-11-16-master-plan.md)
 > Tài liệu liên quan: [ARCHITECTURE.md](../../ARCHITECTURE.md) · [2026-11-16-comment-5w1h-design.md](2026-11-16-comment-5w1h-design.md) (lớp gọi LLM dùng chung)
 > Nguồn nội dung: skill `brand-game-interviewer` và `niche-interviewer-standalone` trong `.claude/skills/`, và Chương 3 của tài liệu "Kallaway Social Media A-Z".
 
@@ -160,7 +160,7 @@ Nhập không bao giờ ghi đè mục đã có nội dung; nó chỉ tạo bả
 - `src/core/soulprint/assist.js` (thuần): dựng request và kiểm đầu ra cho từng nút ở §6.
 - `src/core/report/soulprint.js`: Markdown.
 - `src/features/soulprint.js`: `get`, `save`, `seeds`, `assist(action, input)`, `importText(text)`, `context()`.
-- Route: `GET` và `PUT /api/v1/soulprint`, `GET /api/v1/soulprint/seeds`, `POST /api/v1/soulprint/assist`, `POST /api/v1/soulprint/import`, `GET /api/v1/soulprint/export.md`.
+- Route: `GET` và `POST /api/v1/soulprint` (server chỉ đọc thân request của POST, PATCH, DELETE), `GET /api/v1/soulprint/seeds`, `POST /api/v1/soulprint/assist`, `POST /api/v1/soulprint/import`, `GET /api/v1/soulprint/export.md`.
 - Web: `web/views/soulprint.js` với hai tab **Hồ sơ** (form) và **Brainstorm** (từng câu hỏi); mục menu; thẻ tiến độ ở Tổng quan.
 - Nối với 5W1H: `summaryRequest` nhận thêm đoạn `contextText`, để gợi ý content nhắm đúng avatar và pillars. Hồ sơ trống thì prompt không đổi.
 
