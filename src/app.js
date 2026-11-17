@@ -115,7 +115,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
   handlers.follow_refresh = (p, ctx) => features.follows.refresh(p, ctx.progress);
   const runner = createRunner({ jobsRepo: store.jobs, handlers, onCancelled: (job) => store.records.removeByJob(job.id) });
   return {
-    config, store, source, tiktok, llm, features, runner, ws, settings, close: () => tiktok.close(),
+    config, store, source, tiktok, llm, features, runner, ws, settings, close: async () => { await tiktok.close(); await source.close?.(); },
     /** Set by the entry point (src/main.js): stops jobs, closes Chromium and exits. Null when nothing owns the process (tests, CLI). */
     shutdown: /** @type {null | (() => void)} */ (null),
   };

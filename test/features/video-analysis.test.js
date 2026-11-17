@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { testApp } from './helpers.js';
+import { createFakeSource } from '../../src/sources/fake/index.js';
 import { youtubeIdOf, youtubeLinksOf } from '../../src/features/video-analysis.js';
 
 const A = 'dQw4w9WgXcQ';
@@ -50,4 +51,22 @@ test('history lists runs of both platforms, newest first, each saying its platfo
   const h = a.features.videoAnalysisHistory(10);
   assert.deepEqual(h.map((r) => r.platform), ['youtube', 'tiktok']);
   assert.deepEqual([h[0].items[0].caption, h[0].items[0].script], ['x', false]);
+});
+
+test('with a transcript the script is saved with its stats; each failure keeps numbers and comments and says why', async () => {
+  const transcript = { language: null, kind: 'auto', segments: [{ start: 0, end: 3, text: 'Xin chào các bạn' }, { start: 3, end: null, text: 'hôm nay mình kể chuyện' }] };
+  const run = async (getTranscript, params = {}) => {
+    const a = testApp({ ...createFakeSource(), getTranscript });
+    return a.store.records.get(a.ws, (await a.features.videoAnalysis({ videos: A, comments: 100, ...params })).id).data.videos[0];
+  };
+  const ok = await run(async () => transcript);
+  assert.deepEqual([ok.transcript.segments.length, ok.transcriptNote, ok.script.hook], [2, null, 'Xin chào các bạn hôm nay mình kể chuyện']);
+  const cases = [[async () => null, 'none'], [async () => { throw Object.assign(new Error('x'), { code: 'setup_required' }); }, 'setup'], [async () => { throw Object.assign(new Error('x'), { code: 'source_changed' }); }, 'changed'], [async () => { throw new Error('lạ'); }, 'changed']];
+  for (const [fn, note] of cases) {
+    const e = await run(/** @type {any} */ (fn));
+    assert.deepEqual([e.transcript, e.transcriptNote, e.error, e.comments.length], [null, note, null, 1], String(note));
+  }
+  let asked = 0;
+  const off = await run(async () => (asked++, transcript), { script: false });
+  assert.deepEqual([off.transcriptNote, asked], ['off', 0], 'script turned off: the page is never opened');
 });

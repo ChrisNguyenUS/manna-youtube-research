@@ -4,6 +4,7 @@ import { configure, mapLimit, suggest, stats, realGl } from './client.js';
 import { searchVideosRegions, searchChannelsRegions } from './search.js';
 import { resolveChannelId, getChannelInfo, getChannelVideos, getChannelShorts, getVideoDetails } from './channel.js';
 import { getComments } from './comments.js';
+import { createTranscriptReader } from './transcript.js';
 
 /**
  * Deduplicate concurrent identical calls (two jobs asking for the same channel at once).
@@ -29,6 +30,7 @@ export function createInnertubeSource(cfg = {}) {
   configure(cfg);
   const channel = singleFlight(getChannelInfo);
   const channelVids = singleFlight(getChannelVideos);
+  const transcripts = createTranscriptReader(cfg.loadPlaywright ? { loadPlaywright: cfg.loadPlaywright } : {});
   const regionsOf = (o) => (o.regions && o.regions.length ? o.regions : [realGl(o.gl)]);
   return {
     searchVideos: (q, o = {}, onPage) => searchVideosRegions(q, o, regionsOf(o), onPage),
@@ -44,5 +46,7 @@ export function createInnertubeSource(cfg = {}) {
     capabilities: () => ({ captionsFilter: true, ccFilter: true, globalSearch: true }),
     stats: () => ({ ...stats }),
     configure,
+    getTranscript: (id) => transcripts.read(id),
+    close: () => transcripts.close(),
   };
 }

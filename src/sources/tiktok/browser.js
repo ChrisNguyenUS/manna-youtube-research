@@ -1,18 +1,9 @@
 // One headless Chromium per process (Playwright, imported only when a TikTok search runs).
 // Each search gets a fresh context, always closed afterwards; the browser closes after idleMs.
 
-// Kept as a variable so typecheck does not require the optional package to be installed.
-const PLAYWRIGHT = 'playwright';
-// TikTok answers a creator's video list with an empty body to a browser that says it is automated or headless,
-// so the hidden browser presents itself as an ordinary desktop Chrome (the user allowed this, 2026-11-13).
-const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
-const LAUNCH_ARGS = ['--disable-blink-features=AutomationControlled'];
+import { PLAYWRIGHT, USER_AGENT, LAUNCH_ARGS, loadChromium } from '../browser/chromium.js';
 
-/** Playwright's chromium from the module, whichever way it was exported. @param {() => Promise<any>} [load] */
-export const loadChromium = async (load = () => import(PLAYWRIGHT)) => {
-  const pw = await load();
-  return pw.chromium ?? pw.default?.chromium;
-};
+export { loadChromium };
 
 /**
  * With `session`, each search context starts from the user's saved TikTok sign-in and saves the refreshed cookies after.
