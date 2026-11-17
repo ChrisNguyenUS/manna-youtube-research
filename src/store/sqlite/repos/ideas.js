@@ -3,7 +3,7 @@
 /** @param {import('node:sqlite').DatabaseSync} db @param {() => number} [now] */
 export function ideasRepo(db, now = Date.now) {
   const batch = (r) => (r ? { id: r.id, title: r.title, status: r.status, learned: r.learned ? JSON.parse(r.learned) : null, createdAt: r.created_at, closedAt: r.closed_at } : null);
-  const card = (r) => (r ? { id: r.id, batchId: r.batch_id, status: r.status, data: JSON.parse(r.data), outline: r.outline ? JSON.parse(r.outline) : null, script: r.script ?? '', createdAt: r.created_at, updatedAt: r.updated_at } : null);
+  const card = (r) => (r ? { id: r.id, batchId: r.batch_id, status: r.status, data: JSON.parse(r.data), outline: r.outline ? JSON.parse(r.outline) : null, script: r.script ?? '', published: r.published ? JSON.parse(r.published) : null, createdAt: r.created_at, updatedAt: r.updated_at } : null);
   return {
     openBatch: (ws) => batch(db.prepare("SELECT * FROM idea_batches WHERE workspace_id = ? AND status = 'open' ORDER BY id DESC LIMIT 1").get(ws)),
     /** Newest first, with the number of live cards. @param {string} ws */
@@ -12,6 +12,9 @@ export function ideasRepo(db, now = Date.now) {
     /** @returns {number} */
     addBatch: (ws, title) => Number(db.prepare('INSERT INTO idea_batches (workspace_id, title, created_at) VALUES (?, ?, ?)').run(ws, title, now()).lastInsertRowid),
     renameBatch: (ws, id, title) => void db.prepare('UPDATE idea_batches SET title = ? WHERE workspace_id = ? AND id = ?').run(title, ws, id),
+    saveLearned: (ws, id, learned) => void db.prepare('UPDATE idea_batches SET learned = ? WHERE workspace_id = ? AND id = ?').run(JSON.stringify(learned), ws, id),
+    /** The newest batch before `id` that left something learned. */
+    lastLearned: (ws, id) => batch(db.prepare('SELECT * FROM idea_batches WHERE workspace_id = ? AND id < ? AND learned IS NOT NULL ORDER BY id DESC LIMIT 1').get(ws, id)),
     closeBatch: (ws, id, learned = null) => void db.prepare("UPDATE idea_batches SET status = 'closed', closed_at = ?, learned = COALESCE(?, learned) WHERE workspace_id = ? AND id = ?").run(now(), learned == null ? null : JSON.stringify(learned), ws, id),
     /** Oldest first, the order they were added. */
     cards: (ws, batchId) => /** @type {any[]} */ (db.prepare('SELECT * FROM ideas WHERE workspace_id = ? AND batch_id = ? ORDER BY id').all(ws, batchId)).map(card),
@@ -21,6 +24,10 @@ export function ideasRepo(db, now = Date.now) {
     saveCard: (ws, id, status, data) => void db.prepare('UPDATE ideas SET status = ?, data = ?, updated_at = ? WHERE workspace_id = ? AND id = ?').run(status, JSON.stringify(data), now(), ws, id),
     saveOutline: (ws, id, outline) => void db.prepare('UPDATE ideas SET outline = ?, updated_at = ? WHERE workspace_id = ? AND id = ?').run(JSON.stringify(outline), now(), ws, id),
     saveScript: (ws, id, script) => void db.prepare('UPDATE ideas SET script = ?, updated_at = ? WHERE workspace_id = ? AND id = ?').run(script, now(), ws, id),
+    /** @param {any} published null: the link is removed */
+    savePublished: (ws, id, published) => void db.prepare('UPDATE ideas SET published = ?, updated_at = ? WHERE workspace_id = ? AND id = ?').run(published == null ? null : JSON.stringify(published), now(), ws, id),
+    /** Every card with a posted link, in any batch: a link is attached to one card only. */
+    publishedCards: (ws) => /** @type {any[]} */ (db.prepare('SELECT * FROM ideas WHERE workspace_id = ? AND published IS NOT NULL ORDER BY id').all(ws)).map(card),
     removeCard: (ws, id) => void db.prepare('DELETE FROM ideas WHERE workspace_id = ? AND id = ?').run(ws, id),
   };
 }

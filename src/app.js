@@ -94,7 +94,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
     comment5w1h: makeComment5w1h({ llm, records: base.records, settings, knowledge, profileText: () => features.soulprint.context(), readComments: (ids) => features.commentData.comments(ids) }),
     bricks: makeBricks({ repo: store.bricks, ws, llm, settings, knowledge: knowledgeOf(knowledgeFiles, ['viral-concepts']), analyst: knowledgeOf(knowledgeFiles, ['analyst']), profile: () => features.soulprint.get().profile, records: base.records, tiktok, source, commentsOf: (id) => store.comments.ofVideo(id), follows: store.follows }),
     soulprint: makeSoulprint({ repo: store.soulprint, ws, llm, settings, follows: store.follows, records: store.records, commentData: { videos: () => features.commentData.videos(), comments: (ids) => features.commentData.comments(ids) } }),
-    ideas: makeIdeas({ repo: store.ideas, ws, settings, llm, knowledge: knowledgeOf(knowledgeFiles, ['dick', 'funnel', 'kallaway']), hookKnowledge: knowledgeOf(knowledgeFiles, ['hooks']), profileText: () => features.soulprint.context(), fiveW: { report: (id) => features.comment5w1h.report(id) }, profile: () => features.soulprint.get().profile, library: { list: () => features.bricks.list(), get: (platform, videoId) => features.bricks.get(platform, videoId) } }),
+    ideas: makeIdeas({ repo: store.ideas, ws, settings, llm, tiktok, source, knowledge: knowledgeOf(knowledgeFiles, ['dick', 'funnel', 'kallaway']), hookKnowledge: knowledgeOf(knowledgeFiles, ['hooks']), profileText: () => features.soulprint.context(), fiveW: { report: (id) => features.comment5w1h.report(id) }, profile: () => features.soulprint.get().profile, library: { list: () => features.bricks.list(), get: (platform, videoId) => features.bricks.get(platform, videoId) } }),
   };
 
   /** Job kind → handler. ctx.progress throws after cancel, which is how jobs stop. */
@@ -123,6 +123,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
   handlers.video_deep_dive = (p, ctx) => features.bricks.deepDive(p, ctx.progress);
   handlers.comment_5w1h = (p, ctx) => features.comment5w1h.run(p, ctx.progress);
   handlers.follow_refresh = (p, ctx) => features.follows.refresh(p, ctx.progress);
+  handlers.batch_refresh = (p, ctx) => features.ideas.refresh(p, ctx.progress);
   const runner = createRunner({ jobsRepo: store.jobs, handlers, onCancelled: (job) => store.records.removeByJob(job.id) });
   return {
     config, store, source, tiktok, llm, features, runner, ws, settings, close: async () => { await tiktok.close(); await source.close?.(); },

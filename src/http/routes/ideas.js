@@ -26,6 +26,16 @@ export const ideaRoutes = [
       return query.get('inline') ? raw(md, 'text/markdown; charset=utf-8') : raw(md, 'text/markdown; charset=utf-8', attachment('bang-y-tuong.md'));
     },
   },
+  // Chấm lô: before the /:id routes.
+  { method: 'GET', path: '/api/v1/ideas/batches/:id/review', handler: ({ app, params }) => app.features.ideas.review(idOf(params.id)) },
+  {
+    method: 'GET', path: '/api/v1/ideas/batches/:id/review.md',
+    handler: ({ app, params, query }) => {
+      const md = app.features.ideas.reviewMarkdown(idOf(params.id));
+      return query.get('inline') ? raw(md, 'text/markdown; charset=utf-8') : raw(md, 'text/markdown; charset=utf-8', attachment('cham-lo.md'));
+    },
+  },
+  { method: 'POST', path: '/api/v1/ideas/batches/:id/close', handler: ({ app, params, body }) => app.features.ideas.close(idOf(params.id), body?.learned) },
   // AI helpers: a suggestion for the card on screen. Nothing is saved here.
   { method: 'POST', path: '/api/v1/ideas/assist', handler: ({ app, body }) => app.features.ideas.assist(String(body?.action || ''), { id: idOf(body?.id), card: body?.card }) },
   // A script the owner wrote, checked by code (no AI). Used while typing, before it is saved.
@@ -62,6 +72,17 @@ export const ideaRoutes = [
       return app.features.ideas.saveScript(id, body.text);
     },
   },
+  // The posted video of a card: its link (numbers read by the app) and the owner's own counts.
+  {
+    method: 'POST', path: '/api/v1/ideas/:id/video',
+    handler: ({ app, params, body }) => {
+      const id = idOf(params.id);
+      if (typeof body?.url !== 'string') throw httpError('invalid_input', 'Thiếu link video', 'url');
+      return app.features.ideas.attachVideo(id, body.url);
+    },
+  },
+  { method: 'DELETE', path: '/api/v1/ideas/:id/video', handler: ({ app, params }) => app.features.ideas.clearVideo(idOf(params.id)) },
+  { method: 'POST', path: '/api/v1/ideas/:id/result', handler: ({ app, params, body }) => app.features.ideas.saveResult(idOf(params.id), body ?? {}) },
   // AI helpers on the outline: a suggestion for what is on screen. Nothing is saved here.
   {
     method: 'POST', path: '/api/v1/ideas/:id/outline/assist',
