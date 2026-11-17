@@ -30,6 +30,13 @@ export const brickRoutes = [
   },
   { method: 'GET', path: '/api/v1/bricks/:platform/:id', handler: ({ app, params }) => app.features.bricks.get(...at(params)) },
   {
+    method: 'GET', path: '/api/v1/bricks/:platform/:id/deep-dive.md',
+    handler: ({ app, params, query }) => {
+      const md = app.features.bricks.deepDiveMarkdown(...at(params));
+      return query.get('inline') ? raw(md, 'text/markdown; charset=utf-8') : raw(md, 'text/markdown; charset=utf-8', attachment('dao-sau.md'));
+    },
+  },
+  {
     method: 'POST', path: '/api/v1/bricks/:platform/:id',
     handler: ({ app, params, body }) => {
       if (!body?.edits || typeof body.edits !== 'object') throw httpError('invalid_input', 'Thiếu phần sửa', 'edits');

@@ -8,7 +8,7 @@ const PATH = '/bricks';
 const KIND = 'brick_extract';
 const NAMES = { tiktok: 'TikTok', youtube: 'YouTube' };
 const FIT = { yes: 'Hợp', no: 'Không hợp', unclear: 'Chưa rõ' };
-const TABS = [['transcript', 'Transcript', 'message'], ['idea', 'Idea Analysis', 'bulb'], ['hook', 'Hook', 'key'], ['story', 'Storytelling Format', 'bars'], ['visual', 'Visual Layout', 'eye'], ['audience', 'Khán giả', 'users']];
+const TABS = [['transcript', 'Transcript', 'message'], ['idea', 'Idea Analysis', 'bulb'], ['hook', 'Hook', 'key'], ['story', 'Storytelling Format', 'bars'], ['visual', 'Visual Layout', 'eye'], ['audience', 'Khán giả', 'users'], ['dive', 'Đào sâu', 'compass']];
 const NO_KEY = 'Chưa nhập API key OpenRouter';
 const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
@@ -95,6 +95,27 @@ export async function mount(root, params) {
       + `<div class="fw-field"><div class="fw-cap">CÁC KHỐI</div>${b.story.blocks.length ? b.story.blocks.map((x) => `<div class="fw-value"><span class="muted small">${clock(x.from)}${x.to != null ? `–${clock(x.to)}` : ''}</span> ${chip(lib.blockLabels[x.type] ?? x.type, 'soft')} ${esc(x.summary)}</div>`).join('') : '<div class="fw-value muted">(trống)</div>'}</div>`;
     if (state.tab === 'visual') return '<p class="muted small">AI chưa xem được hình và nghe được tiếng của video (đang chờ thử nghiệm). Bạn có thể tự ghi lại ba ô này.</p>'
       + field('CATEGORY', 'visual.format', b.visual.format) + field('KEY VISUALS', 'visual.keyVisuals', b.visual.keyVisuals) + field('AUDIO', 'visual.audio', b.visual.audio);
+    if (state.tab === 'dive') {
+      const d = r.deepDive;
+      if (!d) return `<p class="muted">Phân tích 8 bước theo phương pháp Quan sát, Phân tích, Đúc kết: điểm ấn tượng, nội dung theo thời gian, nhận định, giả thiết, yếu tố cốt lõi và bổ trợ, công thức làm lại. AI không xem được hình và không nghe được tiếng, nên mọi nhận định là giả thiết.</p>
+        <button type="button" class="btn primary" data-dive ${lib.ai ? '' : 'disabled'}>${icon('compass')} Đào sâu video này</button>${lib.ai ? '' : `<div class="help muted small">${NO_KEY}. <a href="#/settings">Mở Cài đặt</a></div>`}`;
+      const cap = (t) => `<div class="fw-cap">${t}</div>`;
+      const val = (t) => `<div class="fw-value">${esc(t)}</div>`;
+      const mark = (path) => (d.flagged.includes(path) ? ' <span class="fw-chip outline">chưa đủ đời thường</span>' : '');
+      const factors = (items, key) => items.map((x, i) => `<div class="fw-value"><b>${esc(x.what)}</b>${mark(`${key}.${i}.what`)} ${esc(x.why)}${mark(`${key}.${i}.why`)}</div>`).join('') || val('(không có)');
+      return `<div class="row"><span class="muted small">Viết ${ago(d.at)} bằng ${esc(d.model)}. Mọi nhận định là giả thiết.</span><span class="spacer"></span><a class="btn sm" href="${bricks.deepDiveUrl(r.platform, r.videoId)}">${icon('download')} Markdown</a><button type="button" class="btn sm" data-dive ${lib.ai ? '' : 'disabled'}>${icon('refresh')} Viết lại</button></div>
+        <div class="fw-field">${cap('ĐIỂM ẤN TƯỢNG')}${d.impressions.map(val).join('')}</div>
+        <div class="fw-field">${cap('HÌNH THỨC')}${val(d.form)}</div>
+        <div class="fw-field">${cap('3 GIÂY ĐẦU')}${val(d.timeline.first3s)}</div><div class="fw-field">${cap('10 GIÂY TIẾP')}${val(d.timeline.next10s)}</div><div class="fw-field">${cap('30 GIÂY TIẾP')}${val(d.timeline.next30s)}</div>
+        <div class="fw-field">${cap('CÂU KẾT')}${val(d.timeline.ending)}</div><div class="fw-field">${cap('CÁCH TRIỂN KHAI')}${val(d.timeline.overall)}</div>
+        <div class="fw-field">${cap('BÌNH LUẬN NÓI GÌ')}${val(d.comments)}</div>
+        <div class="fw-field">${cap('NHẬN ĐỊNH')}${val(`Clip nói về: ${d.verdict.about}`)}${val(`Nhắm tới: ${d.verdict.audience}`)}${val(`Cảm xúc: ${d.verdict.emotion}`)}${val(`Thông điệp: ${d.verdict.message}`)}${d.verdict.special.map(val).join('')}</div>
+        <div class="fw-field">${cap('GIẢ THIẾT: BỎ ĐI THÌ SAO')}${d.hypotheses.map((h) => val(`${h.factor}: ${h.ifRemoved}`)).join('')}</div>
+        <div class="fw-field">${cap('YẾU TỐ CỐT LÕI')}${factors(d.core, 'core')}</div>
+        <div class="fw-field">${cap('YẾU TỐ BỔ TRỢ')}${factors(d.support, 'support')}</div>
+        <div class="fw-field">${cap('CÔNG THỨC TRIỂN KHAI')}${d.formula.name ? `<span class="fw-chip">${esc(d.formula.name)}</span>${mark('formula.name')}` : ''}${d.formula.appliesTo ? val(`Áp dụng cho: ${d.formula.appliesTo}`) : ''}${d.formula.steps.map((s, i) => `<div class="fw-value">${i + 1}. ${esc(s)}${mark(`formula.steps.${i}`)}</div>`).join('')}</div>
+        <div class="fw-field">${cap('TỰ PHẢN BIỆN')}${d.doubts.map(val).join('')}</div>`;
+    }
     const byId = new Map(r.source.comments.map((c) => [c.id, c]));
     return b.audience.total ? lib.audience.map(([k, l]) => `<div class="fw-field"><div class="fw-cap">${esc(l)} · ${b.audience.counts[k]}</div>${(b.audience.examples[k] ?? []).map((id) => (byId.has(id) ? `<div class="fw-quote"><i>"${esc(byId.get(id).text)}"</i> <span class="muted small">${fmt(byId.get(id).likes)} tim</span></div>` : '')).join('') || '<div class="fw-value muted">–</div>'}</div>`).join('')
       + `<p class="muted small">Đếm trên ${r.source.comments.length} bình luận được chú ý nhất đã có trong app.</p>` : '<div class="fw-field"><div class="fw-value muted">Chưa có bình luận nào của video này trong app.</div></div>';
@@ -215,6 +236,15 @@ export async function mount(root, params) {
         render();
       } catch (err) { toast(err.message, 'error'); }
     } else if (d.redo !== undefined) extract({ links: state.open.meta.url || state.open.videoId, redo: true }, 'Đang bóc lại');
+    else if (d.dive !== undefined) {
+      const prog = root.querySelector('[data-prog]');
+      prog.innerHTML = progressCard('Đang đào sâu video');
+      try {
+        await runJob('video_deep_dive', { platform: state.open.platform, videoId: state.open.videoId }, (p) => updateProgress(prog, p));
+        state.open = await bricks.get(state.open.platform, state.open.videoId);
+        render();
+      } catch (err) { prog.innerHTML = errorCallout(err); }
+    }
     else if (d.remove !== undefined) {
       if (b.dataset.armed) { await bricks.remove(state.open.platform, state.open.videoId); state.open = null; lib = await bricks.list(); setUrl(PATH, {}); render(); }
       else { b.dataset.armed = '1'; b.innerHTML = 'Bấm lần nữa để xoá khỏi thư viện'; }

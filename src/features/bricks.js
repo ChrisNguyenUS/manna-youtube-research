@@ -6,7 +6,8 @@ import { rethrowIfCancelled } from '../core/cancel.js';
 import { aiError } from '../core/ai/base.js';
 import { LIMITS, EDITABLE, cleanEdit, applyEdits } from '../core/bricks/schema.js';
 import { prepareVideo, extractRequest, checkBricks } from '../core/bricks/extract.js';
-import { bricksMarkdown } from '../core/report/bricks.js';
+import { bricksMarkdown, deepDiveMarkdown } from '../core/report/bricks.js';
+import { deepDiveRequest, checkDeepDive, flaggedItems, rewriteRequest, applyRewrite } from '../core/bricks/deep-dive.js';
 import { FATAL, modelOf, makeMeter, twice, pool } from './ai/run.js';
 import { youtubeIdOf } from './video-analysis.js';
 import { compareChannel, RULE } from '../core/bricks/compare.js';
@@ -29,12 +30,12 @@ function describe(platform, v) {
 }
 
 /**
- * @param {{repo: any, ws: string, llm: import('../ports/llm.js').LlmClient, settings: () => Record<string, any>, knowledge?: string,
+ * @param {{repo: any, ws: string, llm: import('../ports/llm.js').LlmClient, settings: () => Record<string, any>, knowledge?: string, analyst?: string,
  *   profile: () => any, records: {get: (id: number) => any}, tiktok: import('../ports/tiktok-source.js').TikTokSource,
  *   source: import('../ports/youtube-source.js').YouTubeSource, commentsOf: (videoId: string) => any[], follows: {list: (ws: string) => any[]}}} deps
- *   knowledge: the concepts file; profile: the Soulprint profile (pillars, filter); commentsOf: collected TikTok comments of a video
+ *   analyst: the 8-step method file; knowledge: the concepts file; profile: the Soulprint profile (pillars, filter); commentsOf: collected TikTok comments of a video
  */
-export function makeBricks({ repo, ws, llm, settings, knowledge = '', profile, records, tiktok, source, commentsOf, follows }) {
+export function makeBricks({ repo, ws, llm, settings, knowledge = '', analyst = '', profile, records, tiktok, source, commentsOf, follows }) {
   /** Score and age of a video, when a followed channel's last check saw it. */
   function scanned() {
     const byId = new Map();
@@ -124,6 +125,31 @@ export function makeBricks({ repo, ws, llm, settings, knowledge = '', profile, r
     return { channelRef, title: rows[0]?.meta.channelTitle || channelRef, min: minScore(), ...compareChannel(rows, { min: minScore() }) };
   }
 
+  /** The 8-step deep dive of one library video: one call, then one rewrite of conclusion texts that are not in plain words. */
+  async function deepDive(params, progress = noop) {
+    if (!params.platform) throw invalid('Thiếu nền tảng', 'platform');
+    if (!llm.ready()) throw aiError('llm_no_key', 'Chưa nhập API key OpenRouter. Vào Cài đặt để nhập.');
+    const r = one(params.platform, params.videoId);
+    const row = view(r, true);
+    const model = modelOf(settings().aiWriteModel);
+    const m = makeMeter(llm);
+    progress({ step: 'Đào sâu 8 bước', done: 0, total: 2 });
+    let d = await twice(async () => checkDeepDive(await m.ask(deepDiveRequest(row, { compare: r.channelRef ? compare(r.channelRef) : null, knowledge: analyst }), model)));
+    const items = flaggedItems(d);
+    if (items.length) {
+      progress({ step: 'Viết lại các câu chưa đủ đời thường', done: 1, total: 2 });
+      try {
+        d = applyRewrite(d, items, await m.ask(rewriteRequest(items), model));
+      } catch (e) {
+        rethrowIfCancelled(e);
+        if (FATAL.has(e?.code)) throw e;
+        d = { ...d, flagged: items.map((x) => x.path) }; // the first answer stands, marked
+      }
+    }
+    repo.setDeepDive(ws, r.platform, r.videoId, { ...d, model, at: Date.now() });
+    return { inline: true, platform: r.platform, videoId: r.videoId, usage: { model, ...m.usage } };
+  }
+
   /** @param {{recordId?: number, links?: string, redo?: boolean} & Record<string, any>} params */
   async function extract(params, progress = noop) {
     if (!llm.ready()) throw aiError('llm_no_key', 'Chưa nhập API key OpenRouter. Vào Cài đặt để nhập.');
@@ -194,7 +220,7 @@ export function makeBricks({ repo, ws, llm, settings, knowledge = '', profile, r
   }
 
   return {
-    extract, moreTargets, candidates, channels, compare,
+    extract, moreTargets, candidates, channels, compare, deepDive, deepDiveMarkdown: (platform, videoId) => deepDiveMarkdown(view(one(platform, videoId), true)),
     list: () => repo.list(ws).map((r) => view(r)),
     get: (platform, videoId) => view(one(platform, videoId), true),
     update,

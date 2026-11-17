@@ -131,6 +131,8 @@ export const soulprint = {
 export const bricks = {
   /** Rows plus the fixed lists the filters and editors use. */
   list: () => api('/bricks'),
+  /** @param {string} platform @param {string} id */
+  deepDiveUrl: (platform, id) => `${BASE}/bricks/${platform}/${encodeURIComponent(id)}/deep-dive.md`,
   candidates: () => api('/bricks/candidates'),
   /** @param {string} channelRef "platform:ref" */
   compare: (channelRef) => api(`/bricks/compare${q({ channel: channelRef })}`),

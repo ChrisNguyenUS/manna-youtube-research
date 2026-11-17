@@ -143,3 +143,33 @@ test('compare: by channel, with the library threshold; channels lists what can b
   assert.deepEqual(f.channels(), [{ channelRef: 'tiktok:monica', title: 'Monica', videos: 6 }]);
   assert.deepEqual([f.compare('tiktok:khac').winners, f.compare('tiktok:khac').enough], [0, false]);
 });
+
+const DIVE = {
+  impressions: ['a', 'b', 'c'], form: 'chưa có dữ liệu', timeline: { first3s: '1', next10s: '2', next30s: '3', ending: '4', overall: '5' }, comments: 'c',
+  verdict: { about: 'a', audience: 'b', emotion: 'c', message: 'd', special: ['x', 'y', 'z'] }, hypotheses: [{ factor: 'f', ifRemoved: 'r' }],
+  core: [{ what: 'Tạo engagement', why: 'Vì người xem dừng lại' }], support: [], formula: { name: 'n', appliesTo: 'a', steps: ['s'] }, doubts: ['d'],
+};
+
+test('deep dive: one call, then one rewrite of the texts that are not plain; saved on the row and kept by a re-extract', async () => {
+  const { a, f, llm, recordId } = setup((req) => (req.task === 'bricks' ? answer() : req.task === 'deep_dive' ? DIVE : { texts: ['Làm người xem dừng lại'] }), { knowledgeFiles: { analyst: '### BƯỚC 1' } });
+  await f.extract({ recordId });
+  const r = await f.deepDive({ platform: 'tiktok', videoId: A });
+  assert.deepEqual([r.inline, r.platform, r.videoId, r.usage.calls], [true, 'tiktok', A, 2]);
+  assert.match(llm.calls.find((c) => c.task === 'deep_dive').system, /### BƯỚC 1/);
+  const row = f.get('tiktok', A);
+  assert.deepEqual([row.hasDeepDive, row.deepDive.core[0].what, row.deepDive.flagged], [true, 'Làm người xem dừng lại', []]);
+  await f.extract({ recordId, redo: true });
+  assert.equal(f.get('tiktok', A).hasDeepDive, true);
+  assert.match(a.features.bricks.deepDiveMarkdown('tiktok', A), /## Đúc kết\n\n### Yếu tố cốt lõi\n\n1\. \*\*Làm người xem dừng lại\*\*/);
+  await assert.rejects(f.deepDive({ platform: 'tiktok', videoId: 'x' }), (/** @type {any} */ e) => e.code === 'not_found');
+});
+
+test('deep dive: nothing to rewrite means one call; a failed rewrite keeps the first answer and flags it', async () => {
+  const clean = setup((req) => (req.task === 'bricks' ? answer() : { ...DIVE, core: [{ what: 'Câu mở đầu ngược đời', why: 'Ai cũng dừng lại' }] }));
+  await clean.f.extract({ recordId: clean.recordId });
+  assert.equal((await clean.f.deepDive({ platform: 'tiktok', videoId: A })).usage.calls, 1);
+  const broken = setup((req) => (req.task === 'bricks' ? answer() : req.task === 'deep_dive' ? DIVE : Object.assign(new Error('x'), { code: 'llm_unavailable' })));
+  await broken.f.extract({ recordId: broken.recordId });
+  await broken.f.deepDive({ platform: 'tiktok', videoId: A });
+  assert.deepEqual([broken.f.get('tiktok', A).deepDive.core[0].what, broken.f.get('tiktok', A).deepDive.flagged], ['Tạo engagement', ['core.0.what']]);
+});

@@ -91,7 +91,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
     videoAnalysisHistory: makeVideoAnalysisHistory({ store, ws }),
     tiktokChannel: makeTikTokChannelAnalysis({ tiktok, records: base.records, now: base.now, settings }),
     comment5w1h: makeComment5w1h({ llm, records: base.records, settings, knowledge, profileText: () => features.soulprint.context(), readComments: (ids) => features.commentData.comments(ids) }),
-    bricks: makeBricks({ repo: store.bricks, ws, llm, settings, knowledge: knowledgeOf(knowledgeFiles, ['viral-concepts']), profile: () => features.soulprint.get().profile, records: base.records, tiktok, source, commentsOf: (id) => store.comments.ofVideo(id), follows: store.follows }),
+    bricks: makeBricks({ repo: store.bricks, ws, llm, settings, knowledge: knowledgeOf(knowledgeFiles, ['viral-concepts']), analyst: knowledgeOf(knowledgeFiles, ['analyst']), profile: () => features.soulprint.get().profile, records: base.records, tiktok, source, commentsOf: (id) => store.comments.ofVideo(id), follows: store.follows }),
     soulprint: makeSoulprint({ repo: store.soulprint, ws, llm, settings, follows: store.follows, records: store.records, commentData: { videos: () => features.commentData.videos(), comments: (ids) => features.commentData.comments(ids) } }),
   };
 
@@ -118,6 +118,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
   handlers.video_analysis = (p, ctx) => features.videoAnalysis(p, ctx.progress);
   handlers.tiktok_channel = (p, ctx) => features.tiktokChannel(p, ctx.progress);
   handlers.brick_extract = (p, ctx) => features.bricks.extract(p, ctx.progress);
+  handlers.video_deep_dive = (p, ctx) => features.bricks.deepDive(p, ctx.progress);
   handlers.comment_5w1h = (p, ctx) => features.comment5w1h.run(p, ctx.progress);
   handlers.follow_refresh = (p, ctx) => features.follows.refresh(p, ctx.progress);
   const runner = createRunner({ jobsRepo: store.jobs, handlers, onCancelled: (job) => store.records.removeByJob(job.id) });

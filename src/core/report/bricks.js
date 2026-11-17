@@ -34,3 +34,21 @@ export function brickSection(r) {
 
 /** @param {any[]} rows */
 export const bricksMarkdown = (rows) => [`# Thư viện gạch: ${rows.length} video`, '', 'Gạch do AI bóc từ lời thoại và bình luận, đã gồm phần chủ kênh sửa tay. Đây là quan sát, không phải kết luận vì sao video thắng.', '', ...rows.map(brickSection)].join('\n\n').replace(/\n{3,}/g, '\n\n') + '\n';
+
+/** @param {any} r a full library row with its deep dive */
+export function deepDiveMarkdown(r) {
+  const d = r.deepDive;
+  if (!d) return `# ${r.meta.title || r.videoId}\n\nVideo này chưa được đào sâu.\n`;
+  const list = (items) => items.map((x) => `- ${x}`).join('\n');
+  const factors = (items) => items.map((x, i) => `${i + 1}. **${x.what}** ${x.why}`).join('\n\n') || '(không có)';
+  return [`# Đào sâu: ${r.meta.title || r.videoId}`, '', `${r.meta.channelTitle ?? ''} · ${r.meta.url ?? ''}`, '', '> AI viết theo phương pháp Quan sát, Phân tích, Đúc kết. AI không xem được hình và không nghe được tiếng; mọi nhận định là giả thiết.',
+    d.flagged.length ? `> Còn ${d.flagged.length} câu trong phần đúc kết dùng từ chưa đủ đời thường.` : '',
+    '## Điểm ấn tượng', list(d.impressions), '## Hình thức', d.form,
+    '## Nội dung theo thời gian', `- 3 giây đầu: ${d.timeline.first3s}\n- 10 giây tiếp: ${d.timeline.next10s}\n- 30 giây tiếp: ${d.timeline.next30s}\n- Câu kết: ${d.timeline.ending}\n- Cách triển khai: ${d.timeline.overall}`,
+    '## Bình luận', d.comments,
+    '## Nhận định', `- Clip nói về: ${d.verdict.about}\n- Nhắm tới: ${d.verdict.audience}\n- Cảm xúc: ${d.verdict.emotion}\n- Thông điệp: ${d.verdict.message}`, d.verdict.special.length ? `Điểm đặc biệt:\n${list(d.verdict.special)}` : '',
+    '## Giả thiết', d.hypotheses.map((h) => `- Nếu bỏ "${h.factor}": ${h.ifRemoved}`).join('\n'),
+    '## Đúc kết', '### Yếu tố cốt lõi', factors(d.core), '### Yếu tố bổ trợ', factors(d.support),
+    `## Công thức triển khai: ${d.formula.name}`, d.formula.appliesTo ? `Áp dụng cho: ${d.formula.appliesTo}` : '', d.formula.steps.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+    '## Tự phản biện', list(d.doubts)].filter(Boolean).join('\n\n') + '\n';
+}

@@ -17,7 +17,7 @@ test('Thư viện gạch is the third entry of Mổ xẻ and has its client and 
 
 test('the detail has the reference tabs, in order, with uppercase field labels', () => {
   const src = view();
-  const tabs = ['Transcript', 'Idea Analysis', 'Hook', 'Storytelling Format', 'Visual Layout', 'Khán giả'];
+  const tabs = ['Transcript', 'Idea Analysis', 'Hook', 'Storytelling Format', 'Visual Layout', 'Khán giả', 'Đào sâu'];
   let at = -1;
   for (const t of tabs) {
     const i = src.indexOf(`'${t}'`);
@@ -42,4 +42,10 @@ test('followed channels and the winners-versus-losers table are on the library s
   for (const s of ['data-run-follows', 'data-contrast', 'data-compare', 'có thể là cốt lõi', 'không phải chứng minh', 'Chưa đủ để đối chiếu']) assert.ok(src.includes(s), s);
   assert.match(fs.readFileSync('web/views/follows.js', 'utf8'), /href="#\/bricks"/);
   assert.match(fs.readFileSync('web/views/settings.js', 'utf8'), /data-k="bricksMinScore"/);
+});
+
+test('the deep dive tab: every section, the plain-language flag, the hypothesis wording, the job label', () => {
+  const src = view();
+  for (const s of ['YẾU TỐ CỐT LÕI', 'YẾU TỐ BỔ TRỢ', 'CÔNG THỨC TRIỂN KHAI', 'chưa đủ đời thường', 'Mọi nhận định là giả thiết', 'data-dive']) assert.ok(src.includes(s), s);
+  assert.match(fs.readFileSync('web/lib.js', 'utf8'), /video_deep_dive: 'Đào sâu video'/);
 });
