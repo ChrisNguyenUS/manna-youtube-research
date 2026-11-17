@@ -44,14 +44,14 @@ flowchart LR
 
 | # | Giai đoạn | Cần trước | Tài liệu | Cỡ |
 |---|---|---|---|---|
-| 1 | Lớp LLM và 5W1H comment | không | [spec](../specs/2026-11-16-comment-5w1h-design.md), [kế hoạch](2026-11-16-comment-5w1h.md) | 6 task, đã viết xong |
-| 2 | Soulprint | bước form: không; bước AI: giai đoạn 1 | [spec](../specs/2026-11-16-soulprint-design.md) | khoảng 5 task |
-| 3 | Gộp app cho gọn | không | chưa có spec | khoảng 4 task |
-| 4 | Thư viện gạch | 1, 2 | chưa có spec | khoảng 6 task |
-| 5 | Bảng ý tưởng lô 10 | 1, 2, 4 | chưa có spec | khoảng 5 task |
-| 6 | Dàn ý script | 5 | chưa có spec | khoảng 4 task |
-| 7 | Chấm lô | 5 | chưa có spec | khoảng 3 task |
-| 8 | Thử nghiệm: model xem và nghe video | 1 | chỉ là thử nghiệm | 1 buổi |
+| 1 | Lớp LLM và 5W1H comment | không | [spec](../specs/2026-11-16-comment-5w1h-design.md), [kế hoạch](2026-11-16-comment-5w1h.md) | 6 task, **đã xong** |
+| 2 | Soulprint | giai đoạn 1 | [spec](../specs/2026-11-16-soulprint-design.md), [kế hoạch](2026-11-17-soulprint.md) | 5 task, **đã xong** |
+| 3 | Gộp app cho gọn | không | [spec](../specs/2026-11-16-consolidate-app-design.md) | 3 bước; gồm cả phân tích video YouTube, vốn chưa có |
+| 4 | Thư viện gạch | 1, 2; nên có 3 | [spec](../specs/2026-11-16-brick-library-design.md) | 4 bước |
+| 5 | Bảng ý tưởng lô 10 | 1, 2, 4 | [spec](../specs/2026-11-16-idea-board-design.md) | 3 bước |
+| 6 | Dàn ý script | 5 | [spec](../specs/2026-11-16-script-outline-design.md) | 3 bước |
+| 7 | Chấm lô | 5 | [spec](../specs/2026-11-16-batch-review-design.md) | 3 bước, không cần AI |
+| 8 | Thử nghiệm: model xem và nghe video | 1 | [bản thử nghiệm](../specs/2026-11-16-video-watch-spike.md) | 1 buổi |
 
 ## 4. Từng giai đoạn
 
