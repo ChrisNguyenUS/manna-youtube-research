@@ -150,3 +150,30 @@ test('a card from a weak library video is not counted as mined from a winner, an
   assert.match(md, /- Nguồn: video đã thắng: Video win/);
   assert.match(md, /- Nguồn: thư viện gạch, video vượt kênh 0\.5×: Video weak/);
 });
+
+test('the outline lives beside the card: saving one never wipes the other (Review Focus #1)', () => {
+  const a = testApp();
+  const f = a.features.ideas;
+  const c = f.create({ from: 'self' });
+  assert.deepEqual([c.outline.length, c.script, c.gaps[0], c.timeline.length], [45, '', 'Chưa chọn hook', 6]);
+  const o = f.saveOutline(c.id, { length: 30, scenes: ['face', 'robot'], blocks: { lockin: { point: 'Hứa' } } });
+  assert.deepEqual([o.outline.length, o.outline.scenes, o.outline.blocks.lockin.point, o.timeline.at(-1).to], [30, ['face'], 'Hứa', 30]);
+  f.update(c.id, { topic: 'Sửa thẻ sau' });
+  assert.deepEqual([f.get(c.id).outline.blocks.lockin.point, f.get(c.id).card.topic], ['Hứa', 'Sửa thẻ sau']);
+  f.saveOutline(c.id, { length: 30, blocks: { lockin: { point: 'Hứa lại' } } });
+  assert.equal(f.get(c.id).card.topic, 'Sửa thẻ sau');
+  assert.throws(() => f.saveOutline(999, {}), (/** @type {any} */ e) => e.code === 'not_found');
+});
+
+test('a pasted script is saved with its check, measured against the outline\'s length and the card\'s lead magnet', () => {
+  const a = testApp();
+  const f = a.features.ideas;
+  const c = f.create({ from: 'self' });
+  f.update(c.id, { leadMagnet: 'danh sách 20 câu' });
+  f.saveOutline(c.id, { length: 30 });
+  const r = f.saveScript(c.id, 'Tuy nhiên mình gửi bạn danh sách 20 câu.');
+  assert.deepEqual([r.view.script, r.lint.maxWords, r.lint.issues.map((x) => x.rule)], ['Tuy nhiên mình gửi bạn danh sách 20 câu.', 90, ['banned']]);
+  assert.equal(f.get(c.id).script, 'Tuy nhiên mình gửi bạn danh sách 20 câu.');
+  assert.deepEqual(f.lint('Chỉ kể thôi.', { length: 45, leadMagnet: '' }).issues.map((x) => x.rule), ['cta']);
+  assert.match(f.outlineMarkdown(c.id), /^# Dàn ý: /);
+});

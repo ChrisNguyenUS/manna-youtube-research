@@ -7,6 +7,9 @@ import { ideasMarkdown } from '../core/report/ideas.js';
 import { aiError } from '../core/ai/base.js';
 import { ACTIONS, assistRequest, checkAssist } from '../core/ideas/assist.js';
 import { modelOf } from './ai/run.js';
+import { cleanOutline, timelineOf, outlineGaps } from '../core/outline/outline.js';
+import { lintScript } from '../core/outline/lint.js';
+import { outlineMarkdown } from '../core/report/outline.js';
 
 const invalid = (message, field) => Object.assign(new Error(message), { code: 'invalid_input', field });
 const notFound = (message) => Object.assign(new Error(message), { code: 'not_found' });
@@ -65,9 +68,10 @@ export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm, kn
   /** A stored card with its checks, read against today's library and Soulprint. */
   function view(row, ctx) {
     const card = cleanCard(row.data);
+    const outline = cleanOutline(row.outline);
     const precedent = precedentOf(card, ctx.rows, { min: ctx.min });
     const { checks, ready, missing } = checksOf(card, precedent, { hasFilter: ctx.hasFilter });
-    return { id: row.id, batchId: row.batchId, status: row.status, card, checks, ready, missing, trial: card.origin.kind === 'self', fromWinner: isFromWinner(card, ctx.min), matches: precedent.matches, createdAt: row.createdAt, updatedAt: row.updatedAt };
+    return { id: row.id, batchId: row.batchId, status: row.status, card, checks, ready, missing, trial: card.origin.kind === 'self', fromWinner: isFromWinner(card, ctx.min), matches: precedent.matches, outline, script: row.script ?? '', timeline: timelineOf(outline), gaps: outlineGaps(outline, card), createdAt: row.createdAt, updatedAt: row.updatedAt };
   }
   function context() {
     const p = profile() ?? {};
@@ -146,7 +150,28 @@ export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm, kn
     return { action, suggestion: checkAssist(action, r.json), usage: { model, tokensIn: r.tokensIn, tokensOut: r.tokensOut, costUsd: r.costUsd } };
   }
 
+  /** @param {number|string} id @param {any} outline the whole outline on screen */
+  function saveOutline(id, outline) {
+    const row = one(id);
+    repo.saveOutline(ws, row.id, cleanOutline(outline));
+    return view(repo.getCard(ws, row.id), context());
+  }
+  /** The owner's own script, saved with its check. @param {number|string} id @param {string} text */
+  function saveScript(id, text) {
+    const row = one(id);
+    const script = String(text ?? '').slice(0, 20_000);
+    repo.saveScript(ws, row.id, script);
+    const v = view(repo.getCard(ws, row.id), context());
+    return { view: v, lint: lintScript(script, { length: v.outline.length, leadMagnet: v.card.leadMagnet }) };
+  }
+  /** @param {number|string} id */
+  function outlineMd(id) {
+    const v = view(one(id), context());
+    return outlineMarkdown(v, { voice: String(profile()?.voice ?? '') });
+  }
+
   return {
+    saveOutline, saveScript, outlineMarkdown: outlineMd, lint: (text, o) => lintScript(text, o),
     sources, assist, board, create, update, newBatch,
     get: (id) => view(one(id), context()),
     remove: (id) => void repo.removeCard(ws, one(id).id),

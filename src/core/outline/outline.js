@@ -47,7 +47,7 @@ export function cleanOutline(input) {
 }
 
 const BASE = 45;
-const FIXED = [['hook', 0, 3], ['lockin', 3, 8], ['body1', 8, 25], ['rehook1', 25, 28]];
+const FIXED = /** @type {[string, number, number][]} */ ([['hook', 0, 3], ['lockin', 3, 8], ['body1', 8, 25], ['rehook1', 25, 28]]);
 /** The rest of the body (28–42 s of the template) is shared by these, by weight; body 2 is always there. */
 const MIDDLE = /** @type {[string, number][]} */ ([['body2', 10], ['rehook2', 2], ['body3', 8], ['closing', 2]]);
 const MIDDLE_SPAN = [28, 42];
