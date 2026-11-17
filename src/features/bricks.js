@@ -13,7 +13,8 @@ import { youtubeIdOf } from './video-analysis.js';
 import { compareChannel, RULE } from '../core/bricks/compare.js';
 
 const ANALYSIS_KINDS = ['tiktok_video_analysis', 'video_analysis'];
-const TIKTOK_LINK = /^(https?:\/\/)?([a-z0-9-]+\.)*tiktok\.com\/|^\d{15,25}$/i;
+/** A TikTok link, or a bare video id. Shared with the idea board's posted links. */
+export const TIKTOK_LINK = /^(https?:\/\/)?([a-z0-9-]+\.)*tiktok\.com\/|^\d{15,25}$/i;
 const invalid = (message, field) => Object.assign(new Error(message), { code: 'invalid_input', field });
 const notFound = (message) => Object.assign(new Error(message), { code: 'not_found' });
 /** Stored bricks with every field present, so a row written by an older version or by hand never breaks a screen. @param {any} d */

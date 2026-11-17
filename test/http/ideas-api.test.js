@@ -56,3 +56,32 @@ test('outline, script, lint and the hand-off over HTTP', async () => {
   assert.equal((await post(`${s.base}/api/v1/ideas/lint`, {})).status, 400);
   s.close();
 });
+
+test('posted video, own counts, the review, closing and the refresh job over HTTP', async () => {
+  const s = await boot();
+  try {
+    const c = await (await post(`${s.base}/api/v1/ideas`, { from: 'self' })).json();
+    const v = await (await post(`${s.base}/api/v1/ideas/${c.id}/video`, { url: 'https://www.tiktok.com/@creator/video/7000000000000000002' })).json();
+    assert.deepEqual([v.status, v.published.videoId], ['posted', '7000000000000000002']);
+    assert.equal((await post(`${s.base}/api/v1/ideas/${c.id}/video`, {})).status, 400);
+    const bad = await post(`${s.base}/api/v1/ideas/${c.id}/result`, { leads: -1 });
+    assert.deepEqual([bad.status, (await bad.json()).error.field], [400, 'leads']);
+    assert.equal((await (await post(`${s.base}/api/v1/ideas/${c.id}/result`, { leads: 3 })).json()).published.leads, 3);
+    const r = await get(`${s.base}/api/v1/ideas/batches/${c.batchId}/review`);
+    assert.deepEqual([r.posted, r.rows.length, r.levels.length], [1, 1, 3]);
+    assert.match(await (await fetch(`${s.base}/api/v1/ideas/batches/${c.batchId}/review.md?inline=1`)).text(), /^# Chấm lô/);
+    const job = await (await post(`${s.base}/api/v1/jobs/batch_refresh`, { batchId: c.batchId })).json();
+    let j = job;
+    for (let i = 0; i < 50 && !['succeeded', 'failed'].includes(j.status); i++) j = await (await new Promise((ok) => setTimeout(ok, 20)), get(`${s.base}/api/v1/jobs/${job.id}`));
+    assert.deepEqual([j.status, j.title, j.result.checked], ['succeeded', 'Cập nhật số liệu lô', 1]);
+    assert.equal((await post(`${s.base}/api/v1/jobs/batch_refresh`, {})).status, 400, 'batchId is required');
+    const closed = await (await post(`${s.base}/api/v1/ideas/batches/${c.batchId}/close`, { learned: { keep: ['Giữ hook'], review: [] } })).json();
+    assert.deepEqual([closed.batch.status, closed.batch.learned.keep], ['closed', ['Giữ hook']]);
+    assert.equal((await get(`${s.base}/api/v1/ideas`)).learnedFrom.id, c.batchId);
+    assert.equal((await get(`${s.base}/api/v1/ideas/batches/999/review`)).error.code, 'not_found');
+    const off = await (await fetch(`${s.base}/api/v1/ideas/${c.id}/video`, { method: 'DELETE' })).json();
+    assert.deepEqual([off.published, off.status], [null, 'filmed']);
+  } finally {
+    s.close();
+  }
+});

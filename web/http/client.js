@@ -168,4 +168,14 @@ export const ideas = {
   /** @param {number} id @param {string} action @param {{outline: any, card: any, archetype?: string}} input */
   outlineAssist: (id, action, input) => api(`/ideas/${id}/outline/assist`, { method: 'POST', body: { action, ...input } }),
   outlineUrl: (id) => `${BASE}/ideas/${id}/outline.md`,
+  /** The posted video of a card; the app reads its numbers. @param {number} id @param {string} url */
+  attachVideo: (id, url) => api(`/ideas/${id}/video`, { method: 'POST', body: { url } }),
+  clearVideo: (id) => api(`/ideas/${id}/video`, { method: 'DELETE' }),
+  /** The owner's own counts; '' means not known. @param {number} id @param {{leads?: string, followers?: string, views?: string}} counts */
+  saveResult: (id, counts) => api(`/ideas/${id}/result`, { method: 'POST', body: counts }),
+  /** @param {number} batchId */
+  review: (batchId) => api(`/ideas/batches/${batchId}/review`),
+  /** @param {number} batchId @param {{keep: string[], review: string[]}} learned */
+  close: (batchId, learned) => api(`/ideas/batches/${batchId}/close`, { method: 'POST', body: { learned } }),
+  reviewUrl: (batchId) => `${BASE}/ideas/batches/${batchId}/review.md`,
 };

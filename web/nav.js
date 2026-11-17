@@ -82,7 +82,7 @@ export const GROUPS = [
   },
   {
     key: 'make', title: 'Làm',
-    items: [{ icon: 'bulb', label: 'Bảng ý tưởng', tabs: [['/board', 'Bảng ý tưởng', () => import('./views/board.js')]] }],
+    items: [{ icon: 'bulb', label: 'Bảng ý tưởng', tabs: [['/board', 'Bảng ý tưởng', () => import('./views/board.js')], ['/board/review', 'Chấm lô', () => import('./views/board-review.js')]] }],
   },
   {
     key: 'library', title: 'Lưu trữ',

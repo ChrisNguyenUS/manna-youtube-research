@@ -2,12 +2,12 @@
 // edited in a panel and saved with Lưu. Other screens open `#/board?from=…`; the card is made here, when the
 // board opens.
 import { ideas } from '../http/client.js';
-import { esc, icon, toast, ago, errorCallout, emptyState, setUrl } from '../lib.js';
+import { esc, icon, fmt, toast, ago, errorCallout, emptyState, setUrl } from '../lib.js';
 
 const PATH = '/board';
-const TABS = [['idea', 'Ý tưởng', 'bulb'], ['checks', 'Chấm', 'check'], ['source', 'Gạch gốc', 'target'], ['outline', 'Dàn ý', 'bars']];
+const TABS = [['idea', 'Ý tưởng', 'bulb'], ['checks', 'Chấm', 'check'], ['source', 'Gạch gốc', 'target'], ['outline', 'Dàn ý', 'bars'], ['result', 'Kết quả', 'trend']];
 const OK = { yes: ['có', 'on'], no: ['chưa', ''], unknown: ['chưa rõ', ''], skip: ['không áp dụng', 'skip'] };
-const ORIGIN = { self: 'Tự nghĩ', brick: 'Từ thư viện gạch', pain: 'Từ nỗi đau', '5w1h': 'Từ 5W1H' };
+const ORIGIN = { self: 'Tự nghĩ', brick: 'Từ thư viện gạch', pain: 'Từ nỗi đau', '5w1h': 'Từ 5W1H', redo: 'Làm lại video đã đăng' };
 /** Where a card came from; a library video counts as "đã thắng" only at or above the library threshold. */
 const originOf = (x) => {
   const s = x.card.origin.snapshot;
@@ -145,6 +145,34 @@ export async function mount(root, params) {
     return `<div class="callout info"><div class="fw-cap">AI đề xuất</div>${body}<div class="row" style="margin-top:8px"><button type="button" class="btn sm primary" data-accept>${icon('check')} Nhận</button><button type="button" class="btn sm" data-reject>Bỏ</button></div><div class="muted small">Nhận chỉ điền vào dàn ý đang mở; bấm Lưu để giữ lại.</div></div>`;
   }
 
+  /** The posted video: its link (numbers read by the app) and the owner's own counts. Saves on its own buttons. */
+  function resultTab() {
+    const x = state.open;
+    const p = x.published;
+    const m = x.result;
+    const numIn = (k, ph, v) => `<input class="input" type="number" min="0" step="1" inputmode="numeric" data-result="${k}" value="${v ?? ''}" placeholder="${esc(ph)}" style="width:150px">`;
+    const linkRow = `<div class="fw-field">${cap('LINK VIDEO ĐÃ ĐĂNG')}<div class="row"><input class="input" data-video-url value="${esc(p?.url ?? '')}" placeholder="Link TikTok hoặc YouTube" style="flex:1;min-width:220px">
+      <button type="button" class="btn sm primary" data-attach ${state.busy ? 'disabled' : ''}>${state.busy === 'attach' ? 'Đang lấy số…' : p ? 'Gắn lại' : 'Gắn link'}</button>${p ? '<button type="button" class="btn sm" data-detach>Gỡ link</button>' : ''}</div></div>`;
+    if (!p) return `<p class="muted small">Đăng xong thì dán link vào đây. App tự lấy view, tim, comment, chia sẻ; số khách và follower tăng bạn tự nhập.</p>${linkRow}`;
+    const stats = [['VIEW', m.views], ['TIM', m.likes], ['COMMENT', m.comments], ['CHIA SẺ', m.shares], ['LƯU', m.saves]].filter(([, v]) => v != null);
+    return `${linkRow}
+      ${p.error ? `<div class="callout">${esc(p.error)}</div>` : ''}
+      <div class="muted small">${p.platform === 'youtube' ? 'YouTube' : 'TikTok'}${m.ageDays != null ? ` · đăng ${m.ageDays} ngày trước` : ''}${m.fresh ? ' · còn mới, chưa tính vào bảng gạch' : ''}${m.checkedAt ? ` · số lấy ${ago(Date.parse(m.checkedAt))}` : ''}</div>
+      ${stats.length ? `<div class="row bd-stats">${stats.map(([l, v]) => `<div class="fw-field">${cap(l)}<div class="fw-value"><b>${fmt(v)}</b></div></div>`).join('')}</div>` : ''}
+      <div class="fw-field">${cap('SỐ BẠN TỰ NHẬP')}<p class="muted small">Để trống nghĩa là chưa biết, khác với 0.</p>
+        <div class="row">${numIn('leads', 'Khách hoặc email', p.leads)}${numIn('followers', 'Follower tăng', p.followers)}${!p.snapshots.length || p.views != null ? numIn('views', 'View (nhập tay)', p.views) : ''}
+        <button type="button" class="btn sm" data-save-result>${icon('check')} Lưu số</button></div></div>
+      ${p.snapshots.length > 1 ? `<div class="fw-field">${cap('CÁC MỐC')}${p.snapshots.slice().reverse().map((s) => `<div class="small">${esc(s.at.slice(0, 10))}: ${fmt(s.views)} view · ${fmt(s.likes)} tim · ${fmt(s.shares)} chia sẻ</div>`).join('')}</div>` : ''}
+      <a class="btn sm" href="#/board/review?batch=${x.batchId}">${icon('bars')} Chấm lô này</a>`;
+  }
+  /** A card the Kết quả tab changed on the server: swapped in, the unsaved edits of the other tabs kept. @param {any} x */
+  function swapIn(x) {
+    b.cards = b.cards.map((y) => (y.id === x.id ? x : y));
+    state.open = x;
+    state.draft.status = x.status;
+    render();
+  }
+
   function checksTab() {
     const x = state.open;
     return `<p class="${x.ready ? '' : 'muted'}">${x.ready ? 'Thẻ đủ căn cứ để chốt.' : `Chưa đủ căn cứ để chốt: còn thiếu ${esc(x.missing.join(', '))}. Vẫn chốt được nếu bạn muốn thử.`}</p>
@@ -158,6 +186,9 @@ export async function mount(root, params) {
   function sourceTab() {
     const o = state.open.card.origin;
     const s = o.snapshot;
+    if (o.kind === 'redo') return `<p class="muted small">Làm lại video đã đăng của bạn: giữ mọi gạch, đổi một gạch để thử.</p>
+      <div class="fw-field">${cap('VIDEO GỐC')}<div class="fw-value">${esc(s?.title)}</div><div class="muted small">${s?.views != null ? `${fmt(s.views)} view` : ''}${s?.leads != null ? ` · ${fmt(s.leads)} khách` : ''}</div></div>
+      ${s?.url ? `<a class="btn sm" href="${esc(s.url)}" target="_blank" rel="noopener">Mở video</a>` : ''}<a class="btn sm" href="#/board/review?batch=${esc(s?.batchId)}">Mở lô cũ</a>`;
     if (o.kind === 'self') return '<p class="muted">Ý tưởng tự nghĩ: không có video gốc. Đây là một thử nghiệm gốc trong lô.</p>';
     if (o.kind === 'pain') return `<div class="fw-field">${cap('NỖI ĐAU TRONG SOULPRINT')}<div class="fw-value">${esc(s?.text)}</div></div><a class="btn sm" href="#/soulprint">Mở Soulprint</a>`;
     if (o.kind === '5w1h') return `<div class="fw-field">${cap('GỢI Ý TRONG BÁO CÁO 5W1H')}<div class="fw-value">${esc(s?.title)}</div><div class="muted small">${esc(s?.recordTitle)}</div></div><a class="btn sm" href="#/tiktok/5w1h?id=${esc(s?.recordId)}">Mở báo cáo</a>`;
@@ -182,8 +213,12 @@ export async function mount(root, params) {
         <button type="button" class="btn sm primary" data-save>${icon('check')} Lưu${state.dirty ? ' *' : ''}</button>
         <button type="button" class="btn sm" data-drop>${x.status === 'dropped' ? 'Đưa lại vào lô' : 'Bỏ thẻ'}</button>
         <button type="button" class="btn sm" data-remove>${icon('trash')}</button></div>
-      <div class="fw-body" data-ai-slot>${state.tab === 'idea' ? ideaTab() : state.tab === 'checks' ? checksTab() : state.tab === 'source' ? sourceTab() : outlineTab()}</div></div>`;
+      <div class="fw-body" data-ai-slot>${state.tab === 'idea' ? ideaTab() : state.tab === 'checks' ? checksTab() : state.tab === 'source' ? sourceTab() : state.tab === 'outline' ? outlineTab() : resultTab()}</div></div>`;
   }
+
+  /** What the previous batch left, shown at the top of this one. @param {{title: string, learned: {keep: string[], review: string[]}}} l */
+  const learnedHtml = (l) => `<div class="callout info"><div class="fw-cap">TỪ ${esc(l.title.toUpperCase())}</div>
+    ${l.learned.keep.length ? `<div class="small"><b>Nên giữ:</b> ${esc(l.learned.keep.join('; '))}</div>` : ''}${l.learned.review.length ? `<div class="small"><b>Nên xem lại:</b> ${esc(l.learned.review.join('; '))}</div>` : ''}</div>`;
 
   function render() {
     const { live, outlier: fromWinners, other, ready, chosen } = b.counts; // renamed here: web code keeps clear of the v0 field name
@@ -193,10 +228,12 @@ export async function mount(root, params) {
         <p>Ý tưởng làm theo lô 10, mỗi thẻ được chấm bằng sáu câu hỏi của Kallaway. Câu 1 do app tra trong Thư viện gạch.</p></div>
         <div class="row"><select class="select input" data-batch style="width:auto">${b.batches.map((x) => `<option value="${x.id}" ${x.id === b.batch.id ? 'selected' : ''}>${esc(x.title)}${x.status === 'open' ? ' (đang mở)' : ''} · ${x.live} thẻ</option>`).join('')}</select>
           <a class="btn" href="${ideas.exportUrl(b.batch.id)}">${icon('download')} Markdown</a><button type="button" class="btn" data-new-batch>Mở lô mới</button>
+          <a class="btn" href="#/board/review?batch=${b.batch.id}">${icon('bars')} Chấm lô</a>
           <button type="button" class="btn primary" data-new ${closed ? 'disabled' : ''}>${icon('plus')} Thẻ tự nghĩ</button></div></div>
       ${closed ? `<div class="callout">Lô này đã đóng ${b.batch.closedAt ? ago(b.batch.closedAt) : ''}. Thẻ mới vào lô đang mở.</div>` : ''}
       <div class="card card-pad bd-head"><b>${esc(b.batch.title)}</b><span>${live}/10 thẻ</span><span class="muted">${fromWinners} từ video đã thắng · ${other} khác · ${ready} đủ căn cứ để chốt · ${chosen} đã chốt</span></div>
       ${b.nudge ? `<div class="callout info">${esc(b.nudge)}</div>` : ''}
+      ${b.learnedFrom ? learnedHtml(b.learnedFrom) : ''}
       <div data-err></div>
       <div class="bd-grid"><div class="card bd-list">${b.cards.length ? b.cards.map(rowHtml).join('') : emptyState('Lô còn trống', ' Tạo thẻ tự nghĩ, hoặc bấm "Tạo ý tưởng" ở Thư viện gạch, Soulprint hay báo cáo 5W1H.')}</div>
         <div class="bd-panel">${panelHtml()}</div></div>`;
@@ -319,6 +356,22 @@ export async function mount(root, params) {
         state.dirty = true;
         render();
       } else if (d.reject !== undefined) { state.suggestion = null; render(); }
+      else if (d.attach !== undefined) {
+        const url = /** @type {HTMLInputElement} */ (root.querySelector('[data-video-url]')).value;
+        state.busy = 'attach';
+        render();
+        let x;
+        try { x = await ideas.attachVideo(state.open.id, url); } finally { state.busy = ''; render(); }
+        toast(x.published.error ? 'Đã gắn link, nhưng chưa lấy được số' : 'Đã gắn video và lấy số');
+        swapIn(x);
+      } else if (d.detach !== undefined) {
+        if (!window.confirm('Gỡ link video khỏi thẻ? Các số đã lấy và đã nhập sẽ mất.')) return;
+        swapIn(await ideas.clearVideo(state.open.id));
+      } else if (d.saveResult !== undefined) {
+        const counts = Object.fromEntries([...root.querySelectorAll('[data-result]')].map((el) => [/** @type {HTMLInputElement} */ (el).dataset.result, /** @type {HTMLInputElement} */ (el).value.trim()]));
+        swapIn(await ideas.saveResult(state.open.id, counts));
+        toast('Đã lưu số');
+      }
       else if (d.length) { state.outline.length = Number(d.length); touchOutline(); render(); }
       else if (d.addHook !== undefined) { state.outline.hooks.push(emptyHook()); touchOutline(); render(); }
       else if (d.delHook !== undefined) {

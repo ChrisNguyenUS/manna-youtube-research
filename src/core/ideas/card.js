@@ -6,8 +6,11 @@ import { conceptOf } from '../bricks/schema.js';
 export const LEGO = /** @type {const} */ ([['topic', 'Topic'], ['angle', 'Angle'], ['hookStructure', 'Hook Structure'], ['storyStructure', 'Story Structure'], ['visualFormat', 'Visual Format'], ['keyVisuals', 'Key Visuals'], ['audio', 'Audio']]);
 export const STATUSES = /** @type {const} */ ([['draft', 'Nháp'], ['chosen', 'Chốt'], ['filmed', 'Đã quay'], ['posted', 'Đã đăng'], ['dropped', 'Bỏ']]);
 export const FUNNEL = /** @type {const} */ ([['biet', 'Biết'], ['thich', 'Thích'], ['tin', 'Tin'], ['yeu', 'Yêu']]);
-/** self: thought up by the owner; brick: from a video of the brick library; pain: a pain of Soulprint; 5w1h: a suggestion of a 5W1H report. */
-export const ORIGINS = ['self', 'brick', 'pain', '5w1h'];
+/**
+ * self: thought up by the owner; brick: from a video of the brick library; pain: a pain of Soulprint; 5w1h: a suggestion
+ * of a 5W1H report; redo: a remake of the owner's own posted video that won its batch.
+ */
+export const ORIGINS = ['self', 'brick', 'pain', '5w1h', 'redo'];
 export const QUESTIONS = /** @type {const} */ ([
   ['q1', 'Đã có video tương tự thắng dạng vượt kênh ở kênh tương đương chưa?'],
   ['q2', 'Nỗi đau của avatar nói được trong một câu chưa?'],
@@ -90,11 +93,12 @@ export function checksOf(c, precedent, { hasFilter }) {
 }
 
 /**
- * A card mined from a video that beat its channel. The brick library also holds weak videos (added for contrast), so
- * a library video counts only when its score, at the time the card was made, reaches the library threshold.
+ * A card mined from a video that beat its channel, or a remake of the owner's own winner. The brick library also holds
+ * weak videos (added for contrast), so a library video counts only when its score, at the time the card was made,
+ * reaches the library threshold.
  * @param {ReturnType<typeof emptyCard>} card @param {number} min the library threshold (setting bricksMinScore)
  */
-export const isFromWinner = (card, min) => card.origin.kind === 'brick' && card.origin.snapshot?.score != null && card.origin.snapshot.score >= min;
+export const isFromWinner = (card, min) => card.origin.kind === 'redo' || card.origin.kind === 'brick' && card.origin.snapshot?.score != null && card.origin.snapshot.score >= min;
 
 /** @param {{status: string, card: ReturnType<typeof emptyCard>, ready: boolean, fromWinner: boolean}[]} cards */
 export function batchCounts(cards) {

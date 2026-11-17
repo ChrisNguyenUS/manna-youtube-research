@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const { HOME, SOULPRINT, GROUPS, ITEMS, ALIASES, allTabs, has, platformOf, tabsFor, firstPath, findItem } = await import(new URL('../web/nav.js', import.meta.url).href);
 
 const LEGACY = ['/', '/soulprint', '/tiktok/topic', '/tiktok/search', '/tiktok/insight', '/tiktok/insight/collected', '/video', '/tiktok/channel', '/tiktok/comments', '/tiktok/5w1h',
-  '/research', '/videos', '/comments', '/channels', '/channel', '/compare', '/keywords', '/ideas', '/follows', '/history', '/saved', '/settings', '/bricks', '/board'];
+  '/research', '/videos', '/comments', '/channels', '/channel', '/compare', '/keywords', '/ideas', '/follows', '/history', '/saved', '/settings', '/bricks', '/board', '/board/review'];
 const item = (label) => ITEMS.find((it) => it.label === label);
 
 test('groups are jobs, in this order, and the sidebar has fifteen entries', () => {

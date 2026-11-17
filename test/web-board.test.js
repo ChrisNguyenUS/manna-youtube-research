@@ -47,3 +47,18 @@ test('the Dàn ý tab: length, scenes, three hooks in three layers, the four S, 
   const client = fs.readFileSync('web/http/client.js', 'utf8');
   for (const name of ['saveOutline:', 'saveScript:', 'lint:', 'outlineAssist:', 'outlineUrl:']) assert.ok(client.slice(client.indexOf('export const ideas')).includes(name), name);
 });
+
+test('phase 7: Chấm lô is a tab of the board entry; the Kết quả tab; the refresh job is named and linked', () => {
+  const make = GROUPS.find((g) => g.key === 'make').items[0];
+  assert.deepEqual(make.tabs.map((t) => [t[0], t[1]]), [['/board', 'Bảng ý tưởng'], ['/board/review', 'Chấm lô']]);
+  const src = view();
+  for (const s of ["'Kết quả'", 'data-attach', 'data-detach', 'data-save-result', 'Để trống nghĩa là chưa biết', 'swapIn(', '#/board/review?batch=', 'learnedHtml(b.learnedFrom)', 'Làm lại video đã đăng']) assert.ok(src.includes(s), s);
+  const rv = fs.readFileSync('web/views/board-review.js', 'utf8');
+  for (const s of ["runJob('batch_refresh'", 'data-confirm-close', 'from=redo:', 'không phải luật', 'chưa nhập', 'còn mới', 'không phải nguyên nhân']) assert.ok(rv.includes(s), s);
+  assert.ok(!/\bfetch\(/.test(rv));
+  assert.match(rv, /import \{[^}]*\besc\b[^}]*\} from '\.\.\/lib\.js'/);
+  const client = fs.readFileSync('web/http/client.js', 'utf8');
+  for (const name of ['attachVideo:', 'clearVideo:', 'saveResult:', 'review:', 'close:', 'reviewUrl:']) assert.ok(client.slice(client.indexOf('export const ideas')).includes(name), name);
+  assert.match(fs.readFileSync('web/lib.js', 'utf8'), /batch_refresh: 'Cập nhật số liệu lô'/);
+  assert.match(fs.readFileSync('web/kinds.js', 'utf8'), /j\.kind === 'batch_refresh'\) return `#\/board\/review\?batch=/);
+});

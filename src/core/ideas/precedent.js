@@ -18,6 +18,7 @@ export function keywords(t) {
  * @returns {{ok: 'yes'|'no'|'unknown', note: string, matches: {platform: string, videoId: string, title: string, score: number}[]}}
  */
 export function precedentOf(card, rows, { min }) {
+  if (card.origin.kind === 'redo') return { ok: 'yes', note: 'Làm lại video đã thắng lô của chính bạn', matches: [] };
   if (card.origin.kind === 'self') return { ok: 'no', note: 'Ý tưởng tự nghĩ: thử nghiệm gốc, chưa có tiền lệ', matches: [] };
   if (!rows.length) return { ok: 'unknown', note: 'Thư viện gạch chưa có video nào', matches: [] };
   const winners = rows.filter((r) => r.meta?.score != null && r.meta.score >= min);
