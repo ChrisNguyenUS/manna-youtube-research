@@ -1,4 +1,4 @@
-import { records as recordsApi, saved as savedApi, jobs as jobsApi } from '../http/client.js';
+import { records as recordsApi, saved as savedApi, jobs as jobsApi, soulprint as soulprintApi } from '../http/client.js';
 import { esc, icon, ago, emptyState, fmt, store, persist, toast } from '../lib.js';
 import { KINDS, PLATFORMS, recordHref } from '../kinds.js';
 
@@ -33,6 +33,7 @@ export async function mount(root) {
 
   root.innerHTML = `
     <div class="page-head"><div><h1>${icon('home')} Tổng quan</h1><p>Nghiên cứu content TikTok và YouTube trên máy của bạn: miễn phí, không cần key.</p></div></div>
+    <a class="card card-pad sp-home" href="#/soulprint" data-soulprint hidden></a>
     <div class="card card-pad home-start">
       <div class="row"><b>Bắt đầu nghiên cứu trên</b>
         <div class="ix-seg" role="radiogroup" aria-label="Nền tảng" data-platform>${Object.entries(PLATFORMS).map(([k, l]) => `<button type="button" role="radio" data-v="${k}">${l}</button>`).join('')}</div></div>
@@ -47,6 +48,15 @@ export async function mount(root) {
           ${STEPS.map(([n, t, d, href, cta]) => `<div class="list-row" style="align-items:flex-start"><span class="badge accent" style="margin-top:2px">${n}</span><div><b>${t}</b><div class="muted small">${d}</div></div><a class="btn sm" style="margin-left:auto;flex:none" href="${href}">${cta}</a></div>`).join('')}</div>
       </div>
     </div>`;
+
+  // Soulprint progress: what the AI features know about this channel so far.
+  soulprintApi.get().then((s) => {
+    const el = root.querySelector('[data-soulprint]');
+    if (!el) return;
+    const missing = s.readiness.checks.filter((c) => !c.ok).map((c) => c.label);
+    el.innerHTML = `${icon('target')}<span><b>Soulprint ${s.readiness.done}/${s.readiness.total}</b><span class="muted small">${s.readiness.ready ? 'Hồ sơ đủ dùng: game, avatar, nỗi đau, câu định vị và pillars đã có.' : `Còn thiếu: ${esc(missing.join(', '))}`}</span></span>`;
+    el.hidden = false;
+  }).catch(() => {});
 
   // ---------- start box ----------
   const q = /** @type {HTMLInputElement} */ (root.querySelector('[data-q]'));

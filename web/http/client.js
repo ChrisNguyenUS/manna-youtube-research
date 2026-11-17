@@ -113,3 +113,16 @@ export const tiktokFiveW = {
   /** A saved report with its comments and the counted table. @param {number|string} id */
   report: (id) => api(`/tiktok/5w1h/${id}`),
 };
+
+/** Soulprint: the root profile of the owner's content. AI helpers return suggestions; only `save` writes. */
+export const soulprint = {
+  get: () => api('/soulprint'),
+  /** @param {any} profile the whole profile on screen */
+  save: (profile) => api('/soulprint', { method: 'POST', body: { profile } }),
+  seeds: () => api('/soulprint/seeds'),
+  /** @param {string} action @param {{profile: any, questionId?: string, answer?: string, text?: string}} input */
+  assist: (action, input) => api('/soulprint/assist', { method: 'POST', body: { action, ...input } }),
+  /** @param {string} text */
+  importText: (text) => api('/soulprint/import', { method: 'POST', body: { text } }),
+  exportUrl: (inline = false) => `${BASE}/soulprint/export.md${inline ? '?inline=1' : ''}`,
+};

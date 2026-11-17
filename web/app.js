@@ -9,6 +9,8 @@ import { icon, refreshJobs, loadSaved, loadFollows, loadMetrics, esc, toast, sto
  */
 /** @type {Item} */
 const HOME = { icon: 'home', label: 'Tổng quan', tabs: [['/', 'Tổng quan', () => import('./views/dashboard.js')]] };
+/** @type {Item} */
+const SOULPRINT = { icon: 'target', label: 'Soulprint', tabs: [['/soulprint', 'Soulprint', () => import('./views/soulprint.js')]] };
 /** @type {{key: string, title: string, items: Item[]}[]} */
 const GROUPS = [
   {
@@ -71,7 +73,7 @@ const GROUPS = [
     ],
   },
 ];
-const ITEMS = [HOME, ...GROUPS.flatMap((g) => g.items)];
+const ITEMS = [HOME, SOULPRINT, ...GROUPS.flatMap((g) => g.items)];
 const has = (item, path) => item.tabs.some((t) => t[0] === path);
 
 function parseHash() {
@@ -88,6 +90,7 @@ function renderNav(path = navPath) {
   const st = store('nav', NAV_STATE);
   document.getElementById('nav').innerHTML =
     navItem(HOME, path) +
+    navItem(SOULPRINT, path) +
     GROUPS.map((g) => {
       // The group holding the open screen is always shown, whatever was folded before.
       const open = !st.collapsed[g.key] || g.items.some((it) => has(it, path));
