@@ -1,0 +1,157 @@
+// Use case: the brick library (spec 2026-11-16-brick-library-design.md). Videos are broken into bricks by the
+// write model, one call per video; rows keep what the model saw so every brick can be traced. The owner's edits sit
+// on top of the model's answer and survive a re-extract.
+import { noop, splitList } from './shared.js';
+import { rethrowIfCancelled } from '../core/cancel.js';
+import { aiError } from '../core/ai/base.js';
+import { LIMITS, EDITABLE, cleanEdit, applyEdits } from '../core/bricks/schema.js';
+import { prepareVideo, extractRequest, checkBricks } from '../core/bricks/extract.js';
+import { bricksMarkdown } from '../core/report/bricks.js';
+import { FATAL, modelOf, makeMeter, twice, pool } from './ai/run.js';
+import { youtubeIdOf } from './video-analysis.js';
+
+const ANALYSIS_KINDS = ['tiktok_video_analysis', 'video_analysis'];
+const TIKTOK_LINK = /^(https?:\/\/)?([a-z0-9-]+\.)*tiktok\.com\/|^\d{15,25}$/i;
+const invalid = (message, field) => Object.assign(new Error(message), { code: 'invalid_input', field });
+const notFound = (message) => Object.assign(new Error(message), { code: 'not_found' });
+
+/** Where a video belongs and how it is shown in lists. @param {'tiktok'|'youtube'} platform @param {any} v */
+function describe(platform, v) {
+  const tiktok = platform === 'tiktok';
+  return {
+    channelRef: tiktok ? (v.author ? `tiktok:${String(v.author).toLowerCase()}` : '') : v.channelId ? `youtube:${v.channelId}` : '',
+    meta: {
+      title: String(v.caption || v.title || '').replace(/\s+/g, ' ').trim().slice(0, 200), url: v.url ?? '', cover: v.cover ?? v.thumb ?? null,
+      channelTitle: tiktok ? (v.author ? `@${v.author}` : '') : v.channelTitle ?? '', views: (tiktok ? v.plays : v.views) ?? null, score: /** @type {number|null} */ (null), ageDays: /** @type {number|null} */ (null), durationSec: v.durationSec ?? null,
+    },
+  };
+}
+
+/**
+ * @param {{repo: any, ws: string, llm: import('../ports/llm.js').LlmClient, settings: () => Record<string, any>, knowledge?: string,
+ *   profile: () => any, records: {get: (id: number) => any}, tiktok: import('../ports/tiktok-source.js').TikTokSource,
+ *   source: import('../ports/youtube-source.js').YouTubeSource, commentsOf: (videoId: string) => any[], follows: {list: (ws: string) => any[]}}} deps
+ *   knowledge: the concepts file; profile: the Soulprint profile (pillars, filter); commentsOf: collected TikTok comments of a video
+ */
+export function makeBricks({ repo, ws, llm, settings, knowledge = '', profile, records, tiktok, source, commentsOf, follows }) {
+  /** Score and age of a video, when a followed channel's last check saw it. */
+  function scanned() {
+    const byId = new Map();
+    for (const f of follows.list(ws)) for (const v of f.lastScan?.videos ?? []) byId.set(`${f.platform}:${v.id}`, { score: v.score ?? null, ageDays: v.ageDays ?? null, channelRef: `${f.platform}:${f.ref}`, channelTitle: f.title });
+    return byId;
+  }
+
+  /** Videos of a saved "Phân tích video" report, with the transcript and comments it already holds. */
+  function fromRecord(recordId) {
+    const rec = records.get(Number(recordId));
+    if (!rec || !ANALYSIS_KINDS.includes(rec.kind)) throw notFound('Không thấy báo cáo Phân tích video');
+    const platform = rec.data.platform === 'youtube' ? 'youtube' : 'tiktok';
+    return (rec.data.videos || []).filter((e) => e.video && !e.error).map((e) => ({ platform, id: String(e.video.id), title: String(e.video.caption || e.video.title || e.link), load: async () => ({ video: e.video, transcript: e.transcript ?? null, comments: e.comments ?? [] }) }));
+  }
+
+  /** Pasted links: each is fetched from its platform when its turn comes. */
+  function fromLinks(links) {
+    const out = [];
+    for (const raw of splitList(links)) {
+      const link = raw.replace(/\s+/g, '');
+      if (TIKTOK_LINK.test(link)) {
+        const id = link.match(/(\d{15,25})/)?.[1] ?? link;
+        out.push({ platform: 'tiktok', id, title: link, load: async () => {
+          const got = await tiktok.getVideo(link);
+          return { video: got.video, transcript: got.transcript ?? null, comments: commentsOf(String(got.video.id)) };
+        } });
+      } else if (youtubeIdOf(link)) {
+        const id = /** @type {string} */ (youtubeIdOf(link));
+        out.push({ platform: 'youtube', id, title: link, load: async () => {
+          const v = await source.getVideo(id, { likes: true });
+          // A missing transcript is not a reason to skip the video: it is extracted from title and description.
+          const transcript = source.getTranscript ? await source.getTranscript(id).catch((e) => (rethrowIfCancelled(e), null)) : null;
+          return { video: { ...v, id, url: `https://www.youtube.com/watch?v=${id}`, cover: v.thumb ?? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` }, transcript, comments: [] };
+        } });
+      }
+    }
+    return out;
+  }
+
+  /** Extra targets for later tasks (followed channels) plug in here. @type {((params: any) => any[])[]} */
+  const moreTargets = [];
+
+  /** @param {{recordId?: number, links?: string, redo?: boolean} & Record<string, any>} params */
+  async function extract(params, progress = noop) {
+    if (!llm.ready()) throw aiError('llm_no_key', 'Chưa nhập API key OpenRouter. Vào Cài đặt để nhập.');
+    const all = [...(params.recordId ? fromRecord(params.recordId) : []), ...(params.links ? fromLinks(params.links) : []), ...moreTargets.flatMap((fn) => fn(params))];
+    const seen = new Set();
+    const targets = all.filter((t) => !seen.has(`${t.platform}:${t.id}`) && seen.add(`${t.platform}:${t.id}`));
+    if (!targets.length) throw invalid('Không có video nào để bóc gạch', 'links');
+    if (targets.length > LIMITS.videos) throw invalid(`Tối đa ${LIMITS.videos} video mỗi lần (đang có ${targets.length})`, 'links');
+
+    const p = profile();
+    const opts = { pillars: (p?.pillars ?? []).map((x) => x.name).filter(Boolean), filter: String(p?.filter ?? ''), knowledge };
+    const model = modelOf(settings().aiWriteModel);
+    const m = makeMeter(llm);
+    const scans = scanned();
+    const failed = [];
+    let done = 0;
+    let skipped = 0;
+    let finished = 0;
+    progress({ step: `Bóc gạch 0/${targets.length}`, done: 0, total: targets.length });
+    await pool(targets, LIMITS.parallel, async (t) => {
+      const before = repo.get(ws, t.platform, t.id);
+      if (before && !params.redo) skipped++;
+      else {
+        try {
+          const got = await t.load();
+          const prep = prepareVideo({ platform: t.platform, video: got.video, transcript: got.transcript, comments: got.comments });
+          const data = await twice(async () => checkBricks(await m.ask(extractRequest(prep, opts), model), prep, opts));
+          const d = describe(/** @type {any} */ (t.platform), got.video);
+          const scan = scans.get(`${t.platform}:${t.id}`) ?? null; // set when a followed channel's last check saw this video
+          repo.put(ws, {
+            platform: t.platform, videoId: String(got.video.id ?? t.id), channelRef: scan?.channelRef || d.channelRef,
+            meta: { ...d.meta, channelTitle: scan?.channelTitle || d.meta.channelTitle, score: scan?.score ?? null, ageDays: scan?.ageDays ?? null },
+            source: { segments: prep.segments, comments: prep.comments, truncated: prep.truncated }, data, model,
+          });
+          done++;
+        } catch (e) {
+          rethrowIfCancelled(e);
+          if (FATAL.has(e?.code)) throw e;
+          failed.push({ title: t.title, reason: String(e?.message || e) });
+        }
+      }
+      finished++;
+      progress({ step: `Bóc gạch ${finished}/${targets.length}`, done: finished, total: targets.length });
+    });
+    return { inline: true, done, skipped, failed, usage: { model, ...m.usage } };
+  }
+
+  const view = (r, full = false) => ({
+    platform: r.platform, videoId: r.videoId, channelRef: r.channelRef, meta: r.meta, bricks: applyEdits(r.data, r.edited), editedPaths: Object.keys(r.edited).filter((k) => EDITABLE.includes(k)),
+    hasDeepDive: !!r.deepDive, analyzedAt: r.analyzedAt, model: r.model, ...(full ? { source: r.source, deepDive: r.deepDive } : {}),
+  });
+  function one(platform, videoId) {
+    const r = repo.get(ws, platform, videoId);
+    if (!r) throw notFound('Video này chưa có trong thư viện gạch');
+    return r;
+  }
+
+  /** @param {string} platform @param {string} videoId @param {Record<string, any>} edits path → value; unknown paths and unacceptable values are ignored */
+  function update(platform, videoId, edits) {
+    const r = one(platform, videoId);
+    const edited = { ...r.edited };
+    for (const [path, value] of Object.entries(edits || {})) {
+      const clean = cleanEdit(path, value);
+      if (clean !== undefined) edited[path] = clean;
+    }
+    repo.setEdited(ws, platform, videoId, edited);
+    return view({ ...r, edited }, true);
+  }
+
+  return {
+    extract, moreTargets,
+    list: () => repo.list(ws).map((r) => view(r)),
+    get: (platform, videoId) => view(one(platform, videoId), true),
+    update,
+    remove: (platform, videoId) => void (one(platform, videoId), repo.remove(ws, platform, videoId)),
+    /** @param {string[]} keys "platform:videoId"; none: the whole library */
+    markdown: (keys) => bricksMarkdown(repo.list(ws).filter((r) => !keys.length || keys.includes(`${r.platform}:${r.videoId}`)).map((r) => view(r))),
+  };
+}

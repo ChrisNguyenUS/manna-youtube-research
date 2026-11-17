@@ -8,5 +8,5 @@ import { createFakeTikTok } from '../../src/sources/fake/tiktok.js';
 /** App wired to fake YouTube + TikTok sources and a throwaway database. `extra`: {llm, knowledge} for the AI features. */
 export function testApp(source = createFakeSource(), tiktok = createFakeTikTok(), extra = {}) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ytr-'));
-  return createApp({ config: { dataDir, port: 0, host: '127.0.0.1', edition: 'dev', logLevel: 'error' }, source, tiktok, knowledge: '', ...extra });
+  return createApp({ config: { dataDir, port: 0, host: '127.0.0.1', edition: 'dev', logLevel: 'error' }, source, tiktok, knowledge: '', knowledgeFiles: {}, ...extra });
 }
