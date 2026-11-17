@@ -49,3 +49,14 @@ test('markdown export names the sections that are filled and says what is missin
   assert.ok(!/## Lợi thế riêng/.test(md), 'empty sections are left out');
   s.close();
 });
+
+test('seeds and import routes answer; import needs text', async () => {
+  const s = await boot();
+  assert.deepEqual(await (await fetch(`${s.base}/api/v1/soulprint/seeds`)).json(), { channels: [], pains: [], avatar: [], pillars: [] });
+  const imp = await (await post(`${s.base}/api/v1/soulprint/import`, { text: '## Giọng nói\nThẳng' })).json();
+  assert.deepEqual(imp, { drafts: { voice: 'Thẳng' }, unsorted: [], cut: false });
+  const bad = await post(`${s.base}/api/v1/soulprint/import`, {});
+  assert.equal(bad.status, 400);
+  assert.equal((await bad.json()).error.field, 'text');
+  s.close();
+});

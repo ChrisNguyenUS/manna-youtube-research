@@ -12,6 +12,14 @@ export const soulprintRoutes = [
       return app.features.soulprint.save(body.profile);
     },
   },
+  { method: 'GET', path: '/api/v1/soulprint/seeds', handler: ({ app }) => app.features.soulprint.seeds() },
+  {
+    method: 'POST', path: '/api/v1/soulprint/import',
+    handler: ({ app, body }) => {
+      if (typeof body?.text !== 'string') throw httpError('invalid_input', 'Thiếu nội dung file', 'text');
+      return app.features.soulprint.importText(body.text);
+    },
+  },
   {
     method: 'GET', path: '/api/v1/soulprint/export.md',
     handler: ({ app, query }) => {

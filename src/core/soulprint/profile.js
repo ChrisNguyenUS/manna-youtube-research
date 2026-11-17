@@ -126,3 +126,46 @@ export function contextText(p) {
   if (p.filter) out.push(`Câu lọc: ${p.filter}`);
   return out.length ? `HỒ SƠ KÊNH (Soulprint)\n${out.join('\n')}` : '';
 }
+
+const foldPlain = (t) => String(t ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+/** Heading text (accents dropped, lower case) → section. First match wins: the filter rows stand before "avatar". */
+const HEADINGS = [
+  [/avatar filter|filter questions/, 'filter'],
+  [/loi hua|target authority statement/, 'statement'],
+  [/khan gia|ideal viewer/, 'avatar'],
+  [/bang chung|co che doc quyen|raw material|unfair advantage/, 'advantage'],
+  [/goc nhin/, 'pillars'],
+  [/duong ra tien|the business/, 'business'],
+  [/giong noi|ca tinh/, 'voice'],
+  [/the game/, 'game'],
+  [/pain.?point bank/, 'pains'],
+  [/dream outcome/, 'dreamOutcome'],
+  [/the one thing/, 'oneThing'],
+];
+
+/**
+ * A pasted document (BRAND.md, the interview skills' strategy.md or positioning.md) → draft text per section, by its
+ * level-2 headings. Headings nobody knows are returned aside; nothing is thrown away except what exceeds the limit.
+ * @param {any} input @returns {{drafts: Record<string, string>, unsorted: {heading: string, text: string}[], cut: boolean}}
+ */
+export function splitByHeadings(input) {
+  const all = typeof input === 'string' ? input.replace(/\r\n?/g, '\n') : '';
+  const cut = all.length > LIMITS.importChars;
+  const src = all.slice(0, LIMITS.importChars);
+  /** @type {Record<string, string>} */
+  const drafts = {};
+  const unsorted = [];
+  if (!src.trim()) return { drafts, unsorted, cut: false };
+  // Text before the first level-2 heading is the document's title and intro, unless there is no heading at all.
+  const parts = src.split(/^##(?!#)[ \t]*(.*)$/m);
+  if (parts.length === 1) return { drafts, unsorted: [{ heading: '', text: src.trim() }], cut };
+  for (let i = 1; i < parts.length; i += 2) {
+    const heading = parts[i].replace(/^[^\p{L}]+/u, '').replace(/[\s:：]+$/, '');
+    const body = (parts[i + 1] ?? '').trim();
+    if (!body) continue;
+    const section = HEADINGS.find(([re]) => /** @type {RegExp} */ (re).test(foldPlain(heading)))?.[1];
+    if (section) drafts[/** @type {string} */ (section)] = drafts[/** @type {string} */ (section)] ? `${drafts[/** @type {string} */ (section)]}\n\n${body}` : body;
+    else unsorted.push({ heading, text: body });
+  }
+  return { drafts, unsorted, cut };
+}
