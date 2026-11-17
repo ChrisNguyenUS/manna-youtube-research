@@ -7,7 +7,7 @@ import { ideasMarkdown } from '../core/report/ideas.js';
 import { aiError } from '../core/ai/base.js';
 import { ACTIONS, assistRequest, checkAssist } from '../core/ideas/assist.js';
 import { modelOf } from './ai/run.js';
-import { cleanOutline, timelineOf, outlineGaps } from '../core/outline/outline.js';
+import { LENGTHS, cleanOutline, timelineOf, outlineGaps } from '../core/outline/outline.js';
 import { lintScript } from '../core/outline/lint.js';
 import { ACTIONS as OUTLINE_ACTIONS, outlineRequest, checkOutlineAssist } from '../core/outline/assist.js';
 import { outlineMarkdown } from '../core/report/outline.js';
@@ -187,7 +187,7 @@ export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm, kn
   }
 
   return {
-    outlineAssist, saveOutline, saveScript, outlineMarkdown: outlineMd, lint: (text, o) => lintScript(text, o),
+    outlineAssist, saveOutline, saveScript, outlineMarkdown: outlineMd, lint: (text, o) => lintScript(text, { length: LENGTHS.includes(Number(o?.length)) ? Number(o.length) : 45, leadMagnet: String(o?.leadMagnet ?? '') }),
     sources, assist, board, create, update, newBatch,
     get: (id) => view(one(id), context()),
     remove: (id) => void repo.removeCard(ws, one(id).id),

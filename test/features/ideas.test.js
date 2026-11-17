@@ -175,6 +175,7 @@ test('a pasted script is saved with its check, measured against the outline\'s l
   assert.deepEqual([r.view.script, r.lint.maxWords, r.lint.issues.map((x) => x.rule)], ['Tuy nhiên mình gửi bạn danh sách 20 câu.', 90, ['banned']]);
   assert.equal(f.get(c.id).script, 'Tuy nhiên mình gửi bạn danh sách 20 câu.');
   assert.deepEqual(f.lint('Chỉ kể thôi.', { length: 45, leadMagnet: '' }).issues.map((x) => x.rule), ['cta']);
+  assert.equal(f.lint('Kể.', { length: 999 }).maxWords, 135, 'an unknown length falls back to 45 seconds');
   assert.match(f.outlineMarkdown(c.id), /^# Dàn ý: /);
 });
 
