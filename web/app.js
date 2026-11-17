@@ -8,8 +8,13 @@ function parseHash() {
   return { path, params: Object.fromEntries(new URLSearchParams(qs || '')) };
 }
 
-const NAV_STATE = { collapsed: {}, platform: {} };
-const navItem = (it, path) => `<a class="nav-item ${has(it, path) ? 'active' : ''}" href="#${firstPath(it, store('nav', NAV_STATE).platform?.[it.label])}" ${has(it, path) ? 'aria-current="page"' : ''}>${icon(it.icon)}<span>${esc(it.label)}</span></a>`;
+const NAV_STATE = { collapsed: {}, platform: '' };
+/** The platform picked last, for the whole app ('' before any; older versions kept one per entry). */
+const lastPlatform = () => {
+  const p = store('nav', NAV_STATE).platform;
+  return typeof p === 'string' ? p : '';
+};
+const navItem = (it, path) => `<a class="nav-item ${has(it, path) ? 'active' : ''}" href="#${firstPath(it, lastPlatform())}" ${has(it, path) ? 'aria-current="page"' : ''}>${icon(it.icon)}<span>${esc(it.label)}</span></a>`;
 let navPath = '/';
 function renderNav(path = navPath) {
   navPath = path;
@@ -45,10 +50,7 @@ async function route() {
   const shown = tabsFor(item, path);
   const tab = shown.find((t) => t[0] === path) || shown[0];
   const platform = platformOf(item, tab[0]);
-  if (platform) {
-    const st = store('nav', NAV_STATE);
-    if (st.platform?.[item.label] !== platform) persist('nav', { ...st, platform: { ...st.platform, [item.label]: platform } });
-  }
+  if (platform && lastPlatform() !== platform) persist('nav', { ...store('nav', NAV_STATE), platform });
   renderNav(tab[0]);
   const main = document.getElementById('main');
   unmount?.(); // let the previous view remove its listeners
@@ -56,8 +58,10 @@ async function route() {
   unmount = null;
   main.scrollTop = 0;
   // Above the page: the TikTok | YouTube switch of an entry that exists on both, then the tabs of the screens that
-  // share the entry. An entry that exists on one platform says which.
-  const platformSwitch = platform
+  // share the entry. An entry that exists on one platform says which. Search screens (`inline`) draw the switch in their form.
+  const platformSwitch = item.inline
+    ? ''
+    : platform
     ? `<div class="page-plat" role="group" aria-label="Nền tảng">${Object.entries(PLATFORM_LABELS).map(([k, l]) => `<a href="#${firstPath(item, k)}" class="${k === platform ? 'on' : ''}" ${k === platform ? 'aria-current="true"' : ''}>${l}</a>`).join('')}</div>`
     : item.only ? `<span class="page-plat-only">${PLATFORM_LABELS[item.only]}</span>` : '';
   const tabLinks = shown.length > 1 ? `<nav class="page-tabs" aria-label="${esc(item.label)}">${shown.map((t) => `<a href="#${t[0]}" class="${t === tab ? 'on' : ''}" ${t === tab ? 'aria-current="page"' : ''}>${esc(t[1])}</a>`).join('')}</nav>` : '';

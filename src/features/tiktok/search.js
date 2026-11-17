@@ -30,7 +30,8 @@ export function makeTikTokSearch({ tiktok, records, now }) {
     if (emptyKeywords.length === keywords.length) throw Object.assign(new Error('TikTok đang chặn tìm kiếm, thử lại sau vài phút'), { code: 'tiktok_blocked' });
     const t = now();
     const found = [...merged.values()];
-    const verdicts = classifyOnTopic(found, keywords);
+    // The country the user picked, else the one the first keyword names (else the US).
+    const verdicts = classifyOnTopic(found, keywords, params.country ? { country: params.country } : {});
     const all = found.map((v, i) => ({ ...v, ...videoMetrics(v, t), onTopic: verdicts[i].onTopic, onTopicVia: verdicts[i].via, offTopicReason: verdicts[i].reason }));
     const topical = params.keepOffTopic ? all : all.filter((v) => v.onTopic);
     // What the filter left out, so the screen can show it and the user can judge the rule.

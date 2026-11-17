@@ -1,8 +1,9 @@
 import { scope } from '../dom.js';
-import { historyList } from '../components/history-list.js';
+import { findHead, findBar, findRows, findAdvanced, regionSelect, bindPlatformSwitch } from '../components/find-shell.js';
+import { findHistory, rerunRecord } from '../components/find-history.js';
 import { records } from '../http/client.js';
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, full, ago, emptyState, thumb, ytVideo, ytChannel, isSaved, toggleSave, bindTips, ageText, setUrl, resumeJob, errorCallout } from '../lib.js';
-import { REGIONS } from './videos.js';
+import { REGIONS, knownRegion } from '../search-options.js';
 
 const FORM = { keywords: '', source: 'both', perKeyword: 40, gl: '', upload: 'year' };
 const FILTER = { subs: '', subsMin: '', subsMax: '', v7: '', v30: '', ratio: '', last: '', country: [], age: '', vcount: '', q: '', sort: 'v30' };
@@ -61,24 +62,24 @@ export async function mount(root, params) {
   const f = store('channels-filter', FILTER);
   if (!Array.isArray(f.country)) f.country = [];
   if (params.q) st.keywords = params.q;
+  if (knownRegion(params.gl, REGIONS)) st.gl = params.gl;
   root.innerHTML = `
-    <div class="page-head"><div><h1>${icon('users')} Tìm kênh</h1>
-      <p>Như Playboard nhưng chạy trên máy: tìm kênh theo từ khoá rồi lọc theo sub, view gần đây, tỉ lệ view/sub ("nhiều view nhưng ít sub"), tuổi kênh, quốc gia, nhịp đăng.</p></div></div>
-    <div class="card card-pad">
-      <div class="form-grid">
-        <div class="field"><label>Từ khoá</label><input class="input" data-k="keywords" placeholder="VD: storytelling, kể chuyện đêm khuya" value="${esc(st.keywords)}"></div>
-        <div class="field"><label>Khu vực</label><select class="select input" data-k="gl">${REGIONS.map(([v, l]) => `<option value="${v}" ${st.gl === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
-      </div>
-      <div class="section-label">Lấy kênh từ</div>
-      <div class="row">${chips('source', [{ v: 'both', label: 'Cả hai (khuyên dùng)' }, { v: 'channels', label: 'Ô tìm kênh của YouTube' }, { v: 'videos', label: 'Chủ của video hot' }], st.source)}
-        <span class="spacer"></span><label class="small muted">Mỗi từ khoá</label>${chips('perKeyword', [{ v: 20, label: '20' }, { v: 40, label: '40' }, { v: 80, label: '80' }], st.perKeyword)}</div>
-      <div class="help muted small" style="margin-top:6px">"Chủ của video hot" lấy kênh có video nhiều view trong <b>1 năm</b> gần nhất cho từ khoá: cách nhanh nhất ra kênh nhỏ đang lên.</div>
-      <div class="row" style="margin-top:14px"><button class="btn primary lg" data-run>${icon('users')} Tìm kênh</button><span class="muted small">Mỗi kênh cần 3 request (thông tin, About, 30 video mới nhất) · 40 kênh ≈ 30–60 giây</span></div>
+    ${findHead('users', 'Tìm kênh', 'Kênh theo từ khoá, rồi lọc theo sub, view gần đây, tỉ lệ view/sub ("nhiều view nhưng ít sub"), tuổi kênh, quốc gia, nhịp đăng.')}
+    <div class="card card-pad" data-form>
+      ${findBar({ path: '/channels', input: `<input class="input" data-k="keywords" placeholder="Từ khoá, cách nhau bằng dấu phẩy. VD: storytelling, kể chuyện đêm khuya" value="${esc(st.keywords)}">`, button: `<button class="btn primary lg" data-run>${icon('users')} Tìm kênh</button>` })}
+      ${findRows([
+        ['Khu vực', regionSelect(st.gl, REGIONS)],
+        ['Lấy kênh từ', `${chips('source', [{ v: 'both', label: 'Cả hai (khuyên dùng)' }, { v: 'channels', label: 'Ô tìm kênh của YouTube' }, { v: 'videos', label: 'Chủ của video hot' }], st.source)}
+          <span class="muted small" data-tip="Lấy kênh có video nhiều view trong 1 năm gần nhất cho từ khoá: cách nhanh nhất ra kênh nhỏ đang lên.">“Chủ của video hot” là gì?</span>`],
+      ])}
+      ${findAdvanced([['Kênh mỗi từ khoá', chips('perKeyword', [{ v: 20, label: '20' }, { v: 40, label: '40' }, { v: 80, label: '80' }], st.perKeyword)]])}
+      <div class="find-note muted small">Mỗi kênh cần 3 request (thông tin, About, 30 video mới nhất) · 40 kênh ≈ 30–60 giây</div>
     </div>
     <div data-out style="margin-top:14px"></div>
     <div class="card" data-history style="margin-top:14px"></div>`;
+  bindPlatformSwitch(root, () => ({}));
 
-  bindChips(root.querySelector('.card'), (name, v) => {
+  bindChips(root.querySelector('[data-form]'), (name, v) => {
     st[name] = name === 'perKeyword' ? Number(v) : v;
     persist('channels-form', st);
   });
@@ -87,14 +88,20 @@ export async function mount(root, params) {
   root.querySelector('[data-run]').addEventListener('click', run);
   const out = root.querySelector('[data-out]');
   const shown = scope();
+  const formTips = bindTips(root.querySelector('[data-form]')); // stays while the results below re-bind theirs
 
   async function run() {
     st.keywords = root.querySelector('[data-k="keywords"]').value.trim();
     persist('channels-form', st);
     if (!st.keywords) return toast('Nhập từ khoá', 'error');
-    out.innerHTML = progressCard(`Đang tìm kênh: ${st.keywords}`);
+    await start(st);
+  }
+
+  /** @param {Record<string, any>} body */
+  async function start(body) {
+    out.innerHTML = progressCard(`Đang tìm kênh: ${body.keywords}`);
     try {
-      const res = await runJob('channel_search', st, (p) => updateProgress(out, p));
+      const res = await runJob('channel_search', body, (p) => updateProgress(out, p));
       await show(res.id);
       history();
     } catch (e) {
@@ -191,11 +198,14 @@ export async function mount(root, params) {
     </div>`;
   }
 
-  const history = historyList(root.querySelector('[data-history]'), { kind: 'channel_search', path: '/channels', title: 'Lần tìm trước', empty: 'Chưa tìm lần nào' });
+  const history = findHistory(root.querySelector('[data-history]'), 'channel');
   history();
-  if (params.id) show(params.id);
+  const again = await rerunRecord(params, '/channels');
+  if (again) start(again.params);
+  else if (params.id) show(params.id);
   else resumeJob('channel_search', out, (j) => `Đang tìm kênh: ${j.title}`, async (res) => (await show(res.id), history()));
   return () => {
     shown.off();
+    formTips();
   };
 }

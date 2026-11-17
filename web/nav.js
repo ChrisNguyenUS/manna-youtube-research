@@ -1,10 +1,12 @@
 // The sidebar, as data. One entry per job to be done; screens that work on the same thing share an entry and show
 // as tabs above the page. An entry whose job exists on both platforms lists its screens per platform (`platforms`),
 // and the page shows a TikTok | YouTube switch; `only` marks an entry that exists on one platform. No DOM here.
+// The platform picked last is remembered once for the whole app (not per entry).
 
 /**
  * @typedef {[string, string, () => Promise<any>]} Tab  [path, tab label, loader of its screen]
- * @typedef {{icon: string, label: string, tabs?: Tab[], platforms?: {tiktok: Tab[], youtube: Tab[]}, only?: 'tiktok'|'youtube'}} Item
+ * @typedef {{icon: string, label: string, tabs?: Tab[], platforms?: {tiktok: Tab[], youtube: Tab[]}, only?: 'tiktok'|'youtube', inline?: boolean}} Item
+ *   inline: the screen draws the platform switch itself (inside its form), so none is drawn above the page
  */
 
 export const PLATFORM_LABELS = { tiktok: 'TikTok', youtube: 'YouTube' };
@@ -19,20 +21,23 @@ export const GROUPS = [
   {
     key: 'find', title: 'Tìm',
     items: [
+      // The three search screens show their own TikTok | YouTube switch inside the form (`inline`), with one screen per
+      // platform, so switching keeps you on the same job. Kênh exists on YouTube only: its TikTok side shows greyed out.
       {
-        icon: 'compass', label: 'Chủ đề',
+        icon: 'compass', label: 'Chủ đề', inline: true,
         platforms: {
-          tiktok: [
-            ['/tiktok/topic', 'Tìm theo chủ đề', () => import('./views/tiktok/topic.js')],
-            ['/tiktok/search', 'Tìm video', () => import('./views/tiktok/search.js')],
-          ],
-          youtube: [
-            ['/research', 'Nghiên cứu chủ đề', () => import('./views/research.js')],
-            ['/videos', 'Tìm video', () => import('./views/videos.js')],
-            ['/channels', 'Tìm kênh', () => import('./views/channels.js')],
-          ],
+          tiktok: [['/tiktok/topic', 'Nghiên cứu chủ đề', () => import('./views/tiktok/topic.js')]],
+          youtube: [['/research', 'Nghiên cứu chủ đề', () => import('./views/research.js')]],
         },
       },
+      {
+        icon: 'search', label: 'Video', inline: true,
+        platforms: {
+          tiktok: [['/tiktok/search', 'Tìm video', () => import('./views/tiktok/search.js')]],
+          youtube: [['/videos', 'Tìm video', () => import('./views/videos.js')]],
+        },
+      },
+      { icon: 'users', label: 'Kênh', only: 'youtube', inline: true, tabs: [['/channels', 'Tìm kênh', () => import('./views/channels.js')]] },
       {
         icon: 'key', label: 'Từ khoá', only: 'youtube',
         tabs: [
