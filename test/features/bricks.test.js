@@ -110,3 +110,36 @@ test('edit and remove: unknown fields are ignored, an unknown video is not_found
   assert.throws(() => f.get('tiktok', A), (/** @type {any} */ e) => e.code === 'not_found');
   assert.equal(f.list().length, 1);
 });
+
+const scan = (id, title, score, o = {}) => ({ id, title, url: `https://www.tiktok.com/@monica/video/${id}`, thumb: null, views: Math.round(score * 1000), score, ageDays: 10, standout: score >= 3, pinned: false, ...o });
+
+test('followed channels: standouts not yet in the library are candidates; contrast adds the weakest videos', async () => {
+  const { a, f, llm } = setup();
+  a.store.follows.put(a.ws, 'tiktok', 'monica', 'Monica', {});
+  const ids = (await a.tiktok.searchVideos('x', { max: 4 })).map((v) => v.id);
+  a.store.follows.saveScan(a.ws, 'tiktok', 'monica', { lastScan: { at: 'now', newIds: [], outlierIds: [], videos: [scan(ids[0], 'Thắng 1', 6), scan(ids[1], 'Thắng 2', 3), scan(ids[2], 'Thua 1', 0.4), scan(ids[3], 'Thua mới', 0.1, { ageDays: 1 })] } });
+  assert.deepEqual(f.candidates(), { min: 3, channels: [{ platform: 'tiktok', ref: 'monica', title: 'Monica', standouts: 2, fresh: 2, contrast: 1 }] });
+  const r = await f.extract({ follows: 'tiktok:monica' });
+  assert.deepEqual([r.done, r.failed], [2, []]);
+  assert.deepEqual(f.list().map((x) => [x.videoId, x.meta.score, x.channelRef, x.meta.channelTitle]).sort(), [[ids[0], 6, 'tiktok:monica', 'Monica'], [ids[1], 3, 'tiktok:monica', 'Monica']].sort());
+  assert.equal(f.candidates().channels[0].fresh, 0);
+  const more = await f.extract({ follows: 'all', contrast: true });
+  assert.deepEqual([more.done, more.skipped], [1, 2], 'the weak old-enough video is added; the day-old one is left out');
+  assert.equal(llm.calls.length, 3);
+  a.store.settings.set(a.ws, { bricksMinScore: 5 });
+  assert.deepEqual([f.candidates().min, f.candidates().channels[0].standouts], [5, 1]);
+  await assert.rejects(f.extract({ follows: 'tiktok:khongco' }), (/** @type {any} */ e) => e.code === 'invalid_input');
+});
+
+test('compare: by channel, with the library threshold; channels lists what can be compared', async () => {
+  const { a, f } = setup();
+  const put = (id, score, concept) => a.store.bricks.put(a.ws, { platform: 'tiktok', videoId: id, channelRef: 'tiktok:monica', meta: { title: id, channelTitle: 'Monica', score }, source: { segments: [], comments: [] }, model: 'm',
+    data: { topic: 't', pillar: '', seed: '', angle: '', belief: null, facts: [], concept, extraConcepts: [], hook: { spoken: '', formula: '', archetype: 'Teacher', category: '' }, story: { category: '', description: '', blocks: [] }, audience: { total: 0, counts: {}, examples: {} }, fit: { verdict: 'unclear', reason: '' }, visual: { format: '', keyVisuals: '', audio: '' }, evidence: {}, flags: { noTranscript: true, truncated: false, unsupported: [] } } });
+  ['w1', 'w2', 'w3'].forEach((id) => put(id, 5, 'So sánh'));
+  ['l1', 'l2', 'l3'].forEach((id) => put(id, 0.5, 'Số'));
+  const c = f.compare('tiktok:monica');
+  assert.deepEqual([c.channelRef, c.title, c.winners, c.losers, c.enough], ['tiktok:monica', 'Monica', 3, 3, true]);
+  assert.equal(c.attrs.find((x) => x.key === 'concept').values[0].core, true);
+  assert.deepEqual(f.channels(), [{ channelRef: 'tiktok:monica', title: 'Monica', videos: 6 }]);
+  assert.deepEqual([f.compare('tiktok:khac').winners, f.compare('tiktok:khac').enough], [0, false]);
+});

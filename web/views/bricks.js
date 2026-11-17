@@ -14,7 +14,7 @@ const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStar
 
 export async function mount(root, params) {
   let lib = await bricks.list();
-  const state = { filter: { q: '', platform: '', channel: '', pillar: '', concept: '', archetype: '', hot: false }, open: /** @type {any} */ (null), tab: 'idea', evidence: /** @type {number[]} */ ([]), editing: '', busy: false };
+  const state = { filter: { q: '', platform: '', channel: '', pillar: '', concept: '', archetype: '', hot: false }, open: /** @type {any} */ (null), tab: 'idea', evidence: /** @type {number[]} */ ([]), editing: '', busy: false, compare: '' };
 
   const chip = (t, cls = '') => (t ? `<span class="fw-chip ${cls}">${esc(t)}</span>` : '<span class="muted">–</span>');
   const options = (label, values, current) => `<option value="">${label}</option>${values.map((v) => `<option ${v === current ? 'selected' : ''}>${esc(v)}</option>`).join('')}`;
@@ -116,8 +116,33 @@ export async function mount(root, params) {
       <div data-extra></div>`;
   }
 
+  /** Under the paste box: followed channels with videos worth extracting, and the winners-versus-losers table of a channel. */
+  async function moreBlocks() {
+    const box = root.querySelector('[data-more]');
+    if (!box || state.open) return;
+    const cand = await bricks.candidates().catch(() => ({ min: 3, channels: [] }));
+    if (!root.contains(box)) return;
+    const withNew = cand.channels.filter((c) => c.fresh || c.contrast);
+    box.innerHTML = `${cand.channels.length ? `<div class="br-follows"><div class="fw-cap">TỪ KÊNH ĐANG THEO DÕI (VƯỢT KÊNH TỪ ${esc(cand.min)}×)</div>
+        ${cand.channels.map((c) => `<label class="check"><input type="checkbox" data-follow="${esc(c.platform)}:${esc(c.ref)}" ${c.fresh ? 'checked' : ''}> ${esc(c.title)} <span class="muted small">${NAMES[c.platform] ?? ''} · ${c.standouts} video vượt kênh, ${c.fresh} chưa có trong thư viện · ${c.contrast} video yếu để đối chiếu</span></label>`).join('')}
+        <div class="row" style="margin-top:8px"><label class="check"><input type="checkbox" data-contrast> Kèm video dưới trung vị để đối chiếu (tối đa 5 mỗi kênh)</label><span class="spacer"></span>
+          <button type="button" class="btn" data-run-follows ${lib.ai && withNew.length ? '' : 'disabled'}>${icon('target')} Bóc gạch các kênh đã chọn</button></div></div>`
+      : '<p class="muted small" style="margin-top:10px">Chưa có kênh theo dõi nào được Cập nhật. Vào Theo dõi, bấm Cập nhật, rồi quay lại đây để bóc gạch các video vượt kênh.</p>'}
+      ${lib.channels?.length ? `<div class="br-compare"><div class="fw-cap">ĐỐI CHIẾU VIDEO THẮNG VÀ THUA CỦA MỘT KÊNH</div>
+        <select class="select input" data-compare style="width:auto"><option value="">Chọn kênh</option>${lib.channels.map((c) => `<option value="${esc(c.channelRef)}" ${state.compare === c.channelRef ? 'selected' : ''}>${esc(c.title)} (${c.videos} video)</option>`).join('')}</select><div data-compare-out></div></div>` : ''}`;
+    if (state.compare) drawCompare(state.compare);
+  }
+  async function drawCompare(channelRef) {
+    const out = root.querySelector('[data-compare-out]');
+    if (!out) return;
+    const c = await bricks.compare(channelRef);
+    out.innerHTML = `<p class="small ${c.enough ? 'muted' : ''}">${c.winners} video thắng (từ ${esc(c.min)}×), ${c.losers} video thua (dưới 1×). ${c.enough ? 'Đây là đối chiếu trên vài video, không phải chứng minh.' : `Chưa đủ để đối chiếu: cần thêm ${c.need.winners ? `${c.need.winners} video thắng` : ''}${c.need.winners && c.need.losers ? ' và ' : ''}${c.need.losers ? `${c.need.losers} video thua` : ''}.`}</p>
+      ${c.attrs.map((a) => `<div class="fw-field"><div class="fw-cap">${esc(a.label)}</div><table class="table br-cmp"><tbody>${a.values.map((v) => `<tr><td>${esc(v.value)} ${v.core ? '<span class="fw-chip">có thể là cốt lõi</span>' : ''}</td><td class="r">${v.wins}/${c.winners} video thắng</td><td class="r">${v.losses}/${c.losers} video thua</td></tr>`).join('')}</tbody></table></div>`).join('')}`;
+  }
+
   function render() {
     root.innerHTML = state.open ? detailHtml() : `<div class="page-head"><div><h1>${icon('target')} Thư viện gạch</h1><p>Video đã thắng, được AI bóc thành từng viên gạch: chủ đề, góc, niềm tin, hook, cách kể, phản ứng khán giả. Mỗi viên gạch có căn cứ từ lời thoại hoặc bình luận.</p></div></div>${listHtml()}`;
+    if (!state.open) moreBlocks();
   }
 
   async function extract(body, title) {
@@ -170,7 +195,11 @@ export async function mount(root, params) {
     if (!b && row) return open(row.dataset.open);
     if (!b) return;
     const d = b.dataset;
-    if (d.run !== undefined) {
+    if (d.runFollows !== undefined) {
+      const chosen = [...root.querySelectorAll('[data-follow]:checked')].map((el) => /** @type {HTMLElement} */ (el).dataset.follow);
+      if (!chosen.length) return toast('Chọn ít nhất một kênh', 'error');
+      extract({ follows: chosen.join(','), contrast: /** @type {HTMLInputElement} */ (root.querySelector('[data-contrast]')).checked }, 'Đang bóc gạch video của kênh theo dõi');
+    } else if (d.run !== undefined) {
       const links = /** @type {HTMLTextAreaElement} */ (root.querySelector('[data-links]')).value.trim();
       if (!links) return toast('Dán ít nhất một link video', 'error');
       extract({ links }, 'Đang bóc gạch');
@@ -190,6 +219,13 @@ export async function mount(root, params) {
       if (b.dataset.armed) { await bricks.remove(state.open.platform, state.open.videoId); state.open = null; lib = await bricks.list(); setUrl(PATH, {}); render(); }
       else { b.dataset.armed = '1'; b.innerHTML = 'Bấm lần nữa để xoá khỏi thư viện'; }
     }
+  });
+  root.addEventListener('change', (e) => {
+    const el = /** @type {HTMLSelectElement} */ (e.target);
+    if (el.dataset?.compare === undefined) return;
+    state.compare = el.value;
+    if (el.value) drawCompare(el.value);
+    else root.querySelector('[data-compare-out]').innerHTML = '';
   });
   root.addEventListener('keydown', (e) => {
     const row = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-open]'));

@@ -11,12 +11,21 @@ const at = (params) => {
 
 export const brickRoutes = [
   // The lists ride along so the screen's filters and editors never drift from what the checks accept.
-  { method: 'GET', path: '/api/v1/bricks', handler: ({ app }) => ({ rows: app.features.bricks.list(), concepts: CONCEPTS, archetypes: ARCHETYPES, audience: AUDIENCE, blockLabels: BLOCK_LABELS, editable: EDITABLE, ai: app.llm.ready() }) },
+  { method: 'GET', path: '/api/v1/bricks', handler: ({ app }) => ({ rows: app.features.bricks.list(), concepts: CONCEPTS, archetypes: ARCHETYPES, audience: AUDIENCE, blockLabels: BLOCK_LABELS, editable: EDITABLE, ai: app.llm.ready(), channels: app.features.bricks.channels() }) },
   {
     method: 'GET', path: '/api/v1/bricks/export.md',
     handler: ({ app, query }) => {
       const md = app.features.bricks.markdown(String(query.get('keys') || '').split(',').filter(Boolean));
       return query.get('inline') ? raw(md, 'text/markdown; charset=utf-8') : raw(md, 'text/markdown; charset=utf-8', attachment('thu-vien-gach.md'));
+    },
+  },
+  { method: 'GET', path: '/api/v1/bricks/candidates', handler: ({ app }) => app.features.bricks.candidates() },
+  {
+    method: 'GET', path: '/api/v1/bricks/compare',
+    handler: ({ app, query }) => {
+      const channel = String(query.get('channel') || '');
+      if (!channel) throw httpError('invalid_input', 'Thiếu kênh', 'channel');
+      return app.features.bricks.compare(channel);
     },
   },
   { method: 'GET', path: '/api/v1/bricks/:platform/:id', handler: ({ app, params }) => app.features.bricks.get(...at(params)) },

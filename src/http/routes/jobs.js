@@ -9,7 +9,7 @@ export const JOB_SCHEMAS = {
   tiktok_topic: { topic: 'string!', keywords: 'string?', maxKeywords: 'int?', perKeyword: 'int?', sort: /** @type {any} */ (['score', 'plays', 'trending', 'fresh']), minPlays: 'int?', maxAgeDays: 'int?', topComments: /** @type {any} */ ([0, 3]), keepOffTopic: 'bool?', keepPrevious: 'bool?' },
   tiktok_video_analysis: { videos: 'string!', script: 'bool?', comments: /** @type {any} */ ([0, 100, 300]), replies: 'bool?', reuse: 'bool?' },
   video_analysis: { videos: 'string!', script: 'bool?', comments: /** @type {any} */ ([0, 100, 300]), replies: 'bool?' },
-  brick_extract: { recordId: 'int?', links: 'string?', redo: 'bool?' },
+  brick_extract: { recordId: 'int?', links: 'string?', follows: 'string?', contrast: 'bool?', redo: 'bool?' },
   tiktok_channel: { input: 'string!', max: 'int?' },
   comment_5w1h: { videos: 'string?', onlyStep3: 'int?' },
   follow_refresh: { platform: /** @type {any} */ (['youtube', 'tiktok']), ref: 'string?' },

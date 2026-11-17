@@ -36,3 +36,10 @@ test('evidence is one click away, edits are marked, and flags are said in words'
 test('a video-analysis report links to the library with its record id', () => {
   assert.match(fs.readFileSync('web/components/video-analysis.js', 'utf8'), /href="#\/bricks\?record=\$\{/);
 });
+
+test('followed channels and the winners-versus-losers table are on the library screen; the follows screen links there', () => {
+  const src = view();
+  for (const s of ['data-run-follows', 'data-contrast', 'data-compare', 'có thể là cốt lõi', 'không phải chứng minh', 'Chưa đủ để đối chiếu']) assert.ok(src.includes(s), s);
+  assert.match(fs.readFileSync('web/views/follows.js', 'utf8'), /href="#\/bricks"/);
+  assert.match(fs.readFileSync('web/views/settings.js', 'utf8'), /data-k="bricksMinScore"/);
+});

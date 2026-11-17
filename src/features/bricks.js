@@ -9,6 +9,7 @@ import { prepareVideo, extractRequest, checkBricks } from '../core/bricks/extrac
 import { bricksMarkdown } from '../core/report/bricks.js';
 import { FATAL, modelOf, makeMeter, twice, pool } from './ai/run.js';
 import { youtubeIdOf } from './video-analysis.js';
+import { compareChannel, RULE } from '../core/bricks/compare.js';
 
 const ANALYSIS_KINDS = ['tiktok_video_analysis', 'video_analysis'];
 const TIKTOK_LINK = /^(https?:\/\/)?([a-z0-9-]+\.)*tiktok\.com\/|^\d{15,25}$/i;
@@ -75,6 +76,53 @@ export function makeBricks({ repo, ws, llm, settings, knowledge = '', profile, r
 
   /** Extra targets for later tasks (followed channels) plug in here. @type {((params: any) => any[])[]} */
   const moreTargets = [];
+
+  const minScore = () => Number(settings().bricksMinScore) || 3;
+  const followed = () => follows.list(ws).filter((f) => f.lastScan?.videos?.length);
+  /** Videos of a channel's last check worth extracting: those beating the channel, and (for contrast) its weakest old-enough ones. */
+  function picks(f, withContrast) {
+    const vids = f.lastScan.videos.filter((v) => v.score != null);
+    const hot = vids.filter((v) => v.score >= minScore());
+    // A video a few days old has not had its views yet: it is not evidence of a weak idea.
+    const weak = vids.filter((v) => v.score < RULE.loserBelow && (v.ageDays ?? 0) >= 3).sort((a, b) => a.score - b.score).slice(0, 5);
+    return { hot, weak: withContrast ? weak : [], weakCount: weak.length };
+  }
+  /** Targets from followed channels: `follows` is "all" or "platform:ref,…". */
+  moreTargets.push((params) => {
+    if (!params.follows) return [];
+    const want = params.follows === 'all' ? null : new Set(String(params.follows).split(',').map((x) => x.trim()).filter(Boolean));
+    const chosen = followed().filter((f) => !want || want.has(`${f.platform}:${f.ref}`));
+    if (want && chosen.length < want.size) throw invalid('Có kênh không còn trong danh sách theo dõi, hoặc chưa được Cập nhật lần nào', 'follows');
+    return chosen.flatMap((f) => {
+      const { hot, weak } = picks(f, params.contrast === true);
+      return [...hot, ...weak].map((v) => fromLinks(v.url)[0]).filter(Boolean);
+    });
+  });
+
+  /** Per followed channel: how many videos beat it, how many of those are not in the library yet, how many weak ones could be added for contrast. */
+  function candidates() {
+    const have = new Set(repo.list(ws).map((r) => `${r.platform}:${r.videoId}`));
+    return { min: minScore(), channels: followed().map((f) => {
+      const { hot, weakCount } = picks(f, false);
+      return { platform: f.platform, ref: f.ref, title: f.title || f.ref, standouts: hot.length, fresh: hot.filter((v) => !have.has(`${f.platform}:${v.id}`)).length, contrast: weakCount };
+    }) };
+  }
+  /** Channels that have rows in the library. */
+  function channels() {
+    const by = new Map();
+    for (const r of repo.list(ws)) {
+      if (!r.channelRef) continue;
+      const c = by.get(r.channelRef) ?? { channelRef: r.channelRef, title: r.meta.channelTitle || r.channelRef, videos: 0 };
+      c.videos++;
+      by.set(r.channelRef, c);
+    }
+    return [...by.values()].sort((a, b) => b.videos - a.videos);
+  }
+  /** @param {string} channelRef */
+  function compare(channelRef) {
+    const rows = repo.list(ws).filter((r) => r.channelRef === channelRef).map((r) => view(r));
+    return { channelRef, title: rows[0]?.meta.channelTitle || channelRef, min: minScore(), ...compareChannel(rows, { min: minScore() }) };
+  }
 
   /** @param {{recordId?: number, links?: string, redo?: boolean} & Record<string, any>} params */
   async function extract(params, progress = noop) {
@@ -146,7 +194,7 @@ export function makeBricks({ repo, ws, llm, settings, knowledge = '', profile, r
   }
 
   return {
-    extract, moreTargets,
+    extract, moreTargets, candidates, channels, compare,
     list: () => repo.list(ws).map((r) => view(r)),
     get: (platform, videoId) => view(one(platform, videoId), true),
     update,

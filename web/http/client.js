@@ -131,6 +131,9 @@ export const soulprint = {
 export const bricks = {
   /** Rows plus the fixed lists the filters and editors use. */
   list: () => api('/bricks'),
+  candidates: () => api('/bricks/candidates'),
+  /** @param {string} channelRef "platform:ref" */
+  compare: (channelRef) => api(`/bricks/compare${q({ channel: channelRef })}`),
   /** @param {string} platform @param {string} id */
   get: (platform, id) => api(`/bricks/${platform}/${encodeURIComponent(id)}`),
   /** @param {string} platform @param {string} id @param {Record<string, any>} edits path → value */

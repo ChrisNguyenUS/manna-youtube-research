@@ -52,3 +52,14 @@ test('bad input: a job with nothing to do fails clearly, edits need an object, u
   assert.equal((await post(`${s.base}/api/v1/jobs/brick_extract`, { recordId: 'x' })).status, 400);
   s.close();
 });
+
+test('candidates and compare answer on an empty library; follows is accepted by the job schema', async () => {
+  const s = await boot();
+  assert.deepEqual(await get(`${s.base}/api/v1/bricks/candidates`), { min: 3, channels: [] });
+  const c = await get(`${s.base}/api/v1/bricks/compare?channel=tiktok:x`);
+  assert.deepEqual([c.winners, c.enough, c.need], [0, false, { winners: 3, losers: 3 }]);
+  assert.equal((await fetch(`${s.base}/api/v1/bricks/compare`)).status, 400);
+  const job = await waitJob(s.base, (await (await post(`${s.base}/api/v1/jobs/brick_extract`, { follows: 'all', contrast: true })).json()).id);
+  assert.deepEqual([job.status, job.errorCode], ['failed', 'invalid_input'], 'no followed channel has anything to extract');
+  s.close();
+});
