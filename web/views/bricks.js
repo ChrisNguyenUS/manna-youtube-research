@@ -128,7 +128,7 @@ export async function mount(root, params) {
     return `
       <div class="page-head"><div><h1>${icon('target')} ${esc(r.meta.title || r.videoId)}</h1>
         <p>${NAMES[r.platform] ?? ''}${r.meta.channelTitle ? ` · ${esc(r.meta.channelTitle)}` : ''}${r.meta.views != null ? ` · ${fmt(r.meta.views)} view` : ''}${r.meta.score != null ? ` · vượt kênh ${esc(r.meta.score)}×` : ''} · bóc ${ago(r.analyzedAt)} bằng ${esc(r.model)}</p></div>
-        <div class="row"><a class="btn" href="#${PATH}">Về thư viện</a>${r.meta.url ? `<a class="btn" href="${esc(r.meta.url)}" target="_blank" rel="noopener">${icon('play')} Mở video</a>` : ''}
+        <div class="row"><a class="btn" href="#${PATH}">Về thư viện</a><a class="btn" href="#/board?from=brick:${esc(r.platform)}:${encodeURIComponent(r.videoId)}">${icon('bulb')} Tạo ý tưởng từ video này</a>${r.meta.url ? `<a class="btn" href="${esc(r.meta.url)}" target="_blank" rel="noopener">${icon('play')} Mở video</a>` : ''}
           <a class="btn" href="${bricks.exportUrl([`${r.platform}:${r.videoId}`])}">${icon('download')} Markdown</a><button type="button" class="btn" data-redo ${lib.ai ? '' : 'disabled'}>${icon('refresh')} Bóc lại</button><button type="button" class="btn" data-remove>${icon('trash')} Xoá</button></div></div>
       ${notes.length ? `<div class="callout">${notes.map(esc).join(' ')}</div>` : ''}
       <div data-prog></div>

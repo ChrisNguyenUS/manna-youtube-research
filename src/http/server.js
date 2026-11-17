@@ -12,6 +12,7 @@ import { tiktokRoutes } from './routes/tiktok.js';
 import { followRoutes } from './routes/follows.js';
 import { soulprintRoutes } from './routes/soulprint.js';
 import { brickRoutes } from './routes/bricks.js';
+import { ideaRoutes } from './routes/ideas.js';
 
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json' };
 const MAX_BODY = 1_000_000;
@@ -35,7 +36,7 @@ async function readBody(req) {
 
 /** @param {ReturnType<typeof import('../app.js').createApp>} app @param {{publicDir?: string}} [o] */
 export function createHttpServer(app, { publicDir = path.join(ROOT, 'web') } = {}) {
-  const router = createRouter([...jobRoutes, ...recordRoutes, ...savedRoutes, ...settingsRoutes, ...tiktokRoutes, ...followRoutes, ...soulprintRoutes, ...brickRoutes]);
+  const router = createRouter([...jobRoutes, ...recordRoutes, ...savedRoutes, ...settingsRoutes, ...tiktokRoutes, ...followRoutes, ...soulprintRoutes, ...brickRoutes, ...ideaRoutes]);
   const root = path.resolve(publicDir);
 
   function send(res, status, body, type = 'application/json; charset=utf-8', headers = {}) {

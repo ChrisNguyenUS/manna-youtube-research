@@ -58,7 +58,7 @@ export async function mount(root, params) {
     const pains = p.pains.map((x, i) => `<div class="sp-row"><input class="input" data-path="pains.${i}.text" value="${esc(x.text)}">
       <select class="select input" data-path="pains.${i}.type"><option value="broad" ${x.type === 'broad' ? 'selected' : ''}>Lớn</option><option value="tactical" ${x.type === 'tactical' ? 'selected' : ''}>Nhỏ</option></select>
       <select class="select input" data-num data-path="pains.${i}.pain" title="Độ đau">${[5, 4, 3, 2, 1].map((n) => `<option ${x.pain === n ? 'selected' : ''}>${n}</option>`).join('')}</select>
-      <button type="button" class="icon-btn" data-del="pains:${i}" title="Xoá" aria-label="Xoá nỗi đau">${icon('x')}</button></div>`).join('');
+      ${state.dirty ? '' : `<a class="icon-btn" href="#/board?from=pain:${i}" title="Tạo ý tưởng từ nỗi đau này" aria-label="Tạo ý tưởng">${icon('bulb')}</a>`}<button type="button" class="icon-btn" data-del="pains:${i}" title="Xoá" aria-label="Xoá nỗi đau">${icon('x')}</button></div>`).join('');
     const pillars = p.pillars.map((x, i) => `<div class="sp-pillar"><div class="sp-row"><input class="input" data-path="pillars.${i}.name" value="${esc(x.name)}" placeholder="Tên trụ">
       <button type="button" class="icon-btn" data-del="pillars:${i}" title="Xoá" aria-label="Xoá trụ">${icon('x')}</button></div>
       ${input(`pillars.${i}.belief`, 'NIỀM TIN ĐI NGƯỢC SỐ ĐÔNG')}${lines(`pillars.${i}.proof`, 'BẰNG CHỨNG')}

@@ -115,7 +115,7 @@ async function showReport(root, id, tab = 'who') {
         <span class="fw-chip">${esc(g.label)}</span><span class="muted">${fmt(g.count)} bình luận</span>${g.description ? `<span class="muted small fw-desc">${esc(g.description)}</span>` : ''}</button>`).join('');
     return q + (notes ? field('NHẬN ĐỊNH', notes) : '') + field('NHÓM', `<div class="fw-groups">${groups}</div>`) + `<div data-explorer></div>`;
   };
-  const idea = (x, i) => `<div class="fw-idea"><div><b>${i + 1}. ${esc(x.title)}</b> <span class="fw-chip outline">Chưa có tiền lệ outlier</span></div>
+  const idea = (x, i) => `<div class="fw-idea"><div><b>${i + 1}. ${esc(x.title)}</b> <span class="fw-chip outline">Chưa có tiền lệ outlier</span> <a class="btn sm" href="#/board?from=5w1h:${esc(r.id)}:${i}">${icon('bulb')} Đưa vào bảng</a></div>
     ${x.who ? field('DÀNH CHO', `<div class="fw-value">${esc(label('who', x.who))}</div>`) : ''}
     ${x.pain ? field('NỖI ĐAU', `<div class="fw-value">${esc(x.pain)}</div>`) : ''}
     ${x.belief ? field('ĐANG TIN', `<div class="fw-value"><i>${esc(x.belief.text)}</i></div>${x.belief.evidence.map(quote).join('')}`) : ''}

@@ -1,6 +1,6 @@
 # Bảng ý tưởng theo lô 10: thiết kế
 
-> Ngày: 2026-11-16 · Trạng thái: chờ duyệt · Phạm vi: giai đoạn 5 trong [kế hoạch tổng](../plans/2026-11-16-master-plan.md)
+> Ngày: 2026-11-16 · Trạng thái: đã duyệt · Phạm vi: giai đoạn 5 trong [kế hoạch tổng](../plans/2026-11-16-master-plan.md)
 > Cần trước: giai đoạn 1, 2, 4.
 > Nguồn nội dung: Chương 4, 5 và 11 của tài liệu Kallaway (Idea Mining, chấm ý tưởng, làm theo lô 10), công thức DICK, phễu.
 
@@ -53,7 +53,7 @@ Thành công nghĩa là:
 | 5 | Giữ gạch nào, làm lại gạch nào? | chủ app | `keep`, `remix`; thẻ tự nghĩ thì bỏ qua câu này |
 | 6 | Lead magnet nào khớp? | chủ app | Trường `leadMagnet`; trống thì là "chưa" |
 
-Mỗi câu lưu `ok` (có, chưa, không rõ), `note`, và `by` (code, AI, tự điền). Câu AI nháp chỉ thành câu trả lời khi chủ app bấm nhận.
+Câu 1 do code tra. Câu 2 đến 6 cũng do code trả lời: "có" khi ô tương ứng của thẻ đã có nội dung, nên mỗi chữ "có" luôn có nội dung đứng sau. Chủ app ghi thêm ghi chú cho từng câu. AI nháp nội dung các ô, và nội dung đó chỉ vào thẻ khi chủ app bấm nhận.
 
 Thẻ **đủ căn cứ để chốt** khi câu 1 đến 4 và câu 6 là "có", và câu lọc là "có". Thẻ chưa đủ vẫn chốt được; màn hiện rõ thiếu câu nào. Thẻ tự nghĩ luôn thiếu câu 1 và được ghi là "thử nghiệm gốc".
 
@@ -69,8 +69,7 @@ Như Soulprint: chỉ hiện khi có key, chỉ đề xuất, bấm nhận mới
 
 | Nút | Làm gì |
 |---|---|
-| Dựng thẻ từ video này | Từ gạch của một video và một nỗi đau được chọn: nháp `topic`, `angle`, `belief`, gợi ý `keep` và `remix` |
-| Nháp câu trả lời | Nháp câu 2, 3, 4 từ thẻ, Soulprint và comment làm bằng chứng |
+| Nháp thẻ ("Dựng thẻ từ video gốc" khi thẻ có video gốc) | Nháp `topic`, `angle`, nỗi đau, `belief`; khi có video gốc thì gợi ý thêm `keep` và `remix` |
 | Gợi ý tiêu đề | Ba tiêu đề theo DICK, mỗi tiêu đề tách rõ bốn phần |
 
 Prompt kèm đoạn Soulprint và file kiến thức (DICK, phễu, mục chấm ý tưởng của Kallaway).
@@ -79,7 +78,9 @@ Prompt kèm đoạn Soulprint và file kiến thức (DICK, phễu, mục chấm
 
 - Trên cùng: tên lô, bộ đếm, nút tạo thẻ, nút xuất.
 - Thân: danh sách thẻ, mỗi thẻ một dòng gồm trạng thái, tiêu đề, pillar, nguồn, và sáu chấm tròn cho sáu câu (đặc, rỗng, hoặc gạch).
-- Bấm một thẻ: khung chi tiết kiểu ảnh mẫu với các tab **Ý tưởng**, **Chấm**, **Gạch gốc** (mở chi tiết video trong thư viện), **Dàn ý** (giai đoạn 6), **Kết quả** (giai đoạn 7).
+- Bấm một thẻ: khung chi tiết kiểu ảnh mẫu với các tab **Ý tưởng**, **Chấm**, **Gạch gốc** (mở chi tiết video trong thư viện). Tab **Dàn ý** và **Kết quả** do giai đoạn 6 và 7 thêm vào.
+- Lô đầu tiên được tạo khi mở bảng lần đầu.
+- Bộ đếm chia thẻ "từ video đã thắng" (từ thư viện gạch) và các thẻ còn lại; thẻ từ nỗi đau hay gợi ý 5W1H tính vào phần còn lại, vì tỉ lệ 70–80% của Kallaway nói về ý đào từ video vượt kênh.
 
 Lối tạo thẻ ở màn khác: nút "Tạo ý tưởng từ video này" ở chi tiết thư viện gạch; nút "Tạo ý tưởng" cạnh mỗi nỗi đau trong Soulprint; nút "Đưa vào bảng" cạnh mỗi gợi ý content trong báo cáo 5W1H.
 
