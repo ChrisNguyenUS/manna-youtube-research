@@ -49,7 +49,7 @@ export const GROUPS = [
     ],
   },
   {
-    key: 'dissect', title: 'Mổ xẻ',
+    key: 'dissect', title: 'Phân tích',
     items: [
       { icon: 'bars', label: 'Phân tích video', tabs: [['/video', 'Phân tích video', () => import('./views/video.js')]] },
       {

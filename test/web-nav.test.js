@@ -11,7 +11,7 @@ const item = (label) => ITEMS.find((it) => it.label === label);
 test('groups are jobs, in this order, and the sidebar has seventeen entries', () => {
   assert.deepEqual(GROUPS.map((g) => [g.key, g.title, g.items.map((it) => it.label)]), [
     ['find', 'Tìm', ['Chủ đề', 'Video', 'Kênh', 'Từ khoá', 'Theo dõi']],
-    ['dissect', 'Mổ xẻ', ['Phân tích video', 'Phân tích kênh', 'Thư viện gạch']],
+    ['dissect', 'Phân tích', ['Phân tích video', 'Phân tích kênh', 'Thư viện gạch']],
     ['audience', 'Khán giả', ['Bình luận', 'Insight', '5W1H']],
     ['make', 'Làm', ['Bảng ý tưởng']],
     ['library', 'Lưu trữ', ['Lịch sử', 'Đã lưu', 'Cài đặt']],

@@ -1,5 +1,5 @@
 import { scope } from '../dom.js';
-import { findHead, findBar, findRows, findAdvanced, regionSelect, bindPlatformSwitch } from '../components/find-shell.js';
+import { findHead, platformTabs, searchBar, section, fieldRows, advanced, changedCount, estimate, regionSelect, bindShell } from '../components/find-shell.js';
 import { findHistory, rerunRecord } from '../components/find-history.js';
 import { records } from '../http/client.js';
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, full, ago, emptyState, thumb, ytVideo, ytChannel, isSaved, toggleSave, bindTips, ageText, setUrl, resumeJob, errorCallout } from '../lib.js';
@@ -65,25 +65,26 @@ export async function mount(root, params) {
   if (knownRegion(params.gl, REGIONS)) st.gl = params.gl;
   root.innerHTML = `
     ${findHead('users', 'Tìm kênh', 'Kênh theo từ khoá, rồi lọc theo sub, view gần đây, tỉ lệ view/sub ("nhiều view nhưng ít sub"), tuổi kênh, quốc gia, nhịp đăng.')}
-    <div class="card card-pad" data-form>
-      ${findBar({ path: '/channels', input: `<input class="input" data-k="keywords" placeholder="Từ khoá, cách nhau bằng dấu phẩy. VD: storytelling, kể chuyện đêm khuya" value="${esc(st.keywords)}">`, button: `<button class="btn primary lg" data-run>${icon('users')} Tìm kênh</button>` })}
-      ${findRows([
-        ['Khu vực', regionSelect(st.gl, REGIONS)],
-        ['Lấy kênh từ', `${chips('source', [{ v: 'both', label: 'Cả hai (khuyên dùng)' }, { v: 'channels', label: 'Ô tìm kênh của YouTube' }, { v: 'videos', label: 'Chủ của video hot' }], st.source)}
-          <span class="muted small" data-tip="Lấy kênh có video nhiều view trong 1 năm gần nhất cho từ khoá: cách nhanh nhất ra kênh nhỏ đang lên.">“Chủ của video hot” là gì?</span>`],
-      ])}
-      ${findAdvanced([['Kênh mỗi từ khoá', chips('perKeyword', [{ v: 20, label: '20' }, { v: 40, label: '40' }, { v: 80, label: '80' }], st.perKeyword)]])}
-      <div class="find-note muted small">Mỗi kênh cần 3 request (thông tin, About, 30 video mới nhất) · 40 kênh ≈ 30–60 giây</div>
+    ${platformTabs('/channels')}
+    <div data-form>
+      ${searchBar({ key: 'keywords', value: st.keywords, label: 'Từ khoá', placeholder: 'Từ khoá, cách nhau bằng dấu phẩy. VD: storytelling, kể chuyện đêm khuya', button: `<button class="btn primary lg" data-run>${icon('users')} Tìm kênh</button>` })}
+      ${section('target', 'Phạm vi tìm', fieldRows([['globe', 'Khu vực', regionSelect(st.gl, REGIONS)]]))}
+      ${section('sliders', 'Tiêu chí tìm kiếm', fieldRows([
+        ['layers', 'Lấy kênh từ', `${chips('source', [{ v: 'both', label: 'Cả hai (khuyên dùng)' }, { v: 'channels', label: 'Ô tìm kênh của YouTube' }, { v: 'videos', label: 'Chủ của video hot' }], st.source)}
+          <span class="rs-tip" tabindex="0" data-tip="“Chủ của video hot” lấy kênh có video nhiều view trong 1 năm gần nhất cho từ khoá: cách nhanh nhất ra kênh nhỏ đang lên." aria-label="Giải thích">${icon('info')}</span>`],
+      ]))}
+      ${advanced({ summary: 'Kênh mỗi từ khoá', changed: changedCount(st, FORM, ['perKeyword']), rows: [['users', 'Kênh mỗi từ khoá', chips('perKeyword', [{ v: 20, label: '20' }, { v: 40, label: '40' }, { v: 80, label: '80' }], st.perKeyword)]] })}
+      ${estimate('Mỗi kênh cần 3 request (thông tin, About, 30 video mới nhất) · 40 kênh ≈ 30–60 giây')}
     </div>
     <div data-out style="margin-top:14px"></div>
-    <div class="card" data-history style="margin-top:14px"></div>`;
-  bindPlatformSwitch(root, () => ({}));
+    <div class="card" data-history style="margin-top:18px"></div>`;
+  bindShell(root, { carry: () => ({}), changed: () => changedCount(st, FORM, ['perKeyword']) });
 
   bindChips(root.querySelector('[data-form]'), (name, v) => {
     st[name] = name === 'perKeyword' ? Number(v) : v;
     persist('channels-form', st);
   });
-  root.querySelectorAll('[data-k]').forEach((el) => el.addEventListener('change', () => ((st[el.dataset.k] = el.value), persist('channels-form', st))));
+  root.querySelectorAll('[data-form] [data-k]').forEach((el) => el.addEventListener('change', () => ((st[el.dataset.k] = el.value), persist('channels-form', st))));
   root.querySelector('[data-k="keywords"]').addEventListener('keydown', (e) => e.key === 'Enter' && run());
   root.querySelector('[data-run]').addEventListener('click', run);
   const out = root.querySelector('[data-out]');
@@ -98,7 +99,12 @@ export async function mount(root, params) {
   }
 
   /** @param {Record<string, any>} body */
+  let running = false; // one search at a time from this screen
   async function start(body) {
+    if (running) return toast('Lần tìm trước vẫn đang chạy');
+    running = true;
+    const btn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-run]'));
+    btn.disabled = true;
     out.innerHTML = progressCard(`Đang tìm kênh: ${body.keywords}`);
     try {
       const res = await runJob('channel_search', body, (p) => updateProgress(out, p));
@@ -106,6 +112,9 @@ export async function mount(root, params) {
       history();
     } catch (e) {
       out.innerHTML = errorCallout(e);
+    } finally {
+      running = false;
+      btn.disabled = false;
     }
   }
 
