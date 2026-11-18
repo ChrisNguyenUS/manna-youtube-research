@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 // into all of web/ (which is not type-checked).
 const { HOME, SOULPRINT, GROUPS, ITEMS, ALIASES, allTabs, has, platformOf, tabsFor, firstPath, findItem } = await import(new URL('../web/nav.js', import.meta.url).href);
 
-const LEGACY = ['/', '/soulprint', '/tiktok/topic', '/tiktok/search', '/tiktok/insight', '/tiktok/insight/collected', '/insight', '/video', '/tiktok/channel', '/tiktok/comments', '/tiktok/5w1h',
+const LEGACY = ['/', '/soulprint', '/tiktok/topic', '/tiktok/search', '/tiktok/insight', '/tiktok/insight/collected', '/insight', '/insight/collected', '/video', '/tiktok/channel', '/tiktok/comments', '/tiktok/5w1h',
   '/research', '/videos', '/comments', '/channels', '/channel', '/compare', '/keywords', '/ideas', '/follows', '/history', '/saved', '/settings', '/bricks', '/board', '/board/review'];
 const item = (label) => ITEMS.find((it) => it.label === label);
 
@@ -35,7 +35,7 @@ test('entries with a version per platform hold the right screens; single-platfor
   assert.deepEqual([item('Kênh').only, paths(item('Kênh').tabs)], ['youtube', ['/channels']]);
   assert.deepEqual([paths(item('Phân tích kênh').platforms.tiktok), paths(item('Phân tích kênh').platforms.youtube)], [['/tiktok/channel'], ['/channel', '/compare']]);
   assert.deepEqual([paths(item('Bình luận').platforms.tiktok), paths(item('Bình luận').platforms.youtube)], [['/tiktok/comments'], ['/comments']]);
-  assert.deepEqual([paths(item('Insight').platforms.tiktok), paths(item('Insight').platforms.youtube)], [['/tiktok/insight', '/tiktok/insight/collected'], ['/insight']]);
+  assert.deepEqual([paths(item('Insight').platforms.tiktok), paths(item('Insight').platforms.youtube)], [['/tiktok/insight', '/tiktok/insight/collected'], ['/insight', '/insight/collected']]);
   assert.deepEqual([item('Từ khoá').only, item('5W1H').only, item('Theo dõi').only], ['youtube', 'tiktok', undefined]);
   assert.ok(!item('Phân tích video').platforms, 'one screen for both platforms');
 });

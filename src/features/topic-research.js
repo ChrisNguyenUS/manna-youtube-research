@@ -115,7 +115,8 @@ export function makeResearchComments(deps) {
         perVideo.push({ id: vid, title: vid, count: 0, error: e.message });
       }
     }
-    data.comments = { videos: perVideo, insights: commentInsights(all, { limit: 30 }), fetchedAt: now(), total: all.length };
+    // list: the comments themselves, so "Insight → Từ comment đã có" (YouTube) can read them later.
+    data.comments = { videos: perVideo, insights: commentInsights(all, { limit: 30 }), fetchedAt: now(), total: all.length, list: all };
     records.update(recordId, data);
     return data.comments;
   };

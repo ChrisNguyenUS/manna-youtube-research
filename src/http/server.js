@@ -9,6 +9,7 @@ import { recordRoutes } from './routes/records.js';
 import { savedRoutes } from './routes/saved.js';
 import { settingsRoutes } from './routes/settings.js';
 import { tiktokRoutes } from './routes/tiktok.js';
+import { youtubeRoutes } from './routes/youtube.js';
 import { followRoutes } from './routes/follows.js';
 import { soulprintRoutes } from './routes/soulprint.js';
 import { brickRoutes } from './routes/bricks.js';
@@ -36,7 +37,7 @@ async function readBody(req) {
 
 /** @param {ReturnType<typeof import('../app.js').createApp>} app @param {{publicDir?: string}} [o] */
 export function createHttpServer(app, { publicDir = path.join(ROOT, 'web') } = {}) {
-  const router = createRouter([...jobRoutes, ...recordRoutes, ...savedRoutes, ...settingsRoutes, ...tiktokRoutes, ...followRoutes, ...soulprintRoutes, ...brickRoutes, ...ideaRoutes]);
+  const router = createRouter([...jobRoutes, ...recordRoutes, ...savedRoutes, ...settingsRoutes, ...tiktokRoutes, ...youtubeRoutes, ...followRoutes, ...soulprintRoutes, ...brickRoutes, ...ideaRoutes]);
   const root = path.resolve(publicDir);
 
   function send(res, status, body, type = 'application/json; charset=utf-8', headers = {}) {
