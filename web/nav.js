@@ -76,11 +76,14 @@ export const GROUPS = [
         },
       },
       {
-        icon: 'target', label: 'Insight', only: 'tiktok',
-        tabs: [
-          ['/tiktok/insight', 'Theo từ khoá', () => import('./views/tiktok/insight.js')],
-          ['/tiktok/insight/collected', 'Từ comment đã có', () => import('./views/tiktok/insight-collected.js')],
-        ],
+        icon: 'target', label: 'Insight',
+        platforms: {
+          tiktok: [
+            ['/tiktok/insight', 'Theo từ khoá', () => import('./views/tiktok/insight.js')],
+            ['/tiktok/insight/collected', 'Từ comment đã có', () => import('./views/tiktok/insight-collected.js')],
+          ],
+          youtube: [['/insight', 'Theo từ khoá', () => import('./views/insight.js')]],
+        },
       },
       { icon: 'bolt', label: '5W1H', only: 'tiktok', tabs: [['/tiktok/5w1h', '5W1H (AI)', () => import('./views/tiktok/five-w.js')]] },
     ],

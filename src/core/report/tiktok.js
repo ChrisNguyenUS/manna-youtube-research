@@ -13,14 +13,22 @@ const FRAME = `## Viết báo cáo từ dữ liệu trên (dành cho Claude)
 4. Quy tắc: không hứa kết quả ("đậu 100%", "chắc chắn", "bảo đảm", "nhanh nhất"); không tự nhận là luật sư hay chuyên gia di trú; không ghi tên người comment; con số thời gian, phí, mức thu nhập phải kiểm tra với nguồn chính thức trước khi dùng.
 `;
 
-/** @param {any} d record data of a tiktok_insight */
+/** @param {any} d record data of a tiktok_insight or youtube_insight */
+/** Insight report (TikTok, or YouTube when `d.platform` says so: same analysis, other video table). */
 export function tiktokInsightMarkdown(d) {
   const i = d.insight;
-  const L = [`# Insight TikTok: ${d.keywords.join(', ')} — ${new Date().toISOString().slice(0, 10)}`, '', BANNER, ''];
+  const yt = d.platform === 'youtube';
+  const L = [`# Insight ${yt ? 'YouTube' : 'TikTok'}: ${d.keywords.join(', ')} — ${new Date().toISOString().slice(0, 10)}`, '', yt ? BANNER.replace('TikTok', 'YouTube') : BANNER, ''];
   const c = d.counts;
-  L.push('## Run info', '', `Từ khoá: ${d.keywords.join(', ')} · Video tìm được: ${c.found} · Trùng: ${c.duplicates} · Lạc đề bỏ: ${c.offTopic} · Giữ: ${c.kept} · Comment đã đọc: ${c.commentsRead}${c.emptyKeywords?.length ? ` · Từ khoá không ra video: ${c.emptyKeywords.join(', ')}` : ''}${d.failedVideos?.length ? ` · Video lỗi: ${d.failedVideos.length}` : ''}`, '');
-  L.push('## Video đã đọc comment', '', '| # | Caption | Creator | Tuổi | View | Like | Cmt | Share | Save | Link |', '|---|---|---|---|---|---|---|---|---|---|');
-  d.videos.forEach((v, k) => L.push(`| ${k + 1} | ${cell(v.caption).slice(0, 80)} | @${cell(v.author)} | ${v.ageDays ?? '–'}d | ${n(v.plays)} | ${n(v.likes)} | ${n(v.comments)} | ${n(v.shares)} | ${n(v.saves)} | ${v.url} |`));
+  if (yt) {
+    L.push('## Run info', '', `Từ khoá: ${d.keywords.join(', ')} · Video tìm được: ${c.found} · Đọc comment: ${c.kept} video · Comment đã đọc: ${c.commentsRead}${d.failedVideos?.length ? ` · Video lỗi/tắt comment: ${d.failedVideos.length}` : ''}`, '');
+    L.push('## Video đã đọc comment', '', '| # | Tiêu đề | Kênh | Sub | View | View/ngày | Like | Comment đã đọc | Link |', '|---|---|---|---|---|---|---|---|---|');
+    d.videos.forEach((v, k) => L.push(`| ${k + 1} | ${cell(v.title).slice(0, 80)} | ${cell(v.channelTitle)} | ${n(v.channelSubs)} | ${n(v.views)} | ${n(v.viewsPerDay)} | ${n(v.likes)} | ${n(v.commentsRead)} | ${v.url} |`));
+  } else {
+    L.push('## Run info', '', `Từ khoá: ${d.keywords.join(', ')} · Video tìm được: ${c.found} · Trùng: ${c.duplicates} · Lạc đề bỏ: ${c.offTopic} · Giữ: ${c.kept} · Comment đã đọc: ${c.commentsRead}${c.emptyKeywords?.length ? ` · Từ khoá không ra video: ${c.emptyKeywords.join(', ')}` : ''}${d.failedVideos?.length ? ` · Video lỗi: ${d.failedVideos.length}` : ''}`, '');
+    L.push('## Video đã đọc comment', '', '| # | Caption | Creator | Tuổi | View | Like | Cmt | Share | Save | Link |', '|---|---|---|---|---|---|---|---|---|---|');
+    d.videos.forEach((v, k) => L.push(`| ${k + 1} | ${cell(v.caption).slice(0, 80)} | @${cell(v.author)} | ${v.ageDays ?? '–'}d | ${n(v.plays)} | ${n(v.likes)} | ${n(v.comments)} | ${n(v.shares)} | ${n(v.saves)} | ${v.url} |`));
+  }
   const block = (title, list, max = 30) => {
     L.push('', `## ${title} (${list?.length ?? 0})`, '');
     L.push(...(list?.length ? list.slice(0, max).map(quote) : ['- (không có)']));

@@ -16,6 +16,8 @@ const TIKTOK_COMMENT_COLS = [
   { key: 'attentionPerDay', label: 'Attention/ngày' }, { label: 'Là trả lời', get: (c) => (c.isReply ? 'Có' : '') },
   { label: 'Nhóm', get: groupOf }, { key: 'videoId', label: 'Video' }, { label: 'Link video', get: (c) => (c.videoId ? `https://www.tiktok.com/video/${c.videoId}` : '') },
 ];
+/** YouTube insight: the same columns, with YouTube links. */
+const YOUTUBE_INSIGHT_COLS = TIKTOK_COMMENT_COLS.map((c) => (c.label === 'Link video' ? { label: 'Link video', get: (x) => (x.videoId ? `https://www.youtube.com/watch?v=${x.videoId}` : '') } : c));
 const TIKTOK_VIDEO_COLS = [
   { key: 'caption', label: 'Caption' }, { key: 'url', label: 'Link' }, { key: 'author', label: 'Creator' }, { key: 'plays', label: 'View' },
   { key: 'likes', label: 'Like' }, { key: 'comments', label: 'Comment' }, { key: 'shares', label: 'Share' }, { key: 'saves', label: 'Save' },
@@ -91,7 +93,7 @@ function exportRecord({ app, ws, params, query }) {
         const md5 = fiveWMarkdown(app.features.comment5w1h.report(r.id));
         return query.get('inline') ? raw(md5, 'text/markdown; charset=utf-8') : raw(md5, 'text/markdown; charset=utf-8', attachment(`${name}.md`));
       }
-      const md = r.kind === 'research' ? researchMarkdown(r.data) : r.kind === 'channel_analysis' ? channelMarkdown(r.data) : r.kind === 'comments' ? commentsMarkdown(r.data) : r.kind === 'tiktok_insight' ? tiktokInsightMarkdown(r.data) : r.kind === 'tiktok_comments' ? tiktokCommentsMarkdown(r.data) : r.kind === 'tiktok_topic' ? tiktokTopicMarkdown(r.data) : r.kind === 'tiktok_channel' ? tiktokChannelMarkdown(r.data) : '```json\n' + JSON.stringify(r.data, null, 2) + '\n```\n';
+      const md = r.kind === 'research' ? researchMarkdown(r.data) : r.kind === 'channel_analysis' ? channelMarkdown(r.data) : r.kind === 'comments' ? commentsMarkdown(r.data) : r.kind === 'tiktok_insight' || r.kind === 'youtube_insight' ? tiktokInsightMarkdown(r.data) : r.kind === 'tiktok_comments' ? tiktokCommentsMarkdown(r.data) : r.kind === 'tiktok_topic' ? tiktokTopicMarkdown(r.data) : r.kind === 'tiktok_channel' ? tiktokChannelMarkdown(r.data) : '```json\n' + JSON.stringify(r.data, null, 2) + '\n```\n';
       return query.get('inline') ? raw(md, 'text/markdown; charset=utf-8') : raw(md, 'text/markdown; charset=utf-8', attachment(`${name}.md`));
     }
     if (params.ext === 'xlsx') {
@@ -116,6 +118,7 @@ function exportRecord({ app, ws, params, query }) {
     else if (r.kind === 'tiktok_channel') csv = toCsv(r.data.videos, [...TIKTOK_VIDEO_COLS.slice(0, 8), { key: 'outlierScore', label: '× trung vị kênh' }, { label: 'Ghim', get: (v) => (v.pinned ? 'Có' : '') },
       { key: 'engagementRate', label: metricLabel('engagementRate') }, { key: 'durationSec', label: 'Dài (giây)' }, { key: 'createdAt', label: 'Đăng lúc' }, { label: 'Nguồn', get: (v) => (v.from === 'search' ? 'Tìm kiếm' : 'Trang kênh') }]);
     else if (r.kind === 'tiktok_insight' || r.kind === 'tiktok_comments') csv = toCsv(r.data.comments.map((c) => ({ ...c, ...classifyComment(c.text), videoId: c.videoId ?? r.data.video?.id })), TIKTOK_COMMENT_COLS);
+    else if (r.kind === 'youtube_insight') csv = toCsv(r.data.comments.map((c) => ({ ...c, ...classifyComment(c.text) })), YOUTUBE_INSIGHT_COLS);
     else if (isVideoAnalysis) csv = toCsv(r.data.videos, VIDEO_ANALYSIS_COLS);
     else csv = toCsv(r.data.videos || [], VIDEO_COLS);
     return raw(csv, 'text/csv; charset=utf-8', attachment(`${name}.csv`));
