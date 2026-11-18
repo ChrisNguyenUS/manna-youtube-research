@@ -18,6 +18,7 @@ import { makeScoreOneKeyword, makeKeywordScores } from './features/keyword-score
 import { makeTikTokSearch } from './features/tiktok/search.js';
 import { makeTikTokComments } from './features/tiktok/comments.js';
 import { makeTikTokInsight, makeTikTokInsightTopics } from './features/tiktok/insight.js';
+import { makeYouTubeInsight } from './features/youtube-insight.js';
 import { makeTikTokScrape } from './features/tiktok/scrape.js';
 import { makeTikTokTopicKeywords, makeTikTokTopicScan } from './features/tiktok/topic.js';
 import { makeTikTokVideoAnalysis, makeVideoAnalysisHistory } from './features/tiktok/video-analysis.js';
@@ -82,6 +83,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
     tiktokComments: makeTikTokComments({ tiktok, records: base.records, now: base.now }),
     tiktokInsight: makeTikTokInsight({ tiktok, records: base.records, now: base.now, tiktokSearch }),
     tiktokInsightTopics: makeTikTokInsightTopics({ records: base.records }),
+    youtubeInsight: makeYouTubeInsight({ source, records: base.records, now: base.now, videoSearch }),
     tiktokScrape: makeTikTokScrape({ tiktokSearch, now: base.now }),
     tiktokTopicKeywords: makeTikTokTopicKeywords({ tiktok }),
     tiktokTopicScan: makeTikTokTopicScan({ tiktok, records: base.records, now: base.now }),
@@ -114,6 +116,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
   };
   handlers.tiktok_search = (p, ctx) => features.tiktokSearch(p, ctx.progress);
   handlers.tiktok_insight = (p, ctx) => features.tiktokInsight(p, ctx.progress);
+  handlers.youtube_insight = (p, ctx) => features.youtubeInsight(p, ctx.progress);
   handlers.tiktok_comments = (p, ctx) => features.tiktokComments(p, ctx.progress);
   handlers.tiktok_topic = (p, ctx) => features.tiktokTopicScan(p, ctx.progress);
   handlers.tiktok_video_analysis = (p, ctx) => features.tiktokVideoAnalysis(p, ctx.progress);

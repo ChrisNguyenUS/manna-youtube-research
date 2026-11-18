@@ -1,4 +1,4 @@
-// Workspace of a TikTok insight report: one place that knows the report's comments, videos, keywords and groups
+// Workspace of an insight report (TikTok, or YouTube: same comment shape, `d.platform` says which): one place that knows the report's comments, videos, keywords and groups
 // (groups = /tiktok/insight/:id/topics, the report's own rule and counts), and the views built on it:
 // a comment browser (Comments and Questions tabs), the topic explorer, the video gallery and the overview.
 // Everything shown comes from the comments stored with the report; commenter names are never stored.
@@ -176,9 +176,12 @@ export function topicExplorer(box, ctx, o = {}) {
   return () => (L.off(), browser?.off());
 }
 
+/** A YouTube insight report (same screens, YouTube links and numbers). @param {InsightCtx} ctx */
+const isYouTube = (ctx) => ctx.d.platform === 'youtube';
+
 /** Video card for the gallery: cover, caption, creator, views, comments read, keyword. */
 const videoCard = (ctx, v) => `<button type="button" class="ix-vcard" data-vid="${esc(v.id)}">
-  <span class="ix-vcover">${cover(v)}<span class="tt-gviews">${icon('eye')}${fmt(v.plays)}</span>${v.rank ? `<span class="ix-vrank">#${v.rank}</span>` : ''}</span>
+  <span class="ix-vcover" ${isYouTube(ctx) ? 'style="aspect-ratio:16/9"' : ''}>${cover(v)}<span class="tt-gviews">${icon('eye')}${fmt(v.plays)}</span>${v.rank ? `<span class="ix-vrank">#${v.rank}</span>` : ''}</span>
   <span class="ix-vbody"><span class="tx-vcap">${esc(v.caption || '(không caption)')}</span>
     <span class="muted small">@${esc(v.author)}</span>
     <span class="small">${fmt(v.comments)} bình luận · <b>${fmt(ctx.commentsOfVideo(v.id).length)}</b> đã đọc</span>
@@ -199,16 +202,20 @@ export function videoGallery(box, ctx, o) {
     if (!v) return;
     const cm = ctx.commentsOfVideo(id).sort((a, b) => (b.likes ?? 0) + (b.replies ?? 0) - ((a.likes ?? 0) + (a.replies ?? 0)));
     const stat = (l, val) => `<div class="tt-dr-stat"><div class="l">${l}</div><div class="v">${val}</div></div>`;
+    const yt = isYouTube(ctx);
+    const saveKind = yt ? 'video' : 'tiktok_video';
     dr.innerHTML = `<div class="tt-dr-head"><b>Video #${v.rank ?? ''}</b><span class="spacer"></span><button type="button" class="icon-btn" data-vclose title="Đóng (Esc)">${icon('x')}</button></div>
       <div class="tt-dr-body">
-        <div class="tt-dr-top"><a class="tt-dr-cover" href="${esc(v.url)}" target="_blank" rel="noopener">${cover(v)}<span class="tt-gviews">${icon('eye')}${fmt(v.plays)}</span></a>
+        <div class="tt-dr-top"><a class="tt-dr-cover" href="${esc(v.url)}" target="_blank" rel="noopener" ${yt ? 'style="aspect-ratio:16/9"' : ''}>${cover(v)}<span class="tt-gviews">${icon('eye')}${fmt(v.plays)}</span></a>
           <div class="tt-dr-who"><div><b>@${esc(v.author)}</b>${v.authorName ? `<div class="small muted">${esc(v.authorName)}</div>` : ''}</div>
             <div class="small">Đăng ${fullDate(v.createdAt)}</div>
             <div>${ctx.vKeywords(v).map((k) => `<span class="tx-kw">${esc(k)}</span>`).join(' ')}</div>
-            <a class="btn sm primary" href="${esc(v.url)}" target="_blank" rel="noopener">${icon('ext')} Mở trên TikTok</a>
-            <button type="button" class="btn sm ${isSaved('tiktok_video', v.id) ? 'on' : ''}" data-vsave="${esc(v.id)}">${icon('bookmark')} ${isSaved('tiktok_video', v.id) ? 'Đã lưu' : 'Lưu video'}</button></div></div>
+            <a class="btn sm primary" href="${esc(v.url)}" target="_blank" rel="noopener">${icon('ext')} Mở trên ${yt ? 'YouTube' : 'TikTok'}</a>
+            <button type="button" class="btn sm ${isSaved(saveKind, v.id) ? 'on' : ''}" data-vsave="${esc(v.id)}">${icon('bookmark')} ${isSaved(saveKind, v.id) ? 'Đã lưu' : 'Lưu video'}</button></div></div>
         <p class="tt-dr-cap">${esc(v.caption || '(không caption)')}</p>
-        <div class="tt-dr-stats">${stat('Lượt xem', fmt(v.plays))}${stat('Tim', fmt(v.likes))}${stat('Bình luận', fmt(v.comments))}${stat('Chia sẻ', fmt(v.shares))}${stat('Lưu', fmt(v.saves))}${stat('Comment đã đọc', fmt(cm.length))}</div>
+        <div class="tt-dr-stats">${yt
+          ? `${stat('Lượt xem', fmt(v.views))}${stat('View/ngày', fmt(v.viewsPerDay))}${stat('Like', fmt(v.likes))}${stat('Sub kênh', fmt(v.channelSubs))}${stat('Vượt kênh', v.viewSub != null ? `${v.viewSub}×` : '–')}${stat('Comment đã đọc', fmt(cm.length))}`
+          : `${stat('Lượt xem', fmt(v.plays))}${stat('Tim', fmt(v.likes))}${stat('Bình luận', fmt(v.comments))}${stat('Chia sẻ', fmt(v.shares))}${stat('Lưu', fmt(v.saves))}${stat('Comment đã đọc', fmt(cm.length))}`}</div>
         <div class="tt-dr-sec">Comment được chú ý nhất</div>
         ${cm.slice(0, 8).map((c) => `<div class="tt-dr-cm"><span class="tt-cm-likes">♥ ${fmt(c.likes ?? 0)}</span> ${esc(c.text)}</div>`).join('') || '<div class="small muted">Chưa đọc comment nào của video này.</div>'}
         ${cm.length ? `<button type="button" class="btn" data-vall="${esc(v.id)}">${icon('message')} Xem cả ${cm.length} comment trong tab Comment</button>` : ''}
@@ -225,8 +232,11 @@ export function videoGallery(box, ctx, o) {
   L.on('click', '[data-vsave]', async (e, el) => {
     const v = ctx.videos.get(el.dataset.vsave);
     if (!v) return;
-    const it = savedTikTokVideo(v, ctx.vKeywords(v));
-    await toggleSave('tiktok_video', it.ref, it.title, it.data);
+    if (isYouTube(ctx)) await toggleSave('video', v.id, v.title, { id: v.id, title: v.title, channelTitle: v.channelTitle, channelId: v.channelId, views: v.views, channelSubs: v.channelSubs, viewSub: v.viewSub, durationSec: v.durationSec });
+    else {
+      const it = savedTikTokVideo(v, ctx.vKeywords(v));
+      await toggleSave('tiktok_video', it.ref, it.title, it.data);
+    }
     openVideo(v.id);
   });
   L.on('click', '[data-vall]', (e, el) => (close(), o.onAllComments(el.dataset.vall)));
