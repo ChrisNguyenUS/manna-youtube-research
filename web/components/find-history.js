@@ -36,7 +36,7 @@ export const FIND_SOURCES = {
  * @param {{limit?: number}} [o]
  * @returns {() => Promise<void>} refresh, to call after a new result was saved
  */
-export function findHistory(el, job, { limit = 8 } = {}) {
+export function findHistory(el, job, { limit = 5 } = {}) {
   const sources = FIND_SOURCES[job];
   const both = new Set(sources.map((s) => s.platform)).size > 1;
   const key = `find-history-${job}`;

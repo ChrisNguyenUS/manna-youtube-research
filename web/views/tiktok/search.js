@@ -1,6 +1,6 @@
 import { records } from '../../http/client.js';
 import { tiktokLoginNotice } from '../../components/tiktok-login.js';
-import { findHead, findBar, findRows, findAdvanced, regionSelect, bindPlatformSwitch } from '../../components/find-shell.js';
+import { findHead, platformTabs, searchBar, section, fieldRows, checkRow, advanced, changedCount, estimate, regionSelect, bindShell } from '../../components/find-shell.js';
 import { findHistory, rerunRecord } from '../../components/find-history.js';
 import { TIKTOK_REGIONS, TIKTOK_COUNTRY, TIKTOK_AGE_CHIPS, TIKTOK_PLAYS_CHIPS, knownRegion } from '../../search-options.js';
 import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl, resumeJob, toggleSave, errorCallout } from '../../lib.js';
@@ -9,6 +9,8 @@ import { scope } from '../../dom.js';
 import { savedTikTokVideo } from '../../saved-items.js';
 
 const FORM = { keywords: '', gl: '', perKeyword: 60, keepOffTopic: false, minPlays: 0, minLikes: 0, maxAgeDays: 0, minEngagement: 0 };
+const ADVANCED = ['perKeyword'];
+const OFF_TOPIC_TIP = 'Đúng chủ đề = caption/hashtag có từ khoá (bỏ chữ “mỹ”, năm), hoặc có ≥ 2 hashtag của chủ đề; video về nước khác bị bỏ. Bỏ tích để giữ hết.';
 const FILTER = { age: '', minLikes: '', minComments: '', onTopic: true, sort: 'hot' };
 const SORTS = { hot: 'hotScore', plays: 'plays', likes: 'likes', shares: 'shares', saves: 'saves', new: 'ageDays' };
 
@@ -19,31 +21,32 @@ export async function mount(root, params) {
   if (knownRegion(params.gl, TIKTOK_REGIONS)) st.gl = params.gl; // carried over from the YouTube side
   root.innerHTML = `
     ${findHead('search', 'Tìm video', 'Video TikTok hot theo từ khoá, chỉ giữ video đúng chủ đề (có từ khoá hoặc hashtag của chủ đề, không nói về nước khác).')}
+    ${platformTabs('/tiktok/search')}
     <div data-ttlogin></div>
-    <div class="card card-pad" data-form>
-      ${findBar({ path: '/tiktok/search', input: `<input class="input" data-k="keywords" placeholder="Từ khoá, cách nhau bằng dấu phẩy. VD: phỏng vấn quốc tịch, thi quốc tịch mỹ" value="${esc(st.keywords)}">`, button: `<button class="btn primary lg" data-run>${icon('search')} Tìm video</button>` })}
-      ${findRows([
-        ['Khu vực', `${regionSelect(st.gl, TIKTOK_REGIONS)}<span class="muted small" data-tip="TikTok luôn tìm như người xem ở Việt Nam. Khu vực ở đây là nước mà video phải nói tới: video về thủ tục nước khác bị bỏ.">Video nói về nước này · kết quả vẫn là TikTok Việt</span>`],
-        ['Đăng trong', chips('maxAgeDays', TIKTOK_AGE_CHIPS, st.maxAgeDays || 0)],
-        ['View tối thiểu', chips('minPlays', TIKTOK_PLAYS_CHIPS, st.minPlays || 0)],
-      ])}
-      ${findAdvanced([
-        ['Like tối thiểu', chips('minLikes', [0, 1_000, 10_000, 100_000].map((v) => ({ v, label: v ? `≥ ${fmt(v)}` : 'Không lọc' })), st.minLikes || 0)],
-        ['<span data-tip="(like + comment + share + save) ÷ view">Tương tác ≥</span>', chips('minEngagement', [0, 3, 5, 10].map((v) => ({ v, label: v ? `${v}%` : 'Không lọc' })), st.minEngagement || 0)],
-        ['Video mỗi từ khoá', chips('perKeyword', [30, 60, 120, 200].map((v) => ({ v, label: String(v) })), st.perKeyword)],
-        ['Video lạc đề', `<label class="check"><input type="checkbox" data-k="keepOffTopic" ${st.keepOffTopic ? 'checked' : ''}> Giữ cả video lạc đề</label>`],
-      ])}
-      <div class="find-note muted small">Miễn phí · ~1–2 phút mỗi từ khoá. Từ khoá nên có chữ tiếng Việt và ghi rõ nước (vd "thi quốc tịch mỹ").</div>
+    <div data-form>
+      ${searchBar({ key: 'keywords', value: st.keywords, label: 'Từ khoá', placeholder: 'Từ khoá, cách nhau bằng dấu phẩy. VD: phỏng vấn quốc tịch, thi quốc tịch mỹ', button: `<button class="btn primary lg" data-run>${icon('search')} Tìm video</button>` })}
+      ${section('target', 'Phạm vi tìm', fieldRows([
+        ['globe', 'Khu vực', `${regionSelect(st.gl, TIKTOK_REGIONS)}<span class="rs-tip" tabindex="0" data-tip="TikTok luôn tìm như người xem ở Việt Nam. Khu vực ở đây là nước mà video phải nói tới: video về thủ tục nước khác bị bỏ." aria-label="Giải thích khu vực">${icon('info')}</span><span class="muted small">Video nói về nước này</span>`],
+        ['calendar', 'Đăng trong', chips('maxAgeDays', TIKTOK_AGE_CHIPS, st.maxAgeDays || 0)],
+        ['eye', 'View tối thiểu', chips('minPlays', TIKTOK_PLAYS_CHIPS, st.minPlays || 0)],
+      ]))}
+      ${section('sliders', 'Tiêu chí tìm kiếm', fieldRows([
+        ['heart', 'Like tối thiểu', chips('minLikes', [0, 1_000, 10_000, 100_000].map((v) => ({ v, label: v ? `≥ ${fmt(v)}` : 'Không lọc' })), st.minLikes || 0)],
+        ['bars', '<span data-tip="(like + comment + share + save) ÷ view">Tương tác ≥</span>', chips('minEngagement', [0, 3, 5, 10].map((v) => ({ v, label: v ? `${v}%` : 'Không lọc' })), st.minEngagement || 0)],
+      ]), checkRow('filterOffTopic', 'Lọc video lạc đề', !st.keepOffTopic, OFF_TOPIC_TIP))}
+      ${advanced({ summary: 'Video mỗi từ khoá', changed: changedCount(st, FORM, ADVANCED), rows: [['play', 'Video mỗi từ khoá', chips('perKeyword', [30, 60, 120, 200].map((v) => ({ v, label: String(v) })), st.perKeyword)]] })}
+      ${estimate('Miễn phí · khoảng 1–2 phút mỗi từ khoá. Từ khoá nên có chữ tiếng Việt và ghi rõ nước (vd "thi quốc tịch mỹ").')}
     </div>
-    <div data-out style="margin-top:14px"></div><div class="card" data-history style="margin-top:14px"></div>`;
+    <div data-out style="margin-top:14px"></div><div class="card" data-history style="margin-top:18px"></div>`;
   const out = root.querySelector('[data-out]');
   const form = root.querySelector('[data-form]');
   const shown = scope();
   shown.add(tiktokLoginNotice(root.querySelector('[data-ttlogin]')));
   const formTips = bindTips(form);
-  bindPlatformSwitch(root, () => ({ q: /** @type {HTMLInputElement} */ (form.querySelector('[data-k="keywords"]')).value.trim(), gl: st.gl }));
+  bindShell(root, { carry: () => ({ q: /** @type {HTMLInputElement} */ (form.querySelector('[data-k="keywords"]')).value.trim(), gl: st.gl }), changed: () => changedCount(st, FORM, ADVANCED) });
   bindChips(form, (n, v) => ((st[n] = Number(v)), persist('tt-search-form', st)));
-  form.querySelector('[data-k="keepOffTopic"]').addEventListener('change', (e) => ((st.keepOffTopic = e.target.checked), persist('tt-search-form', st)));
+  // Shown the way round people think of it ("lọc" = drop off-topic videos); stored as before (keepOffTopic).
+  form.querySelector('[data-k="filterOffTopic"]').addEventListener('change', (e) => ((st.keepOffTopic = !e.target.checked), persist('tt-search-form', st)));
   form.querySelector('[data-k="gl"]').addEventListener('change', (e) => ((st.gl = e.target.value), persist('tt-search-form', st)));
   form.querySelector('[data-k="keywords"]').addEventListener('keydown', (e) => e.key === 'Enter' && run());
   form.querySelector('[data-run]').addEventListener('click', run);
@@ -57,7 +60,12 @@ export async function mount(root, params) {
   }
 
   /** @param {Record<string, any>} body */
+  let running = false; // one search at a time from this screen
   async function start(body) {
+    if (running) return toast('Lần tìm trước vẫn đang chạy');
+    running = true;
+    const btn = /** @type {HTMLButtonElement} */ (form.querySelector('[data-run]'));
+    btn.disabled = true;
     out.innerHTML = progressCard(`Đang tìm TikTok: ${body.keywords}`);
     try {
       const res = await runJob('tiktok_search', body, (p) => updateProgress(out, p));
@@ -65,6 +73,9 @@ export async function mount(root, params) {
       history();
     } catch (e) {
       out.innerHTML = errorCallout(e);
+    } finally {
+      running = false;
+      btn.disabled = false;
     }
   }
 

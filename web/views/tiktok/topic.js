@@ -8,14 +8,15 @@ import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toas
 import { savedTikTokVideo, savedKeyword } from '../../saved-items.js';
 import { scope } from '../../dom.js';
 import { tiktokLoginNotice } from '../../components/tiktok-login.js';
-import { findHead, findBar, findRows, findAdvanced, regionSelect, bindPlatformSwitch } from '../../components/find-shell.js';
+import { findHead, platformTabs, searchBar, section, fieldRows, checkRow, advanced, changedCount, estimate, regionSelect, bindShell } from '../../components/find-shell.js';
+import { resultHeader, kpiGrid, resultTabs, exportMenu, panel, closeMenusOnClick } from '../../components/research-result.js';
 import { findHistory, rerunRecord } from '../../components/find-history.js';
 import { TIKTOK_REGIONS, TIKTOK_COUNTRY, TIKTOK_AGE_CHIPS, TIKTOK_PLAYS_CHIPS, knownRegion } from '../../search-options.js';
 
 const FORM = {
   topic: '', gl: '', minPlays: 100000, maxAgeDays: 0, sort: 'score', maxKeywords: 10, perKeyword: 10, topComments: 3, keepOffTopic: 0, keepPrevious: 1,
   // How the result is shown (never sent to the server).
-  tab: 'compare', layout: 'grid', show: 10, vsort: 'rank', cmShow: 1, colw: 320,
+  tab: 'overview', layout: 'grid', show: 10, vsort: 'rank', cmShow: 1, colw: 320,
 };
 const SORT_LABELS = { score: 'Tổng hợp', plays: 'Lượt xem', trending: 'View/ngày', fresh: 'Mới nhất' };
 const INTENT_ORDER = ['time', 'cost', 'howto', 'interview', 'condition', 'experience', 'related'];
@@ -31,15 +32,13 @@ const VIEW_SORTS = {
   likes: ['Nhiều tim nhất', (v) => v.likes],
   comments: ['Nhiều bình luận nhất', (v) => v.comments],
 };
-// Advanced scan settings, as chip rows: [label, options [value, label]].
-const ADV = {
-  sort: ['Xếp hạng theo', Object.entries(SORT_LABELS)],
-  perKeyword: ['Video mỗi từ khoá', [[5, '5'], [10, '10'], [20, '20'], [30, '30']]],
-  topComments: ['Top comment', [[3, '3 comment nhiều tym'], [0, 'Không lấy (nhanh hơn)']]],
-  keepOffTopic: ['<span data-tip="Đúng chủ đề = caption/hashtag có từ khoá (bỏ chữ “mỹ”, năm), hoặc có ≥ 2 hashtag của chủ đề; bỏ video về nước khác">Video lạc đề</span>', [[0, 'Bỏ, chỉ giữ đúng chủ đề'], [1, 'Giữ hết']]],
-  keepPrevious: ['<span data-tip="Mỗi lần tìm, TikTok trả về một bộ video hơi khác. Khi quét lại chủ đề cũ, video lần trước có mà lần này TikTok không trả về vẫn được giữ (nhãn “Lần trước”, view tính đến lần quét đó), tối đa 30 ngày.">Video lần trước</span>', [[1, 'Giữ nếu lần này thiếu'], [0, 'Không giữ']]],
-  maxKeywords: ['Tự chọn sẵn', [[5, '5 từ khoá đầu'], [10, '10 từ khoá đầu'], [15, '15 từ khoá đầu'], [20, '20 từ khoá đầu']]],
-};
+// Scan settings shown as chip rows: [label, options [value, label]]. Defaults are FORM's.
+const SORT_CHIPS = Object.entries(SORT_LABELS).map(([v, label]) => ({ v, label }));
+const PER_KEYWORD_CHIPS = [5, 10, 20, 30].map((v) => ({ v, label: String(v) }));
+const MAX_KEYWORDS_CHIPS = [5, 10, 15, 20].map((v) => ({ v, label: `${v} từ khoá đầu` }));
+const ADVANCED = ['maxKeywords'];
+const OFF_TOPIC_TIP = 'Đúng chủ đề = caption/hashtag có từ khoá (bỏ chữ “mỹ”, năm), hoặc có ≥ 2 hashtag của chủ đề; video về nước khác bị bỏ. Bỏ tích để giữ hết.';
+const PREVIOUS_TIP = 'Mỗi lần tìm, TikTok trả về một bộ video hơi khác. Khi quét lại chủ đề cũ, video lần trước có mà lần này TikTok không trả về vẫn được giữ (nhãn “Lần trước”, view tính đến lần quét đó), tối đa 30 ngày.';
 const COUNTRY_REGION = Object.fromEntries(Object.entries(TIKTOK_COUNTRY).map(([gl, c]) => [c, gl]));
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
 const setHash = (h) => window.history.replaceState(null, '', h);
@@ -88,48 +87,70 @@ export async function mount(root, params) {
   if (knownRegion(params.gl, TIKTOK_REGIONS)) st.gl = params.gl; // carried over from the YouTube side
   root.innerHTML = `
     <section data-setup>
-      ${findHead('compass', 'Nghiên cứu chủ đề', 'Nhập chủ đề, chọn từ khoá mà chính TikTok gợi ý, rồi quét video top của từng từ khoá. Quét lại chủ đề cũ để thấy video nào đang tăng view.')}
+      ${findHead('compass', 'Nghiên cứu chủ đề', 'Khám phá video đang tăng trưởng, kênh nổi bật và nội dung hiệu quả trên TikTok và YouTube.')}
+      ${platformTabs('/tiktok/topic')}
       <div data-ttlogin></div>
-      <div class="card card-pad" data-form>
-        ${findBar({ path: '/tiktok/topic', input: `<input class="input" data-k="topic" placeholder="Chủ đề. VD: di trú mỹ, bảo lãnh vợ chồng" value="${esc(st.topic)}" autocomplete="off">`, button: `<button class="btn primary lg" data-find>${icon('layers')} Tìm từ khoá</button>` })}
-        ${findRows([
-          ['Khu vực', `${regionSelect(st.gl, TIKTOK_REGIONS)}<span class="muted small" data-tip="TikTok luôn tìm như người xem ở Việt Nam. Khu vực ở đây là nước mà video phải nói tới: video về thủ tục nước khác bị bỏ.">Video nói về nước này · kết quả vẫn là TikTok Việt</span>`],
-          ['Đăng trong', chips('maxAgeDays', TIKTOK_AGE_CHIPS, st.maxAgeDays || 0)],
-          ['View tối thiểu', chips('minPlays', TIKTOK_PLAYS_CHIPS, st.minPlays || 0)],
-        ])}
-        ${findAdvanced(Object.entries(ADV).map(([k, [label, opts]]) => [label, chips(k, opts.map(([v, l]) => ({ v, label: l })), st[k] ?? '')]))}
-        <div class="find-note muted small">Miễn phí · mỗi từ khoá ≈ 12 giây, 25 giây nếu lấy comment</div>
+      <div data-form>
+        ${searchBar({ key: 'topic', value: st.topic, label: 'Chủ đề', placeholder: 'Chủ đề. VD: di trú mỹ, bảo lãnh vợ chồng', button: `<button class="btn primary lg" data-find>${icon('layers')} Tìm từ khoá</button>` })}
+        ${section('target', 'Phạm vi nghiên cứu', fieldRows([
+          ['globe', 'Khu vực', `${regionSelect(st.gl, TIKTOK_REGIONS)}<span class="rs-tip" tabindex="0" data-tip="TikTok luôn tìm như người xem ở Việt Nam. Khu vực ở đây là nước mà video phải nói tới: video về thủ tục nước khác bị bỏ." aria-label="Giải thích khu vực">${icon('info')}</span><span class="muted small">Video nói về nước này</span>`],
+          ['calendar', 'Đăng trong', chips('maxAgeDays', TIKTOK_AGE_CHIPS, st.maxAgeDays || 0)],
+          ['eye', 'View tối thiểu', chips('minPlays', TIKTOK_PLAYS_CHIPS, st.minPlays || 0)],
+        ]))}
+        ${section('sliders', 'Tiêu chí tìm kiếm', fieldRows([
+          ['sort', 'Xếp hạng theo', chips('sort', SORT_CHIPS, st.sort)],
+          ['play', 'Video mỗi từ khoá', chips('perKeyword', PER_KEYWORD_CHIPS, st.perKeyword)],
+        ]), [
+          checkRow('topComments', 'Lấy top comment', Boolean(st.topComments), '3 comment nhiều tym nhất của mỗi video. Bỏ tích để quét nhanh hơn.'),
+          checkRow('filterOffTopic', 'Lọc video lạc đề', !st.keepOffTopic, OFF_TOPIC_TIP),
+          checkRow('keepPrevious', 'Giữ video lần trước', Boolean(st.keepPrevious), PREVIOUS_TIP),
+        ].join(''))}
+        ${advanced({ summary: 'Tự chọn sẵn bao nhiêu từ khoá gợi ý', changed: changedCount(st, FORM, ADVANCED), rows: [['check', 'Tự chọn sẵn', chips('maxKeywords', MAX_KEYWORDS_CHIPS, st.maxKeywords)]] })}
+        <div data-estimate></div>
       </div>
-      <div class="tt-setup">
+      <div class="tt-setup" data-kwarea>
         <div class="card" data-kwpanel></div>
         <aside class="card tt-side" data-side></aside>
       </div>
-      <div class="card tt-history" data-history style="margin-top:14px"></div>
+      <div class="card tt-history" data-history style="margin-top:18px"></div>
     </section>
     <section data-result hidden><div data-prog></div><div data-res></div></section>`;
 
   const setupEl = /** @type {HTMLElement} */ (root.querySelector('[data-setup]'));
   const resultEl = /** @type {HTMLElement} */ (root.querySelector('[data-result]'));
   const kwPanel = root.querySelector('[data-kwpanel]');
-  const side = root.querySelector('[data-side]');
+  const side = /** @type {HTMLElement} */ (root.querySelector('[data-side]'));
+  const kwArea = /** @type {HTMLElement} */ (root.querySelector('[data-kwarea]'));
   const resBox = root.querySelector('[data-res]');
   const progBox = root.querySelector('[data-prog]');
   const topicInput = /** @type {HTMLInputElement} */ (root.querySelector('[data-k="topic"]'));
   const form = /** @type {HTMLElement} */ (root.querySelector('[data-form]'));
   const historyList = findHistory(root.querySelector('[data-history]'), 'topic');
   shown.add(bindTips(form));
-  bindPlatformSwitch(root, () => ({ q: topicInput.value.trim(), gl: st.gl }));
+  const syncChanged = bindShell(root, { carry: () => ({ q: topicInput.value.trim(), gl: st.gl }), changed: () => changedCount(st, FORM, ADVANCED) });
+  const renderEstimate = () => {
+    form.querySelector('[data-estimate]').innerHTML = estimate(`Miễn phí · khoảng ${st.topComments ? 25 : 12} giây mỗi từ khoá${st.topComments ? ' (có lấy comment; không lấy thì khoảng 12 giây)' : ''}`);
+  };
+  renderEstimate();
+  // Switches: shown the way people think of them ("lọc" = drop off-topic videos), stored as before.
+  form.querySelector('[data-k="topComments"]').addEventListener('change', (e) => ((st.topComments = e.target.checked ? 3 : 0), persist('tt-topic-form', st), renderEstimate(), renderSide()));
+  form.querySelector('[data-k="filterOffTopic"]').addEventListener('change', (e) => ((st.keepOffTopic = e.target.checked ? 0 : 1), persist('tt-topic-form', st)));
+  form.querySelector('[data-k="keepPrevious"]').addEventListener('change', (e) => ((st.keepPrevious = e.target.checked ? 1 : 0), persist('tt-topic-form', st)));
   form.querySelector('[data-k="gl"]').addEventListener('change', (e) => ((st.gl = e.target.value), persist('tt-topic-form', st)));
   bindChips(form, (k, v) => {
     st[k] = k === 'sort' ? v : Number(v) || 0;
     persist('tt-topic-form', st);
     if (k === 'maxKeywords' && kws.length) return preselect();
-    if (k === 'topComments') renderSide();
   });
   /** The form shows `st` again (after "Chỉnh sửa từ khoá" loaded an old scan's settings). */
   const syncForm = () => {
     form.querySelectorAll('[data-chips]').forEach((g) => g.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.dataset.v === String(st[g.dataset.chips] ?? ''))));
     /** @type {HTMLSelectElement} */ (form.querySelector('[data-k="gl"]')).value = st.gl;
+    /** @type {HTMLInputElement} */ (form.querySelector('[data-k="topComments"]')).checked = Boolean(st.topComments);
+    /** @type {HTMLInputElement} */ (form.querySelector('[data-k="filterOffTopic"]')).checked = !st.keepOffTopic;
+    /** @type {HTMLInputElement} */ (form.querySelector('[data-k="keepPrevious"]')).checked = Boolean(st.keepPrevious);
+    renderEstimate();
+    syncChanged();
   };
   shown.add(tiktokLoginNotice(root.querySelector('[data-ttlogin]')));
 
@@ -150,7 +171,10 @@ export async function mount(root, params) {
     st.topic = topicInput.value.trim();
     persist('tt-topic-form', st);
     if (!st.topic) return toast('Nhập chủ đề', 'error');
-    kwPanel.innerHTML = `<div class="card-head"><h3>Từ khoá gợi ý</h3></div><div class="card-pad"><div class="callout info">Đang hỏi TikTok các từ khoá liên quan tới “${esc(st.topic)}”… (khoảng 10 giây)</div></div>`;
+    kwArea.classList.remove('tt-setup-empty');
+    const btn = /** @type {HTMLButtonElement} */ (form.querySelector('[data-find]'));
+    btn.disabled = true;
+    kwPanel.innerHTML = `<div class="card-head"><h3>${icon('layers')} Từ khoá gợi ý</h3></div><div class="card-pad"><div class="callout info">Đang hỏi TikTok các từ khoá liên quan tới “${esc(st.topic)}”… (khoảng 10 giây)</div><div class="tt-kwgrid">${'<div class="skel tt-kwskel"></div>'.repeat(6)}</div></div>`;
     try {
       const r = await tiktokTopic.keywords(st.topic, st.maxKeywords);
       // Same topic again (e.g. after "Chỉnh sửa từ khoá"): keep what was picked, including your own keywords.
@@ -162,7 +186,9 @@ export async function mount(root, params) {
       intentFilter = 'all';
       renderKeywords();
     } catch (e) {
-      kwPanel.innerHTML = `<div class="card-head"><h3>Từ khoá gợi ý</h3></div><div class="card-pad">${errorCallout(e)}</div>`;
+      kwPanel.innerHTML = `<div class="card-head"><h3>${icon('layers')} Từ khoá gợi ý</h3></div><div class="card-pad">${errorCallout(e)}</div>`;
+    } finally {
+      btn.disabled = false;
     }
   }
 
@@ -173,8 +199,11 @@ export async function mount(root, params) {
   }
 
   function renderKeywords() {
+    // No suggestions yet: one compact line saying how to get them, not two empty panels.
+    kwArea.classList.toggle('tt-setup-empty', !kws.length);
+    side.hidden = !kws.length;
     if (!kws.length) {
-      kwPanel.innerHTML = `<div class="card-head"><h3>${icon('layers')} Từ khoá gợi ý</h3></div><div class="card-pad">${emptyState('Chưa có từ khoá', 'Gõ chủ đề rồi bấm “Tìm từ khoá”. App lấy các từ khoá TikTok gợi ý khi gõ và mục “Người khác cũng tìm kiếm”, rồi nhóm theo ý định.')}</div>`;
+      kwPanel.innerHTML = `<div class="tt-kwhint">${icon('layers')}<div><b>Từ khoá gợi ý</b><span>Gõ chủ đề rồi bấm “Tìm từ khoá”: app lấy các từ khoá TikTok gợi ý khi gõ và mục “Người khác cũng tìm kiếm”, nhóm theo ý định, rồi bạn chọn từ khoá để quét.</span></div></div>`;
       return renderSide();
     }
     const live = kws.filter((k) => !k.dropped);
@@ -252,6 +281,7 @@ export async function mount(root, params) {
     const topic = o.topic || topicInput.value.trim() || st.topic;
     if (!topic) return toast('Nhập chủ đề', 'error');
     if (!keywords.length) return toast('Chọn ít nhất một từ khoá', 'error');
+    if (scanning) return toast('Lần quét trước vẫn đang chạy');
     st.topic = topic;
     persist('tt-topic-form', st);
     const country = 'country' in o ? o.country : TIKTOK_COUNTRY[o.gl];
@@ -259,12 +289,14 @@ export async function mount(root, params) {
     await follow(topic, (onProgress) => runJob('tiktok_topic', body, onProgress));
   }
 
+  let scanning = false; // one scan at a time from this screen
   /**
    * Show a scan in progress (each keyword's column as soon as it is saved), then the result.
    * Also used when coming back to this screen while a scan is still running.
    * @param {string} topic @param {(onProgress: (p: any) => void) => Promise<any>} job
    */
   async function follow(topic, job) {
+    scanning = true;
     mode('result');
     resBox.innerHTML = '';
     current = null;
@@ -286,6 +318,8 @@ export async function mount(root, params) {
     } catch (e) {
       const prog = progBox.querySelector('[data-progress]');
       if (prog) prog.outerHTML = errorCallout(e);
+    } finally {
+      scanning = false;
     }
   }
 
@@ -315,6 +349,15 @@ export async function mount(root, params) {
     return [...list].sort((a, b) => f(b) - f(a));
   };
 
+  /** Tabs the scan has data for. */
+  const resultTabsFor = (nKw, nVideos, nCreators, hasComments) => [
+    ['overview', 'Tổng quan'],
+    ['videos', `Video (${nVideos})`],
+    ['keywords', `Từ khoá (${nKw})`],
+    ['creators', `Kênh (${nCreators})`],
+    ...(hasComments ? [['comments', 'Bình luận']] : []),
+  ];
+
   /** @param {any} rec */
   function renderResult(rec) {
     if (current?.id !== rec.id) {
@@ -332,43 +375,41 @@ export async function mount(root, params) {
     const offTopic = d.columns.reduce((a, c) => a + (c.offTopic ?? 0), 0);
     const sum = (k) => all.reduce((a, v) => a + (v[k] || 0), 0);
     const p = d.params;
-    const criteria = [
-      `Đã quét ${d.columns.length} từ khoá`,
-      p.maxAgeDays ? `đăng trong ${p.maxAgeDays} ngày` : 'mọi thời gian',
-      p.minPlays ? `≥ ${fmt(p.minPlays)} view` : '',
-      `xếp theo ${SORT_LABELS[p.sort] || p.sort}`,
-      p.keepOffTopic ? 'giữ cả video lạc đề' : '',
-    ].filter(Boolean).join(' · ');
-    const when = done ? `Quét ${ago(Date.parse(d.scannedAt))}` : d.status === 'failed' ? 'Lần quét bị dừng giữa chừng' : 'Đang quét…';
-    const kpi = (ic, value, label, hint = '') => `<div class="tt-kpi"><span class="tt-kpi-ic">${icon(ic)}</span><div><div class="tt-kpi-v">${value}</div><div class="tt-kpi-l">${label}</div>${hint ? `<div class="tt-kpi-h">${hint}</div>` : ''}</div></div>`;
+    const region = TIKTOK_REGIONS.find(([v]) => v === (COUNTRY_REGION[p.country] ?? ''))?.[1];
+    const when = done ? `Hoàn thành ${ago(Date.parse(d.scannedAt))}` : d.status === 'failed' ? 'Lần quét bị dừng giữa chừng' : 'Đang quét…';
     const fresh30 = all.filter((v) => v.ageDays != null && v.ageDays <= 30).length;
+    const hasComments = all.some((v) => v.topComments?.length);
+    const tabs = resultTabsFor(cols.length, all.length, new Set(all.map((v) => v.author)).size, hasComments);
+    if (!tabs.some(([k]) => k === st.tab)) st.tab = 'overview';
     resBox.innerHTML = `
-      <div class="tt-crumb"><button type="button" class="btn ghost sm" data-back>${icon('back')} Nghiên cứu chủ đề</button><span class="muted">/</span><b>Kết quả nghiên cứu</b></div>
-      <div class="page-head" style="margin-bottom:14px"><div><h1>Kết quả nghiên cứu: ${esc(d.topic)}</h1>
-          <p class="small">${esc(criteria)}<span class="muted"> · ${when}${d.previous ? ` · so với lần quét ${ago(Date.parse(d.previous.scannedAt))}` : ''}</span></p></div>
-        ${done ? `<div class="head-actions">
-          <button class="btn" data-rescan>${icon('refresh')} Quét lại</button>
-          <button class="btn" data-editkw>${icon('edit')} Chỉnh sửa từ khoá</button>
-          <details class="tt-menu"><summary class="btn primary">${icon('download')} Xuất dữ liệu</summary><div class="tt-menu-list">
-            <a href="${records.exportUrl(rec.id, 'xlsx')}">Excel (.xlsx), 2 sheet</a><a href="${records.exportUrl(rec.id, 'csv')}">CSV</a><a href="${records.exportUrl(rec.id, 'md')}">Markdown (dán cho Claude)</a></div></details>
-        </div>` : ''}</div>
-      <div class="tt-kpis">
-        ${kpi('layers', cols.length, 'Từ khoá', junk.length && !showJunk ? `ẩn ${junk.length} từ khoá rác` : '')}
-        ${kpi('play', all.length, 'Video', [p.keepOffTopic ? 'đã gộp video trùng' : `đã gộp video trùng · bỏ ${offTopic} lạc đề`, all.some((v) => v.carried) ? `${all.filter((v) => v.carried).length} giữ từ lần trước` : ''].filter(Boolean).join(' · '))}
-        ${kpi('users', new Set(all.map((v) => v.author)).size, 'Kênh (creator)')}
-        ${kpi('eye', fmt(sum('plays')), 'Tổng lượt xem', `${fresh30} video đăng ≤ 30 ngày`)}
-        ${kpi('heart', fmt(sum('likes')), 'Tổng lượt tim')}
-        ${kpi('message', fmt(sum('comments')), 'Tổng bình luận', s?.newSincePrevious != null ? `${s.newSincePrevious} video mới so với lần trước` : '')}
-      </div>
-      ${junk.length || d.hashtags?.length ? `<div class="card card-pad tt-notes">
-        ${junk.length ? `<div class="small">Từ khoá rác (quá nửa video lạc đề): ${junk.map((c) => `<span class="tag">${esc(c.keyword)} · ${c.offTopic} video lạc đề</span>`).join('')} <button type="button" class="btn sm ghost" data-showjunk>${showJunk ? 'Ẩn cột rác' : 'Hiện cột rác'}</button></div>` : ''}
-        ${d.hashtags?.length ? `<div class="small muted">Hashtag hay đi chung: ${d.hashtags.map((h) => `<span class="tag">#${esc(h.tag)} · ${h.videos}</span>`).join('')}</div>` : ''}
-      </div>` : ''}
-      <div class="card tt-results">
-        <div class="tt-rbar">
-          <div class="tt-tabs"><button type="button" class="tab ${st.tab === 'compare' ? 'on' : ''}" data-tab="compare">${icon('columns')} So sánh theo từ khoá</button><button type="button" class="tab ${st.tab === 'explore' ? 'on' : ''}" data-tab="explore">${icon('grid')} Tất cả video (${all.length})</button></div>
-          <span class="spacer"></span><div class="row" data-controls></div>
-        </div>
+      ${resultHeader({
+        platform: 'tiktok',
+        topic: d.topic,
+        meta: [
+          ['globe', region ? `Video về ${region}` : 'Nước: tự đoán từ chủ đề'],
+          ['calendar', p.maxAgeDays ? (p.maxAgeDays === 365 ? '1 năm' : `${p.maxAgeDays} ngày`) : 'Mọi lúc'],
+          ['eye', p.minPlays ? `≥ ${fmt(p.minPlays)} view` : 'Không lọc view'],
+          ['sort', `Xếp theo ${(SORT_LABELS[p.sort] || p.sort).toLowerCase()}`],
+          ['layers', `${d.columns.length} từ khoá`],
+          ['check', when],
+        ],
+        status: `${p.keepOffTopic ? '<div class="small muted">Giữ cả video lạc đề</div>' : ''}${d.previous ? `<div class="small muted">So với lần quét ${ago(Date.parse(d.previous.scannedAt))}</div>` : ''}`,
+        actions: done
+          ? `<button class="btn" data-rescan>${icon('refresh')} Quét lại</button><button class="btn" data-editkw>${icon('edit')} Chỉnh sửa từ khoá</button>
+            ${exportMenu([[records.exportUrl(rec.id, 'xlsx'), 'Excel (.xlsx), 2 sheet'], [records.exportUrl(rec.id, 'csv'), 'CSV'], [records.exportUrl(rec.id, 'md'), 'Markdown (dán cho Claude)']])}`
+          : '',
+      })}
+      ${kpiGrid([
+        { ic: 'layers', value: cols.length, label: 'Từ khoá', hint: junk.length && !showJunk ? `ẩn ${junk.length} từ khoá rác` : '' },
+        { ic: 'play', value: all.length, label: 'Video', hint: [p.keepOffTopic ? 'đã gộp video trùng' : `đã gộp trùng · bỏ ${offTopic} lạc đề`, all.some((v) => v.carried) ? `${all.filter((v) => v.carried).length} giữ từ lần trước` : ''].filter(Boolean).join(' · ') },
+        { ic: 'users', value: new Set(all.map((v) => v.author)).size, label: 'Kênh (creator)' },
+        { ic: 'eye', value: fmt(sum('plays')), label: 'Tổng lượt xem', hint: `${fresh30} video đăng ≤ 30 ngày`, tip: 'Cộng lượt xem của các video trong kết quả (video trùng tính một lần). N = nghìn, Tr = triệu.' },
+        { ic: 'heart', value: fmt(sum('likes')), label: 'Tổng lượt tim' },
+        { ic: 'message', value: fmt(sum('comments')), label: 'Tổng bình luận', hint: s?.newSincePrevious != null ? `${s.newSincePrevious} video mới so với lần trước` : '' },
+      ])}
+      <div class="card tt-results rr-body">
+        ${resultTabs(tabs, st.tab)}
+        <div class="tt-rbar" data-rbar><div class="row" data-controls></div></div>
         <div data-rbody></div>
       </div>
       <div class="tt-selbar" data-selbar hidden></div>
@@ -383,14 +424,17 @@ export async function mount(root, params) {
   function renderBody() {
     if (!current) return;
     const controls = resBox.querySelector('[data-controls]');
+    const bar = /** @type {HTMLElement} */ (resBox.querySelector('[data-rbar]'));
     const body = resBox.querySelector('[data-rbody]');
-    if (st.tab === 'explore') {
-      controls.innerHTML = `<label class="tt-searchmini">${icon('search')}<input data-q placeholder="Tìm trong caption, @kênh…" value="${esc(exploreQ)}"></label>
+    bar.hidden = !['videos', 'keywords'].includes(st.tab);
+    controls.innerHTML = '';
+    if (st.tab === 'videos') {
+      controls.innerHTML = `<label class="tt-searchmini">${icon('search')}<input data-q placeholder="Tìm trong caption, @kênh…" value="${esc(exploreQ)}" aria-label="Tìm trong video"></label>
         <div class="tt-seg"><button type="button" class="${st.layout === 'grid' ? 'on' : ''}" data-layout="grid">${icon('grid')} Lưới</button><button type="button" class="${st.layout === 'list' ? 'on' : ''}" data-layout="list">${icon('list')} Danh sách</button></div>
         ${pill('vsort', 'Sắp xếp:', sortOptions(), viewSort())}`;
       body.innerHTML = `<div class="tt-kwfilter chips" data-kwfilter></div><div data-explore></div>`;
       renderExplore();
-    } else {
+    } else if (st.tab === 'keywords') {
       controls.innerHTML = `${pill('show', 'Hiển thị:', [[5, '5 video/từ khoá'], [10, '10 video/từ khoá'], [20, '20 video/từ khoá'], [0, 'Tất cả video']], st.show)}
         ${pill('cmShow', 'Comment:', [[0, 'Ẩn'], [1, 'Top 1'], [3, 'Top 3']], st.cmShow)}
         ${pill('colw', 'Cột:', [[260, 'Gọn'], [320, 'Vừa'], [420, 'Rộng']], st.colw)}
@@ -398,7 +442,72 @@ export async function mount(root, params) {
       body.innerHTML = compareView(visibleCols(), viewSort());
       linkTopScroll();
       syncSel();
+    } else if (st.tab === 'creators') {
+      body.innerHTML = creatorsView();
+    } else if (st.tab === 'comments') {
+      body.innerHTML = commentsView();
+    } else {
+      body.innerHTML = overviewView();
+      syncSel();
     }
+  }
+
+  /** Tổng quan: the keywords side by side (table), what to notice, and the top videos. */
+  function overviewView() {
+    const d = current.data;
+    const cols = visibleCols();
+    const all = sortVideos(uniqueVideos(cols), viewSort(), true);
+    const rows = d.columns.map((c, i) => ({ c, i, n: c.videos.length, med: c.stats?.medianPlays ?? null, max: c.videos.length ? Math.max(...c.videos.map((v) => v.plays || 0)) : null, cm: c.videos.reduce((a, v) => a + (v.comments || 0), 0) }));
+    const best = Math.max(...rows.map((r) => r.med ?? 0));
+    const junk = d.columns.filter((c) => c.junk);
+    const offTopic = d.columns.reduce((a, c) => a + (c.offTopic ?? 0), 0);
+    const carried = all.filter((v) => v.carried).length;
+    const notes = [
+      offTopic && !d.params.keepOffTopic ? `Đã bỏ ${offTopic} video lạc đề (xem trong tab Từ khoá).` : '',
+      junk.length ? `${junk.length} từ khoá rác (quá nửa video lạc đề): ${junk.map((c) => `<span class="tag">${esc(c.keyword)}</span>`).join(' ')} <button type="button" class="btn sm ghost" data-showjunk>${showJunk ? 'Ẩn từ khoá rác' : 'Hiện từ khoá rác'}</button>` : '',
+      rows.some((r) => !r.n) ? `${rows.filter((r) => !r.n).length} từ khoá không có video đạt bộ lọc.` : '',
+      carried ? `${carried} video giữ từ lần quét trước (TikTok lần này không trả về).` : '',
+      d.summary?.newSincePrevious != null ? `${d.summary.newSincePrevious} video mới so với lần quét trước.` : '',
+    ].filter(Boolean);
+    const table = `<div class="table-wrap"><table class="t rr-table"><thead><tr><th>Từ khoá</th><th class="r">Video</th><th class="r">View trung vị</th><th class="r">View cao nhất</th><th class="r">Bình luận</th></tr></thead><tbody>
+      ${rows.map((r) => `<tr class="${r.c.junk ? 'muted' : ''}"><td><button type="button" class="linklike" data-kwgo="${r.i}" title="Xem video của từ khoá này">${r.med === best && r.n ? '<span class="rr-best" title="View trung vị cao nhất">★</span> ' : ''}<b>${esc(r.c.keyword)}</b></button>${r.c.junk ? ' <span class="badge plain">rác</span>' : ''}<div class="small muted">${esc(r.c.intentLabel || '')}</div></td>${r.n
+        ? `<td class="r num">${r.n}</td><td class="r num">${r.med != null ? fmt(r.med) : '–'}</td><td class="r num">${fmt(r.max)}</td><td class="r num">${fmt(r.cm)}</td>`
+        : `<td colspan="4" class="muted small">${r.c.error ? `Lỗi: ${esc(r.c.error)}` : 'Không tìm thấy video phù hợp với bộ lọc hiện tại.'}</td>`}</tr>`).join('')}</tbody></table></div>`;
+    const side = `<div class="card-pad rr-notes">${notes.length ? `<ul>${notes.map((n) => `<li>${n}</li>`).join('')}</ul>` : '<div class="small muted">Không có gì bất thường trong lần quét này.</div>'}
+      ${d.hashtags?.length ? `<div class="section-label">Hashtag hay đi chung</div><div class="chips">${d.hashtags.map((h) => `<span class="tag">#${esc(h.tag)} · ${h.videos}</span>`).join('')}</div>` : ''}</div>`;
+    const top = all.slice(0, 10);
+    return `<div class="rr-overview">
+        ${panel('bars', 'So sánh từ khoá', table)}
+        ${panel('info', 'Đáng chú ý', side)}
+      </div>
+      <div class="rr-sub"><h3>${icon('play')} Video nổi bật <span class="muted">(${all.length})</span></h3><span class="muted small">xếp theo ${esc((VIEW_SORTS[viewSort()] || VIEW_SORTS.rank)[0].toLowerCase())}</span><span class="spacer"></span>${all.length > top.length ? `<button type="button" class="btn sm" data-goto-videos>Xem tất cả ${all.length} video ${icon('chevron')}</button>` : ''}</div>
+      ${top.length ? gridCards(top) : `<div class="card-pad">${emptyState('Không có video đạt bộ lọc', 'Thử nới bộ lọc (view tối thiểu, thời gian) rồi quét lại.')}</div>`}`;
+  }
+
+  /** Creators in the result: how many of their videos, their views, their best video. */
+  function creatorsView() {
+    const by = new Map();
+    for (const v of uniqueVideos(visibleCols())) {
+      const c = by.get(v.author) ?? { author: v.author, name: v.authorName, videos: [], keywords: new Set() };
+      c.videos.push(v);
+      v.keywords.forEach((k) => c.keywords.add(k));
+      by.set(v.author, c);
+    }
+    const list = [...by.values()].map((c) => ({ ...c, plays: c.videos.reduce((a, v) => a + (v.plays || 0), 0), best: c.videos.reduce((a, v) => ((v.plays || 0) > (a.plays || 0) ? v : a)) })).sort((a, b) => b.plays - a.plays);
+    if (!list.length) return `<div class="card-pad">${emptyState('Chưa có kênh nào', 'Kênh hiện ra khi có video đạt bộ lọc.')}</div>`;
+    return `<div class="table-wrap"><table class="t rr-table"><thead><tr><th>Kênh</th><th class="r">Video trong kết quả</th><th class="r">Tổng view</th><th>Video nhiều view nhất</th><th>Từ khoá</th><th></th></tr></thead><tbody>
+      ${list.map((c) => `<tr><td><b>@${esc(c.author)}</b>${c.name ? `<div class="small muted">${esc(c.name)}</div>` : ''}</td><td class="r num">${c.videos.length}</td><td class="r num">${fmt(c.plays)}</td>
+        <td class="title-cell"><a href="${esc(c.best.url)}" target="_blank" rel="noopener">${esc((c.best.caption || '(không có caption)').slice(0, 90))}</a><div class="meta">${fmt(c.best.plays)} view · ${ageText(c.best.ageDays, true)}</div></td>
+        <td class="small">${[...c.keywords].map((k) => `<span class="tag">${esc(k)}</span>`).join(' ')}</td>
+        <td><a class="btn sm" href="#/tiktok/channel?input=${encodeURIComponent('@' + c.author)}">${icon('bars')} Phân tích</a></td></tr>`).join('')}</tbody></table></div>`;
+  }
+
+  /** The top comments the scan collected, most liked first, each with its video. */
+  function commentsView() {
+    const rows = uniqueVideos(visibleCols()).flatMap((v) => (v.topComments || []).map((c) => ({ c, v }))).sort((a, b) => (b.c.likes || 0) - (a.c.likes || 0));
+    if (!rows.length) return `<div class="card-pad">${emptyState('Không có bình luận', 'Lần quét này không lấy top comment.')}</div>`;
+    return `<div class="card-pad"><p class="muted small" style="margin-top:0">${rows.length} bình luận nhiều tym nhất (tối đa 3 mỗi video). Muốn đọc hết comment: tích chọn video rồi bấm “Lấy comment”.</p>
+      ${rows.slice(0, 150).map(({ c, v }) => `<blockquote class="quote">${esc(c.text)}<div class="m">♥ ${fmt(c.likes)} · <a href="${esc(v.url)}" target="_blank" rel="noopener">${esc((v.caption || '(không có caption)').slice(0, 70))}</a> · @${esc(v.author)}</div></blockquote>`).join('')}</div>`;
   }
 
   const gainBadge = (v) => (v.carried ? `<span class="tt-gain old" title="Lần quét này TikTok không trả về video này. Giữ từ lần quét ${esc(String(v.lastSeenAt).slice(0, 10))}, view tính đến hôm đó.">Lần trước</span>` : v.gain != null ? `<span class="tt-gain ${v.gain > 0 ? 'up' : ''}" title="Tăng ${fmt(v.gainPerDay)} view/ngày từ lần quét trước">+${fmt(v.gain)} view</span>` : v.isNew ? '<span class="tt-gain new" title="Lần quét trước chưa có video này">Mới</span>' : '');
@@ -419,7 +528,7 @@ export async function mount(root, params) {
       const i = current.data.columns.indexOf(c);
       const list = sortVideos(c.videos, vsort).slice(0, limit);
       const tot = (k) => c.videos.reduce((a, v) => a + (v[k] || 0), 0);
-      return `<div class="tt-col ${c.junk ? 'tt-col-junk' : ''}" data-col="${i}">
+      return `<div class="tt-col ${c.junk ? 'tt-col-junk' : ''} ${c.videos.length ? '' : 'tt-col-none'}" data-col="${i}">
         <div class="tt-col-head">
           <div class="tt-col-title"><span class="tt-num">${i + 1}</span><span class="tt-col-kw" title="${esc(c.keyword)}">${esc(c.keyword)}</span><span class="tt-count">${c.videos.length} video</span></div>
           <div class="tt-col-stats"><span>${icon('eye')} ${fmt(tot('plays'))}</span><span>${icon('heart')} ${fmt(tot('likes'))}</span><span>${icon('message')} ${fmt(tot('comments'))}</span></div>
@@ -437,10 +546,19 @@ export async function mount(root, params) {
             ${commentsHtml(v.topComments, Number(st.cmShow))}
           </div>` : `<div class="tt-row compact" data-vid="${esc(v.id)}">${cb(v)}<span class="tt-rank">${k + 1}</span>
             <a class="tt-cap1" href="${esc(v.url)}" target="_blank" rel="noopener" title="${esc(v.caption)}">${esc(v.caption || '(không có caption)')}</a><span class="tt-views">${fmt(v.plays)}</span></div>`)).join('')
-        : `<div class="card-pad">${emptyState(c.error ? 'Không lấy được' : 'Không có video đạt bộ lọc')}</div>`}
+        : `<div class="tt-colempty">${c.error ? 'Không lấy được video của từ khoá này.' : 'Không tìm thấy video phù hợp với bộ lọc hiện tại.'}</div>`}
       </div>`;
     }).join('')}</div>`;
   }
+
+  /** Video cards: cover, caption, creator and age, views, likes/comments/shares, keywords, the top comment, a tick box. */
+  const gridCards = (list) => `<div class="tt-grid">${list.map((v) => `<div class="tt-gcard" data-vid="${esc(v.id)}">
+      <div class="tt-gcover"><a href="${esc(v.url)}" target="_blank" rel="noopener">${cover(v)}</a><label class="tt-gsel">${cb(v)}</label><span class="tt-gviews">${icon('eye')}${fmt(v.plays)}</span></div>
+      <div class="tt-gbody"><a class="tt-cap" href="${esc(v.url)}" target="_blank" rel="noopener" title="${esc(v.caption)}">${esc(v.caption || '(không có caption)')}</a>
+        <div class="tt-meta">@${esc(v.author)} · ${ageText(v.ageDays, true)} ${gainBadge(v)}</div>
+        <div class="tt-meta">${icon('heart')} ${fmt(v.likes)} · ${icon('message')} ${fmt(v.comments)} · ${fmt(v.shares)} share</div>
+        <div>${v.keywords.map((k) => `<span class="tag">${esc(k)}</span>`).join('')}</div>
+        ${commentsHtml(v.topComments, 1)}</div></div>`).join('')}</div>`;
 
   function renderExplore() {
     const q = fold(exploreQ);
@@ -450,13 +568,7 @@ export async function mount(root, params) {
     const box = resBox.querySelector('[data-explore]');
     if (!list.length) box.innerHTML = `<div class="card-pad">${emptyState('Không có video khớp', exploreQ ? 'Thử bỏ bớt chữ tìm kiếm.' : '')}</div>`;
     else if (st.layout === 'list') box.innerHTML = tableView(list);
-    else box.innerHTML = `<div class="tt-grid">${list.map((v) => `<div class="tt-gcard" data-vid="${esc(v.id)}">
-        <div class="tt-gcover"><a href="${esc(v.url)}" target="_blank" rel="noopener">${cover(v)}</a><label class="tt-gsel">${cb(v)}</label><span class="tt-gviews">${icon('eye')}${fmt(v.plays)}</span></div>
-        <div class="tt-gbody"><a class="tt-cap" href="${esc(v.url)}" target="_blank" rel="noopener" title="${esc(v.caption)}">${esc(v.caption || '(không có caption)')}</a>
-          <div class="tt-meta">@${esc(v.author)} · ${ageText(v.ageDays, true)} ${gainBadge(v)}</div>
-          <div class="tt-meta">${fmt(v.likes)} tim · ${fmt(v.comments)} cmt · ${fmt(v.shares)} share</div>
-          <div>${v.keywords.map((k) => `<span class="tag">${esc(k)}</span>`).join('')}</div>
-          ${commentsHtml(v.topComments, 1)}</div></div>`).join('')}</div>`;
+    else box.innerHTML = gridCards(list);
     syncSel();
   }
 
@@ -653,12 +765,7 @@ export async function mount(root, params) {
   });
   shown.on(resBox, 'click', '[data-dr-step]', (e, el) => stepDrawer(Number(el.dataset.drStep)));
   shown.on(resBox, 'click', '[data-dr-col]', (e, el) => {
-    if (st.tab !== 'compare') {
-      st.tab = 'compare';
-      persist('tt-topic-form', st);
-      resBox.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('on', /** @type {HTMLElement} */ (b).dataset.tab === 'compare'));
-      renderBody();
-    }
+    showTab('keywords');
     jumpTo(Number(el.dataset.drCol));
   });
   const onKey = (e) => {
@@ -714,17 +821,28 @@ export async function mount(root, params) {
   });
 
   // ---------------- result controls ----------------
-  shown.on(resBox, 'click', '[data-tab]', (e, el) => {
-    st.tab = el.dataset.tab;
+  function showTab(t) {
+    if (st.tab === t) return;
+    st.tab = t;
     persist('tt-topic-form', st);
-    resBox.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('on', b === el));
+    resBox.querySelectorAll('[data-rtab]').forEach((b) => {
+      const on = /** @type {HTMLElement} */ (b).dataset.rtab === t;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-selected', String(on));
+    });
     renderBody();
+  }
+  shown.on(resBox, 'click', '[data-rtab]', (e, el) => showTab(el.dataset.rtab));
+  shown.on(resBox, 'click', '[data-goto-videos]', () => showTab('videos'));
+  shown.on(resBox, 'click', '[data-kwgo]', (e, el) => {
+    showTab('keywords');
+    requestAnimationFrame(() => jumpTo(Number(el.dataset.kwgo)));
   });
   shown.on(resBox, 'change', '[data-view-opt]', (e, el) => {
     const k = el.dataset.viewOpt;
     st[k] = k === 'vsort' ? el.value : Number(el.value);
     persist('tt-topic-form', st);
-    if (st.tab === 'explore') renderExplore();
+    if (st.tab === 'videos') renderExplore();
     else renderBody();
   });
   shown.on(resBox, 'click', '[data-layout]', (e, el) => {
