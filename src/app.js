@@ -19,6 +19,7 @@ import { makeTikTokSearch } from './features/tiktok/search.js';
 import { makeTikTokComments } from './features/tiktok/comments.js';
 import { makeTikTokInsight, makeTikTokInsightTopics } from './features/tiktok/insight.js';
 import { makeYouTubeInsight } from './features/youtube-insight.js';
+import { makeYouTubeCommentData } from './features/youtube-comment-data.js';
 import { makeTikTokScrape } from './features/tiktok/scrape.js';
 import { makeTikTokTopicKeywords, makeTikTokTopicScan } from './features/tiktok/topic.js';
 import { makeTikTokVideoAnalysis, makeVideoAnalysisHistory } from './features/tiktok/video-analysis.js';
@@ -90,6 +91,7 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
     tiktokVideoAnalysis: makeTikTokVideoAnalysis({ tiktok, records: base.records, now: base.now, comments: { coverage: (ids, want) => features.commentData.coverage(ids, want), ofVideo: (id) => store.comments.ofVideo(id) } }),
     follows: makeFollows({ ...base, tiktok }),
     commentData: makeCommentData({ store, ws }),
+    youtubeCommentData: makeYouTubeCommentData({ store, ws }),
     videoAnalysis: makeYouTubeVideoAnalysis({ source, records: base.records, now: base.now }),
     videoAnalysisHistory: makeVideoAnalysisHistory({ store, ws }),
     tiktokChannel: makeTikTokChannelAnalysis({ tiktok, records: base.records, now: base.now, settings }),

@@ -93,6 +93,12 @@ export const follows = {
 /** Snapshots of a YouTube channel's public numbers, one per saved analysis (oldest first). @param {string} id */
 export const channelHistory = (id) => api(`/channels/${encodeURIComponent(id)}/history`);
 /** Shared TikTok comment dataset (every screen that collected comments). */
+/** YouTube comments already collected (Lấy comment, Phân tích video, Insight, Nghiên cứu chủ đề). */
+export const youtubeCommentData = {
+  videos: () => api('/youtube/comment-videos'),
+  /** @param {string[]} ids */
+  of: (ids) => api(`/youtube/comments?videos=${encodeURIComponent(ids.join(','))}`),
+};
 export const tiktokCommentData = {
   /** Videos with collected comments, with counts and the reports holding them. */
   videos: () => api('/tiktok/comment-videos'),

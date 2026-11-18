@@ -1,4 +1,4 @@
-// The one comment explorer of the app (TikTok): Thu thập bình luận (full), Phân tích video (embedded) and Insight
+// The one comment explorer of the app (TikTok; YouTube via o.platform): Thu thập bình luận (full), Phân tích video (embedded) and Insight
 // (full, with the report's extra filters) all use it. Intent (Câu hỏi, Ý định mua…), type (comment / reply) and
 // sorting are separate controls. Comments carry `intents` from the server (core/analysis/comment-intents.js).
 // Commenter names are never stored, so they are never shown.
@@ -113,10 +113,10 @@ export function commentExplorer(box, o) {
       <div class="cx-body">
         ${parent || c.parentText ? `<div class="cx-parent">↳ trả lời: “${esc(String(parent?.text ?? c.parentText).slice(0, 140))}”</div>` : ''}
         <div class="cx-text ${open ? 'open' : ''}">${esc(c.text)}</div>
-        <div class="cx-meta"><span title="Tim">${icon('heart')} ${fmt(c.likes ?? 0)}</span><span title="Số trả lời trên TikTok">${icon('message')} ${fmt(c.replies ?? 0)}</span>${when(c.createdAt) ? `<span title="Ngày comment">${when(c.createdAt)}</span>` : ''}
+        <div class="cx-meta"><span title="Tim">${icon('heart')} ${fmt(c.likes ?? 0)}</span><span title="Số trả lời trên ${o.platform === 'youtube' ? 'YouTube' : 'TikTok'}">${icon('message')} ${fmt(c.replies ?? 0)}</span>${when(c.createdAt) ? `<span title="Ngày comment">${when(c.createdAt)}</span>` : ''}
           ${(c.intents ?? []).map((k) => `<span class="cx-tag t-${k}">${esc(INTENT_LABEL[k] ?? k)}</span>`).join('')}${c.seller ? '<span class="cx-tag t-seller" title="Câu này giống người bán dịch vụ trả lời, không phải khách">Người bán</span>' : ''}${c.pinned ? '<span class="cx-tag t-other">Ghim</span>' : ''}
           ${o.tags ? o.tags(c) : ''}</div>
-        ${many && v && mode === 'full' ? `<a class="cx-video" href="${esc(v.url)}" target="_blank" rel="noopener">${icon('play')} ${esc(String(v.caption || v.url).slice(0, 70))}${v.author ? ` · @${esc(v.author)}` : ''}</a>` : ''}
+        ${many && v && mode === 'full' ? `<a class="cx-video" href="${esc(v.url)}" target="_blank" rel="noopener">${icon('play')} ${esc(String(v.caption || v.url).slice(0, 70))}${v.author ? ` · ${o.platform === 'youtube' ? '' : '@'}${esc(v.author)}` : ''}</a>` : ''}
         <div class="cx-acts">
           ${answers.length ? `<button type="button" class="cx-link" data-thread="${esc(id)}">${open ? 'Ẩn' : 'Xem'} ${answers.length} trả lời đã lấy</button>` : ''}
           <button type="button" class="cx-link" data-copy-one="${esc(id)}">${icon('doc')} Chép</button>
