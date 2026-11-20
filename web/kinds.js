@@ -19,7 +19,7 @@ export const KINDS = {
   video_search: { label: 'Tìm video', path: '/videos', icon: 'search', platform: 'youtube' },
   channel_search: { label: 'Tìm kênh', path: '/channels', icon: 'users', platform: 'youtube' },
   channel_analysis: { label: 'Phân tích kênh', path: '/channel', icon: 'bars', platform: 'youtube' },
-  comments: { label: 'Comment', path: '/comments', icon: 'message', platform: 'youtube' },
+  comments: { label: 'Thu thập bình luận', path: '/comments', icon: 'message', platform: 'youtube' },
   idea_check: { label: 'Chấm điểm từ khoá', path: '/ideas', icon: 'bulb', platform: 'youtube' },
   keyword_score: { label: 'Chấm điểm từ khoá', path: '/ideas', icon: 'bulb', platform: 'youtube' },
   keywords: { label: 'Từ khoá', path: '/keywords', icon: 'key', platform: 'youtube' },

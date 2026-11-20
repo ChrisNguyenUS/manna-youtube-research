@@ -3,6 +3,9 @@ import { httpError } from '../router.js';
 
 export const youtubeRoutes = [
   { method: 'GET', path: '/api/v1/youtube/comment-videos', handler: ({ app }) => app.features.youtubeCommentData.videos() },
+  // "Thu thập bình luận" on YouTube: the runs, and how much of some videos is already collected.
+  { method: 'GET', path: '/api/v1/youtube/comment-collections', handler: ({ app, query }) => app.features.youtubeCommentData.collections(Number(query.get('limit')) || 100) },
+  { method: 'GET', path: '/api/v1/youtube/comment-coverage', handler: ({ app, query }) => app.features.youtubeCommentData.coverage(String(query.get('ids') || '').split(',').filter((x) => /^[\w-]{11}$/.test(x))) },
   {
     method: 'GET', path: '/api/v1/youtube/comments',
     handler: ({ app, query }) => {

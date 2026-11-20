@@ -86,13 +86,14 @@ export const GROUPS = [
         icon: 'download', label: 'Thu thập comment',
         platforms: {
           tiktok: [
-            ['/tiktok/comments', 'Thu thập bình luận', () => import('./views/tiktok/comments.js')],
+            // One screen on both platforms (views/comment-collect.js): the switch above the page only changes the platform.
+            ['/tiktok/comments', 'Thu thập bình luận', () => import('./views/comment-collect.js')],
             ['/tiktok/insight', 'Insight theo từ khoá', () => import('./views/tiktok/insight.js')],
             ['/tiktok/insight/collected', 'Từ comment đã có', () => import('./views/tiktok/insight-collected.js')],
             ['/tiktok/5w1h', '5W1H (bản cũ)', () => import('./views/tiktok/five-w.js')],
           ],
           youtube: [
-            ['/comments', 'Lấy comment', () => import('./views/comments.js')],
+            ['/comments', 'Thu thập bình luận', () => import('./views/comment-collect.js')],
             ['/insight', 'Insight theo từ khoá', () => import('./views/insight.js')],
             ['/insight/collected', 'Từ comment đã có', () => import('./views/insight-collected.js')],
           ],

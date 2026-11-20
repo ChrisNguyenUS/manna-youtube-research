@@ -88,5 +88,32 @@ export function makeYouTubeCommentData({ store, ws }) {
     return { videos: ids.map((id) => summary(all.get(id))), comments: tagged, counts: intentCounts(tagged), themes: voiceTopics(tagged) };
   }
 
-  return { videos, comments };
+  /**
+   * How much of each video is already collected (any report), like TikTok's coverage: parents, replies, last collected.
+   * Videos with nothing collected are left out. @param {string[]} videoIds
+   */
+  function coverage(videoIds) {
+    const all = collect();
+    return [...new Set(videoIds.map(String))].filter((id) => all.has(id)).map((id) => {
+      const s = summary(all.get(id));
+      return { videoId: id, parents: s.parents, replies: s.replies, lastSeen: s.lastSeen };
+    });
+  }
+
+  /** "Lấy comment" runs (one report per video), newest first, with what each collected. @param {number} [limit] */
+  function collections(limit = 100) {
+    const rows = store.records.list(ws, 'comments', limit);
+    const times = new Map();
+    for (const r of rows) times.set(r.ref, (times.get(r.ref) ?? 0) + 1);
+    return rows.map((row) => {
+      const rec = store.records.get(ws, row.id);
+      const d = rec?.data ?? {};
+      const list = Array.isArray(d.comments) ? d.comments : [];
+      const replies = list.filter((c) => c.isReply).length;
+      const v = d.video ?? { id: row.ref, title: row.title };
+      return { id: row.id, createdAt: row.created_at, video: meta({ ...v, id: v.id ?? row.ref }), total: list.length, parents: list.length - replies, replies, disabled: !!d.disabled, params: row.params, timesCollected: times.get(row.ref) ?? 1 };
+    });
+  }
+
+  return { videos, comments, coverage, collections };
 }

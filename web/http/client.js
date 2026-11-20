@@ -98,6 +98,10 @@ export const youtubeCommentData = {
   videos: () => api('/youtube/comment-videos'),
   /** @param {string[]} ids */
   of: (ids) => api(`/youtube/comments?videos=${encodeURIComponent(ids.join(','))}`),
+  /** "Lấy comment" runs, newest first. */
+  collections: () => api('/youtube/comment-collections'),
+  /** How much of each video is already collected. @param {string[]} ids */
+  coverage: (ids) => api(`/youtube/comment-coverage?ids=${encodeURIComponent(ids.join(','))}`),
 };
 export const tiktokCommentData = {
   /** Videos with collected comments, with counts and the reports holding them. */

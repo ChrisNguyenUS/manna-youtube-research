@@ -24,7 +24,7 @@ test('one sidebar entry, one screen, the old path is an alias, and both jobs hav
   assert.match(lib, /video_analysis: 'Phân tích video YouTube'/);
   const view = fs.readFileSync('web/views/video.js', 'utf8');
   for (const s of ['data-platform', 'Tự nhận', 'chạy thành hai lần', "from '../video-links.js'"]) assert.ok(view.includes(s), s);
-  assert.ok(!/#\/tiktok\/video/.test(fs.readFileSync('web/views/tiktok/comments.js', 'utf8') + fs.readFileSync('web/components/tiktok-channel/videos.js', 'utf8')), 'links elsewhere point at #/video');
+  assert.ok(!/#\/tiktok\/video/.test(fs.readFileSync('web/views/comment-collect.js', 'utf8') + fs.readFileSync('web/components/tiktok-channel/videos.js', 'utf8')), 'links elsewhere point at #/video');
 });
 
 test('the result component never calls the server itself', () => {

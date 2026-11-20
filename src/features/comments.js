@@ -22,6 +22,7 @@ export function makeFetchComments(deps) {
       const recId = records.add('comments', d.title || vid, { ref: vid, params, data });
       out.push({ id: recId, video, count: res.comments.length, disabled: res.disabled });
     }
-    return { jobs: out };
+    // inline: the job's result (one report per video) reaches the screen as is, like TikTok's collection.
+    return { inline: true, jobs: out };
   };
 }

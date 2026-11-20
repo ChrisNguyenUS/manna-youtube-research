@@ -31,3 +31,19 @@ test('research keeps the comments it reads from now on, and they are collected; 
   assert.ok(a.features.youtubeCommentData.videos().some((v) => v.collections.some((c) => c.kind === 'research')));
   assert.deepEqual(youtubeCommentsIn({ kind: 'research', data: { videos: [], comments: { total: 3, insights: {} } } }), []);
 });
+
+test('Thu thập bình luận on YouTube: runs with their counts (newest first, repeats marked) and coverage of chosen videos', async () => {
+  const a = testApp();
+  const first = await a.features.fetchComments({ videos: 'aaaaaaaaaaa', max: 100 }, () => {});
+  await a.features.fetchComments({ videos: 'https://youtu.be/aaaaaaaaaaa', max: 100 }, () => {});
+  assert.equal(first.inline, true, 'the screen gets the run as is, like TikTok');
+  assert.equal(first.jobs.length, 1);
+  const runs = a.features.youtubeCommentData.collections();
+  assert.equal(runs.length, 2);
+  assert.ok(runs[0].createdAt >= runs[1].createdAt);
+  assert.deepEqual([runs[0].video.id, runs[0].video.url, runs[0].timesCollected], ['aaaaaaaaaaa', 'https://www.youtube.com/watch?v=aaaaaaaaaaa', 2]);
+  assert.equal(runs[0].parents + runs[0].replies, runs[0].total);
+  const cov = a.features.youtubeCommentData.coverage(['aaaaaaaaaaa', 'bbbbbbbbbbb']);
+  assert.deepEqual(cov.map((c) => c.videoId), ['aaaaaaaaaaa'], 'a video never collected is left out');
+  assert.equal(cov[0].parents + cov[0].replies, 1);
+});

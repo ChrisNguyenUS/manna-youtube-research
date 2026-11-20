@@ -10,10 +10,10 @@ test('5W1H is a known result kind that opens on its own screen', () => {
   assert.equal(jobHref({ kind: 'comment_5w1h', status: 'succeeded', result: { id: 9 } }), '#/tiktok/5w1h?id=9');
 });
 
-test('the screen is a tab next to Thu thập bình luận, has a job label and a way in from the comment screen', () => {
+test('the screen is a tab next to Thu thập bình luận and has a job label; the comment screen leads to Customer Intelligence', () => {
   assert.match(fs.readFileSync('web/nav.js', 'utf8'), /\['\/tiktok\/5w1h', '5W1H \(bản cũ\)', \(\) => import\('\.\/views\/tiktok\/five-w\.js'\)\]/);
   assert.match(fs.readFileSync('web/lib.js', 'utf8'), /comment_5w1h: 'Phân tích 5W1H \(AI\)'/);
-  assert.match(fs.readFileSync('web/views/tiktok/comments.js', 'utf8'), /href="#\/tiktok\/5w1h"/);
+  assert.match(fs.readFileSync('web/views/comment-collect.js', 'utf8'), /href="#\/ci\/runs\?new=1"/, 'the comment screen leads to Customer Intelligence, which replaced the 5W1H button');
 });
 
 test('settings ask for the OpenRouter key and two models, and no longer say "sắp có"', () => {
