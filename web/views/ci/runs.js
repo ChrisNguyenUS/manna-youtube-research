@@ -31,8 +31,8 @@ async function createScreen(root, runs) {
     <form class="ci-create" data-form>
       <section class="card card-pad"><div class="section-label" style="margin-top:0">1. Dữ liệu</div>
         <div class="ci-grid2">
-          <div><b>${icon('play')} TikTok</b>${videoList('tiktok', av.tiktok)}</div>
-          <div><b>${icon('play')} YouTube</b>${videoList('youtube', av.youtube)}</div>
+          <div><b class="ci-src-h">${icon('play')} TikTok</b>${videoList('tiktok', av.tiktok)}</div>
+          <div><b class="ci-src-h">${icon('play')} YouTube</b>${videoList('youtube', av.youtube)}</div>
         </div>
         <details class="ci-manual"><summary><b>Facebook / nguồn khác: dán CSV hoặc JSON</b></summary>
           <div class="row" style="margin:8px 0"><label class="small">Nền tảng mặc định <select class="input" name="manualPlatform">${['facebook', 'instagram', 'tiktok', 'youtube', 'other'].map((p) => `<option value="${p}">${PLATFORM_VI[p]}</option>`).join('')}</select></label></div>

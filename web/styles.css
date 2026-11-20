@@ -1626,3 +1626,8 @@ a.ci-pick:hover { background: var(--surface-2); }
 .section-label svg, .linklike svg, .ci-field svg, .ci-pick svg, .ci-strategy svg, .ci-root svg, .ci-result svg, .card-head h3 svg, .ci-opp-acts svg, .ci-why-acts svg, .ci-cm-acts svg, .ci-quote svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; vertical-align: -2px; flex: none; }
 .card-head h3 svg { stroke: var(--accent); }
 .btn.ghost.danger { border-color: transparent; }
+/* Safety net: an app icon (web/lib.js icon()) has no size of its own; inside CI screens it gets a small default.
+   :where() keeps this at zero specificity, so any rule above that sizes a particular icon still wins. */
+:where(.ci-head, .ci-runline, .ci-create, .ci-split, .ci-grid2, .ci-grid3, .ci-kpis, .ci-list, .ci-opp, .ci-drawer, .ci-tabs, .ci-filters, .ci-crumb, .ci-pain-head, .ci-drawer-root) svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; vertical-align: -2px; flex: none; }
+.ci-src-h { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.ci-src-h svg { stroke: var(--accent); }
