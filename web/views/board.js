@@ -7,7 +7,7 @@ import { esc, icon, fmt, toast, ago, errorCallout, emptyState, setUrl } from '..
 const PATH = '/board';
 const TABS = [['idea', 'Ý tưởng', 'bulb'], ['checks', 'Chấm', 'check'], ['source', 'Gạch gốc', 'target'], ['outline', 'Dàn ý', 'bars'], ['result', 'Kết quả', 'trend']];
 const OK = { yes: ['có', 'on'], no: ['chưa', ''], unknown: ['chưa rõ', ''], skip: ['không áp dụng', 'skip'] };
-const ORIGIN = { self: 'Tự nghĩ', brick: 'Từ thư viện gạch', pain: 'Từ nỗi đau', '5w1h': 'Từ 5W1H', redo: 'Làm lại video đã đăng' };
+const ORIGIN = { self: 'Tự nghĩ', brick: 'Từ thư viện gạch', pain: 'Từ nỗi đau', '5w1h': 'Từ 5W1H', redo: 'Làm lại video đã đăng', ci: 'Từ Customer Intelligence' };
 /** Where a card came from; a library video counts as "đã thắng" only at or above the library threshold. */
 const originOf = (x) => {
   const s = x.card.origin.snapshot;
@@ -191,6 +191,7 @@ export async function mount(root, params) {
       ${s?.url ? `<a class="btn sm" href="${esc(s.url)}" target="_blank" rel="noopener">Mở video</a>` : ''}<a class="btn sm" href="#/board/review?batch=${esc(s?.batchId)}">Mở lô cũ</a>`;
     if (o.kind === 'self') return '<p class="muted">Ý tưởng tự nghĩ: không có video gốc. Đây là một thử nghiệm gốc trong lô.</p>';
     if (o.kind === 'pain') return `<div class="fw-field">${cap('NỖI ĐAU TRONG SOULPRINT')}<div class="fw-value">${esc(s?.text)}</div></div><a class="btn sm" href="#/soulprint">Mở Soulprint</a>`;
+    if (o.kind === 'ci') return `<div class="fw-field">${cap('CƠ HỘI NỘI DUNG (CUSTOMER INTELLIGENCE)')}<div class="fw-value">${esc(s?.title)}</div><div class="muted small">${esc(s?.runTitle)} · Điểm ưu tiên ${esc(s?.priority ?? '–')} · Bằng chứng ${esc(s?.evidenceStrength ?? '–')}${s?.facts?.length ? ` · ${s.facts.length} điều cần kiểm chứng` : ''}</div></div><a class="btn sm" href="#/ci/lab/opportunities?run=${esc(s?.runId)}&opp=${esc(s?.opportunityId)}">Mở cơ hội</a>`;
     if (o.kind === '5w1h') return `<div class="fw-field">${cap('GỢI Ý TRONG BÁO CÁO 5W1H')}<div class="fw-value">${esc(s?.title)}</div><div class="muted small">${esc(s?.recordTitle)}</div></div><a class="btn sm" href="#/tiktok/5w1h?id=${esc(s?.recordId)}">Mở báo cáo</a>`;
     return `<p class="muted small">Gạch của video gốc lúc tạo thẻ.</p>
       <div class="fw-field">${cap('VIDEO')}<div class="fw-value">${esc(s?.title)}</div><div class="muted small">${esc(s?.channelTitle ?? '')}${s?.score != null ? ` · vượt kênh ${esc(s.score)}×` : ''}</div></div>

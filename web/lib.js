@@ -41,6 +41,9 @@ export const ytChannel = (c) => (c.handle ? `https://www.youtube.com/${c.handle}
 
 // ---------- icons (lucide-style strokes) ----------
 const P = {
+  flask: '<path d="M9 3h6M10 3v6L4.5 18.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3"/><path d="M7 15h10"/>',
+  pie: '<path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><path d="M12 17h.01"/>',
   home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/>',
@@ -222,7 +225,7 @@ export async function refreshJobs() {
     /* server restarting */
   }
 }
-const LABELS = { batch_refresh: 'Cập nhật số liệu lô', tiktok_channel: 'Phân tích kênh TikTok', follow_refresh: 'Kiểm tra kênh theo dõi', tiktok_topic: 'Tìm theo chủ đề TikTok', tiktok_video_analysis: 'Phân tích video TikTok', video_analysis: 'Phân tích video YouTube', tiktok_search: 'Tìm video TikTok', brick_extract: 'Bóc gạch video', video_deep_dive: 'Đào sâu video', tiktok_insight: 'Insight TikTok', youtube_insight: 'Insight YouTube', tiktok_comments: 'Thu thập bình luận', comment_5w1h: 'Phân tích 5W1H (AI)', video_search: 'Tìm video', channel_search: 'Tìm kênh', channel_analysis: 'Phân tích kênh', research: 'Nghiên cứu chủ đề', research_comments: 'Đọc comment', comments: 'Lấy comment', idea_check: 'Chấm điểm từ khoá', keyword_score: 'Chấm điểm từ khoá liên quan', keywords: 'Từ khoá' };
+const LABELS = { ci_analyze: 'Customer Intelligence', batch_refresh: 'Cập nhật số liệu lô', tiktok_channel: 'Phân tích kênh TikTok', follow_refresh: 'Kiểm tra kênh theo dõi', tiktok_topic: 'Tìm theo chủ đề TikTok', tiktok_video_analysis: 'Phân tích video TikTok', video_analysis: 'Phân tích video YouTube', tiktok_search: 'Tìm video TikTok', brick_extract: 'Bóc gạch video', video_deep_dive: 'Đào sâu video', tiktok_insight: 'Insight TikTok', youtube_insight: 'Insight YouTube', tiktok_comments: 'Thu thập bình luận', comment_5w1h: 'Phân tích 5W1H (AI)', video_search: 'Tìm video', channel_search: 'Tìm kênh', channel_analysis: 'Phân tích kênh', research: 'Nghiên cứu chủ đề', research_comments: 'Đọc comment', comments: 'Lấy comment', idea_check: 'Chấm điểm từ khoá', keyword_score: 'Chấm điểm từ khoá liên quan', keywords: 'Từ khoá' };
 
 /**
  * An error and the ways out of it: sign in to TikTok when that is what is missing, run the job again when there was one.

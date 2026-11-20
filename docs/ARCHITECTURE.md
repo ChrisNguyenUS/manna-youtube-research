@@ -53,6 +53,7 @@ src/
     tiktok/metrics.js       # videoMetrics (Hot score, tương tác, tuổi), attentionPerDay; rank.js (trending → tương tác → hợp thời); keywords.js (từ khoá liên quan: gộp, bỏ nước khác, ý định); on-topic.js (luật lọc đúng chủ đề dùng chung, đo trên test/fixtures/tiktok-on-topic.json)
     tracking/diff.js        # so snapshot: video mới, tốc độ, đổi tiêu đề/thumbnail (v1.1)
     ai/                     # base.js (aiError, DEFAULT_MODEL), five-w.js (5W1H comment: prepare, prompts, checks, counting)
+    ci/                     # Customer Intelligence: taxonomy.js (nhãn, trạng thái, trọng số), prompts.js (master prompt theo task mode + JSON schema), ingest.js (chuẩn hoá, ref V1/C1, nhập CSV/JSON), checks.js (làm sạch output AI: bỏ ID bịa, quote phải có thật), stats.js (đếm, độ mạnh bằng chứng, điểm ưu tiên)
     report/                 # markdown.js, csv.js, tiktok.js (Markdown insight, comment, chủ đề TikTok), xlsx.js (file Excel không cần thư viện), video-analysis.js (Markdown/CSV của Phân tích video), five-w.js (Markdown báo cáo 5W1H comment)
   ports/                    # HỢP ĐỒNG (JSDoc interface + test hợp đồng dùng chung)
     youtube-source.js       # searchVideos, searchChannels, getChannel, getChannelVideos, getShorts,
@@ -90,6 +91,7 @@ src/
     keyword-ideas.js
     tracking.js             # (v1.1)
     shared-video-analysis.js # khung chạy lô của Phân tích video, dùng chung hai nền tảng
+    ci.js                   # Customer Intelligence (docs/customer-intelligence/): run → phân loại → chủ đề/nỗi đau → insight (job ci_analyze); 5 Whys, 5W1H, cơ hội chạy khi bấm; duyệt → Bảng ý tưởng (nguồn ci:ID)
     ai/comment-5w1h.js      # job comment_5w1h; ai/knowledge/*.md là ghi chú khoá học của chủ sản phẩm, không nằm trong git
     tiktok/                 # search.js, comments.js, insight.js, scrape.js (API scrape, xếp hạng core/tiktok/rank.js), topic.js (Tìm theo chủ đề, quét lại so view), video-analysis.js (Phân tích video)
   http/

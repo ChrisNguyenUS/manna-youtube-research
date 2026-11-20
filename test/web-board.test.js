@@ -7,10 +7,10 @@ const { GROUPS, ITEMS } = await import(new URL('../web/nav.js', import.meta.url)
 
 const view = () => fs.readFileSync('web/views/board.js', 'utf8');
 
-test('a "Làm" group holds the board, after Khán giả and before Lưu trữ', () => {
-  assert.deepEqual(GROUPS.map((g) => g.key), ['find', 'dissect', 'audience', 'make', 'library']);
+test('a "Làm" group holds the board, after Customer Intelligence and before Lưu trữ', () => {
+  assert.deepEqual(GROUPS.map((g) => g.key), ['find', 'dissect', 'ci', 'make', 'library']);
   assert.deepEqual(GROUPS.find((g) => g.key === 'make').items.map((it) => [it.label, it.tabs[0][0]]), [['Bảng ý tưởng', '/board']]);
-  assert.equal(ITEMS.length, 17);
+  assert.equal(ITEMS.length, 20);
   const client = fs.readFileSync('web/http/client.js', 'utf8');
   for (const name of ['board:', 'create:', 'update:', 'remove:', 'newBatch:', 'exportUrl:']) assert.ok(client.slice(client.indexOf('export const ideas')).includes(name), name);
 });

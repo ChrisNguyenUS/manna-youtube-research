@@ -20,7 +20,7 @@ export async function mount(root) {
       <div class="section-label">AI phân tích (OpenRouter)</div>
       <div class="grid grid-2">
         <div class="field"><label>API key OpenRouter</label><input class="input" type="password" data-k="aiKey" value="${esc(s.aiKey)}" placeholder="sk-or-…"><div class="help">Lấy ở openrouter.ai, mục Keys. Lưu trên máy này.</div></div>
-        <div class="field"></div>
+        <div class="field"><label>Model suy luận 5 Whys (Customer Intelligence)</label><input class="input" data-k="ciReasonModel" value="${esc(s.ciReasonModel ?? '')}" placeholder="Để trống = dùng model tổng hợp"><div class="help">Chỉ dùng khi bạn bấm đào 5 Whys. Có thể chọn model suy luận mạnh hơn.</div></div>
         <div class="field"><label>Model gắn mã (việc nhiều, đơn giản)</label><input class="input" data-k="aiTagModel" value="${esc(s.aiTagModel)}" placeholder="deepseek/deepseek-v4.1-flash-1017"><div class="help">Mã model đúng như trên OpenRouter, có số phiên bản. Không dùng tên kiểu "latest".</div></div>
         <div class="field"><label>Model tổng hợp (việc ít, cần viết tốt)</label><input class="input" data-k="aiWriteModel" value="${esc(s.aiWriteModel)}" placeholder="deepseek/deepseek-v4.1-flash-1017"></div>
       </div>

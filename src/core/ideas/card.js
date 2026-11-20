@@ -10,7 +10,7 @@ export const FUNNEL = /** @type {const} */ ([['biet', 'Biết'], ['thich', 'Thí
  * self: thought up by the owner; brick: from a video of the brick library; pain: a pain of Soulprint; 5w1h: a suggestion
  * of a 5W1H report; redo: a remake of the owner's own posted video that won its batch.
  */
-export const ORIGINS = ['self', 'brick', 'pain', '5w1h', 'redo'];
+export const ORIGINS = ['self', 'brick', 'pain', '5w1h', 'redo', 'ci'];
 export const QUESTIONS = /** @type {const} */ ([
   ['q1', 'Đã có video tương tự thắng dạng vượt kênh ở kênh tương đương chưa?'],
   ['q2', 'Nỗi đau của avatar nói được trong một câu chưa?'],
@@ -20,7 +20,7 @@ export const QUESTIONS = /** @type {const} */ ([
   ['q6', 'Lead magnet nào khớp?'],
 ]);
 export const LIMITS = { live: 10, text: 400, short: 150, evidence: 5 };
-const PAIN_SOURCES = ['self', 'soulprint', '5w1h'];
+const PAIN_SOURCES = ['self', 'soulprint', '5w1h', 'ci'];
 const FILTER = ['yes', 'no', 'unknown'];
 
 const obj = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
