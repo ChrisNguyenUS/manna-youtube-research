@@ -9,6 +9,8 @@ const STATUS = {
   tiktok_login_cancelled: 409, tiktok_login_timeout: 408,
   // The language model: no key or a wrong one is the user's to fix; the provider failing or answering junk is not.
   llm_no_key: 400, llm_auth: 400, llm_unavailable: 503, llm_bad_output: 502,
+  // Customer Intelligence: the run's AI budget is spent.
+  ci_budget: 402,
 };
 
 /** @param {keyof typeof STATUS} code @param {string} message @param {string} [field] */

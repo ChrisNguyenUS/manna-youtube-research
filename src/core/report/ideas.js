@@ -3,7 +3,7 @@ import { LEGO, STATUSES, FUNNEL } from '../ideas/card.js';
 
 const label = (pairs, k) => pairs.find((x) => x[0] === k)?.[1] ?? k;
 const OK = { yes: 'có', no: 'chưa', unknown: 'chưa rõ', skip: 'không áp dụng' };
-const SRC = { self: 'tự nghĩ', brick: 'thư viện gạch', pain: 'nỗi đau trong Soulprint', '5w1h': 'gợi ý 5W1H', redo: 'làm lại video của bạn' };
+const SRC = { self: 'tự nghĩ', brick: 'thư viện gạch', pain: 'nỗi đau trong Soulprint', '5w1h': 'gợi ý 5W1H', redo: 'làm lại video của bạn', ci: 'cơ hội nội dung (Customer Intelligence)' };
 
 /** @param {{batch: any, cards: any[], counts: any}} b the board of one batch */
 export function ideasMarkdown(b) {

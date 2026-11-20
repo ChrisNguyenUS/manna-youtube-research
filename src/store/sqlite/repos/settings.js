@@ -1,7 +1,7 @@
 // Per-workspace settings; unknown keys are ignored, missing keys fall back to defaults.
 import { DEFAULT_MODEL } from '../../../core/ai/base.js';
 
-export const DEFAULT_SETTINGS = { gl: 'US', concurrency: 4, delayMs: 200, minSubsForOutlier: 500, outlierMultiple: 3, globalRegions: 'US,GB,IN,CA,AU,PH,VN,ID', aiKey: '', aiTagModel: DEFAULT_MODEL, aiWriteModel: DEFAULT_MODEL, bricksMinScore: 3 };
+export const DEFAULT_SETTINGS = { gl: 'US', concurrency: 4, delayMs: 200, minSubsForOutlier: 500, outlierMultiple: 3, globalRegions: 'US,GB,IN,CA,AU,PH,VN,ID', aiKey: '', aiTagModel: DEFAULT_MODEL, aiWriteModel: DEFAULT_MODEL, bricksMinScore: 3, ciReasonModel: '' };
 
 /** @param {import('node:sqlite').DatabaseSync} db */
 export function settingsRepo(db) {

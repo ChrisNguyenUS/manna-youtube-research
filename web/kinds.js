@@ -39,6 +39,7 @@ export const recordHref = (r) => (KINDS[r.kind] ? `#${KINDS[r.kind].path}?id=${r
  */
 export function jobHref(j) {
   if (j.kind === 'follow_refresh') return '#/follows'; // results live on the follow list, not in a record
+  if (j.kind === 'ci_analyze') return `#/ci/runs?run=${j.params?.runId ?? ''}`; // results live in the run
   if (j.kind === 'batch_refresh') return `#/board/review?batch=${j.params?.batchId ?? ''}`; // numbers live on the cards
   const k = KINDS[j.kind];
   if (!k) return '#/';

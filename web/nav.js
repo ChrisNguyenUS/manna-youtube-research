@@ -66,29 +66,38 @@ export const GROUPS = [
     ],
   },
   {
-    key: 'audience', title: 'Khán giả',
+    // Customer Intelligence (docs/customer-intelligence): one workflow from comments to content opportunities.
+    // The old Insight and 5W1H menus live on as the data-collection screens of this module ("Thu thập").
+    key: 'ci', title: 'Customer Intelligence',
     items: [
+      { icon: 'pie', label: 'Toàn cảnh', tabs: [['/ci', 'Toàn cảnh khách hàng', () => import('./views/ci/overview.js')]] },
+      { icon: 'target', label: 'Chủ đề & Nỗi đau', tabs: [['/ci/topics', 'Chủ đề & Nỗi đau', () => import('./views/ci/topics.js')]] },
+      { icon: 'message', label: 'Bình luận & Câu hỏi', tabs: [['/ci/comments', 'Bình luận & Câu hỏi', () => import('./views/ci/comments.js')]] },
       {
-        icon: 'message', label: 'Bình luận',
-        platforms: {
-          tiktok: [['/tiktok/comments', 'Thu thập bình luận', () => import('./views/tiktok/comments.js')]],
-          youtube: [['/comments', 'Lấy comment', () => import('./views/comments.js')]],
-        },
+        icon: 'flask', label: 'Content Lab',
+        tabs: [
+          ['/ci/lab/whys', '5 Whys', () => import('./views/ci/whys.js')],
+          ['/ci/lab/brief', '5W1H Brief', () => import('./views/ci/brief.js')],
+          ['/ci/lab/opportunities', 'Cơ hội nội dung', () => import('./views/ci/opportunities.js')],
+        ],
       },
+      { icon: 'clock', label: 'Lần phân tích & AI', tabs: [['/ci/runs', 'Lần phân tích & AI', () => import('./views/ci/runs.js')]] },
       {
-        icon: 'target', label: 'Insight',
+        icon: 'download', label: 'Thu thập comment',
         platforms: {
           tiktok: [
-            ['/tiktok/insight', 'Theo từ khoá', () => import('./views/tiktok/insight.js')],
+            ['/tiktok/comments', 'Thu thập bình luận', () => import('./views/tiktok/comments.js')],
+            ['/tiktok/insight', 'Insight theo từ khoá', () => import('./views/tiktok/insight.js')],
             ['/tiktok/insight/collected', 'Từ comment đã có', () => import('./views/tiktok/insight-collected.js')],
+            ['/tiktok/5w1h', '5W1H (bản cũ)', () => import('./views/tiktok/five-w.js')],
           ],
           youtube: [
-            ['/insight', 'Theo từ khoá', () => import('./views/insight.js')],
+            ['/comments', 'Lấy comment', () => import('./views/comments.js')],
+            ['/insight', 'Insight theo từ khoá', () => import('./views/insight.js')],
             ['/insight/collected', 'Từ comment đã có', () => import('./views/insight-collected.js')],
           ],
         },
       },
-      { icon: 'bolt', label: '5W1H', only: 'tiktok', tabs: [['/tiktok/5w1h', '5W1H (AI)', () => import('./views/tiktok/five-w.js')]] },
     ],
   },
   {

@@ -24,13 +24,13 @@ const FULL = `Lô đang mở đã đủ ${LIMITS.live} thẻ. Bỏ một thẻ, 
 
 /**
  * @param {{repo: any, ws: string, settings: () => Record<string, any>, profile: () => any,
- *   library: {list: () => any[], get: (platform: string, videoId: string) => any}, fiveW: {report: (id: number) => any}, llm: import('../ports/llm.js').LlmClient,
+ *   library: {list: () => any[], get: (platform: string, videoId: string) => any}, fiveW: {report: (id: number) => any}, ci?: {cardOf: (id: number) => any}, llm: import('../ports/llm.js').LlmClient,
  *   knowledge?: string, hookKnowledge?: string, profileText?: () => string,
  *   tiktok: import('../ports/tiktok-source.js').TikTokSource, source: import('../ports/youtube-source.js').YouTubeSource, now?: () => number}} deps
  *   library: the brick library (features.bricks), read for question 1 and for cards made from a video
  *   tiktok, source: read the numbers of posted videos
  */
-export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm, knowledge = '', hookKnowledge = '', profileText = () => '', tiktok, source, now = Date.now }) {
+export function makeIdeas({ repo, ws, settings, profile, library, fiveW, ci, llm, knowledge = '', hookKnowledge = '', profileText = () => '', tiktok, source, now = Date.now }) {
   /** Ways to make a new card: `from` prefix → card fields. Later tasks add sources here. @type {Record<string, (parts: string[]) => any>} */
   const sources = { self: () => emptyCard() };
 
@@ -66,6 +66,12 @@ export function makeIdeas({ repo, ws, settings, profile, library, fiveW, llm, kn
       title: { text: x.title }, pain: { text: x.pain ?? '', source: '5w1h', evidence: quotes(x.evidence) },
       belief: { common: x.belief?.text ?? '', reality: '' }, concept: x.concept, funnel: x.funnel,
     };
+  };
+
+  /** ci:OPPORTUNITYID — a content opportunity of Customer Intelligence the owner approved, with its evidence. */
+  sources.ci = ([id]) => {
+    if (!ci || !/^\d+$/.test(String(id))) throw invalid('Nguồn cơ hội không hợp lệ', 'from');
+    return ci.cardOf(Number(id));
   };
 
   /** redo:CARDID — remake a posted video of an earlier batch: same idea, every brick kept; the owner changes one. */

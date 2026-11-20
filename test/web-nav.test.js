@@ -5,19 +5,20 @@ import assert from 'node:assert/strict';
 const { HOME, SOULPRINT, GROUPS, ITEMS, ALIASES, allTabs, has, platformOf, tabsFor, firstPath, findItem } = await import(new URL('../web/nav.js', import.meta.url).href);
 
 const LEGACY = ['/', '/soulprint', '/tiktok/topic', '/tiktok/search', '/tiktok/insight', '/tiktok/insight/collected', '/insight', '/insight/collected', '/video', '/tiktok/channel', '/tiktok/comments', '/tiktok/5w1h',
+  '/ci', '/ci/topics', '/ci/comments', '/ci/lab/whys', '/ci/lab/brief', '/ci/lab/opportunities', '/ci/runs',
   '/research', '/videos', '/comments', '/channels', '/channel', '/compare', '/keywords', '/ideas', '/follows', '/history', '/saved', '/settings', '/bricks', '/board', '/board/review'];
 const item = (label) => ITEMS.find((it) => it.label === label);
 
-test('groups are jobs, in this order, and the sidebar has seventeen entries', () => {
+test('groups are jobs, in this order, and the sidebar has twenty entries', () => {
   assert.deepEqual(GROUPS.map((g) => [g.key, g.title, g.items.map((it) => it.label)]), [
     ['find', 'Tìm', ['Chủ đề', 'Video', 'Kênh', 'Từ khoá', 'Theo dõi']],
     ['dissect', 'Phân tích', ['Phân tích video', 'Phân tích kênh', 'Thư viện gạch']],
-    ['audience', 'Khán giả', ['Bình luận', 'Insight', '5W1H']],
+    ['ci', 'Customer Intelligence', ['Toàn cảnh', 'Chủ đề & Nỗi đau', 'Bình luận & Câu hỏi', 'Content Lab', 'Lần phân tích & AI', 'Thu thập comment']],
     ['make', 'Làm', ['Bảng ý tưởng']],
     ['library', 'Lưu trữ', ['Lịch sử', 'Đã lưu', 'Cài đặt']],
   ]);
   assert.deepEqual(ITEMS.slice(0, 2), [HOME, SOULPRINT]);
-  assert.equal(ITEMS.length, 17);
+  assert.equal(ITEMS.length, 20);
 });
 
 test('every old path still belongs to exactly one entry, and no path is listed twice (Review Focus #1)', () => {
@@ -34,9 +35,10 @@ test('entries with a version per platform hold the right screens; single-platfor
   assert.deepEqual([paths(item('Video').platforms.tiktok), paths(item('Video').platforms.youtube)], [['/tiktok/search'], ['/videos']]);
   assert.deepEqual([item('Kênh').only, paths(item('Kênh').tabs)], ['youtube', ['/channels']]);
   assert.deepEqual([paths(item('Phân tích kênh').platforms.tiktok), paths(item('Phân tích kênh').platforms.youtube)], [['/tiktok/channel'], ['/channel', '/compare']]);
-  assert.deepEqual([paths(item('Bình luận').platforms.tiktok), paths(item('Bình luận').platforms.youtube)], [['/tiktok/comments'], ['/comments']]);
-  assert.deepEqual([paths(item('Insight').platforms.tiktok), paths(item('Insight').platforms.youtube)], [['/tiktok/insight', '/tiktok/insight/collected'], ['/insight', '/insight/collected']]);
-  assert.deepEqual([item('Từ khoá').only, item('5W1H').only, item('Theo dõi').only], ['youtube', 'tiktok', undefined]);
+  const collect = item('Thu thập comment');
+  assert.deepEqual([paths(collect.platforms.tiktok), paths(collect.platforms.youtube)], [['/tiktok/comments', '/tiktok/insight', '/tiktok/insight/collected', '/tiktok/5w1h'], ['/comments', '/insight', '/insight/collected']]);
+  assert.deepEqual(paths(item('Content Lab').tabs), ['/ci/lab/whys', '/ci/lab/brief', '/ci/lab/opportunities']);
+  assert.deepEqual([item('Từ khoá').only, item('Theo dõi').only], ['youtube', undefined]);
   assert.ok(!item('Phân tích video').platforms, 'one screen for both platforms');
 });
 
