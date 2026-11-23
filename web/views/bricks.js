@@ -1,4 +1,4 @@
-// "Thư viện gạch": videos broken into bricks by AI (topic, angle, belief, hook, story, audience). A table to filter,
+// "Swipe File": videos broken into bricks by AI (topic, angle, belief, hook, story, audience). A table to filter,
 // and a detail panel whose tabs follow the owner's reference. Every AI-written brick shows its evidence on click and
 // can be corrected; corrected fields are marked and survive a re-extract.
 import { bricks } from '../http/client.js';
@@ -29,13 +29,23 @@ export async function mount(root, params) {
       .sort((a, b) => (f.hot ? (b.meta.score ?? 0) - (a.meta.score ?? 0) : b.analyzedAt - a.analyzedAt));
   }
 
+  /** One video of the Swipe File: what it is, how well it did, its hook, and its elements as chips. @param {any} r */
+  const cardHtml = (r) => `<div class="br-card" role="button" data-open="${esc(r.platform)}:${esc(r.videoId)}" tabindex="0">
+      <div class="br-card-top"><span class="badge plain">${NAMES[r.platform] ?? ''}</span>${r.meta.score != null ? `<span class="badge accent" title="Outlier = view ÷ sub của kênh">Outlier ×${esc(r.meta.score)}</span>` : ''}${r.bricks.fit.verdict === 'yes' ? '<span class="badge good">Hợp kênh</span>' : r.bricks.fit.verdict === 'no' ? '<span class="badge plain">Không hợp kênh</span>' : ''}</div>
+      <b class="br-card-title">${esc(r.meta.title || r.videoId)}</b>
+      <div class="muted small">${esc(r.meta.channelTitle || '')}${r.meta.channelTitle ? ' · ' : ''}${ago(r.analyzedAt)}${r.editedPaths.length ? ' · đã sửa tay' : ''}${r.bricks.flags.noTranscript ? ' · không có lời thoại' : ''}</div>
+      ${r.bricks.hook.spoken ? `<div class="br-card-hook">“${esc(r.bricks.hook.spoken)}”</div>` : ''}
+      ${r.bricks.topic ? `<div class="small">${esc(r.bricks.topic)}</div>` : ''}
+      <div class="br-card-chips">${[r.bricks.pillar, r.bricks.concept, r.bricks.hook.archetype].filter(Boolean).map((t) => chip(t)).join('')}</div>
+    </div>`;
+
   function listHtml() {
     const rows = visible();
     const f = state.filter;
     return `
       <div class="card card-pad br-add">
-        <div class="input-row"><textarea class="input" rows="1" data-links placeholder="Dán link video TikTok hoặc YouTube để bóc gạch, mỗi dòng một link"></textarea>
-          <button type="button" class="btn primary" data-run ${lib.ai ? '' : 'disabled'}>${icon('target')} Bóc gạch</button></div>
+        <div class="input-row"><textarea class="input" rows="1" data-links placeholder="Dán link video TikTok hoặc YouTube để breakdown, mỗi dòng một link"></textarea>
+          <button type="button" class="btn primary" data-run ${lib.ai ? '' : 'disabled'}>${icon('layers')} Breakdown</button></div>
         ${lib.ai ? '' : `<div class="help muted small">${NO_KEY}. <a href="#/settings">Mở Cài đặt</a></div>`}
         <div data-prog></div><div data-more></div>
       </div>
@@ -47,17 +57,12 @@ export async function mount(root, params) {
           <select class="select input" data-f="pillar">${options('Mọi pillar', uniq((r) => r.bricks.pillar), f.pillar)}</select>
           <select class="select input" data-f="concept">${options('Mọi concept', uniq((r) => r.bricks.concept), f.concept)}</select>
           <select class="select input" data-f="archetype">${options('Mọi kiểu hook', uniq((r) => r.bricks.hook.archetype), f.archetype)}</select>
-          <label class="check"><input type="checkbox" data-f="hot" ${f.hot ? 'checked' : ''}> Có điểm vượt kênh, cao nhất trước</label>
-          <span class="spacer"></span><a class="btn sm" href="${bricks.exportUrl(rows.map((r) => `${r.platform}:${r.videoId}`))}">${icon('download')} Markdown (${rows.length})</a>
+          <label class="check"><input type="checkbox" data-f="hot" ${f.hot ? 'checked' : ''}> Có điểm outlier, cao nhất trước</label>
+          <span class="spacer"></span><a class="btn sm" href="${bricks.exportUrl(rows.map((r) => `${r.platform}:${r.videoId}`))}">${icon('download')} Export .md (${rows.length})</a>
         </div>
-        <div class="table-wrap"><table class="table br-table"><thead><tr><th>Video</th><th>Kênh</th><th class="r">Vượt kênh</th><th>Topic</th><th>Pillar</th><th>Concept</th><th>Kiểu hook</th><th>Hook nguyên văn</th><th>Hợp kênh</th></tr></thead>
-          <tbody>${rows.map((r) => `<tr data-open="${esc(r.platform)}:${esc(r.videoId)}" tabindex="0">
-            <td><b>${esc(r.meta.title || r.videoId)}</b><div class="muted small">${NAMES[r.platform] ?? ''} · ${ago(r.analyzedAt)}${r.editedPaths.length ? ' · đã sửa tay' : ''}${r.bricks.flags.noTranscript ? ' · không có lời thoại' : ''}</div></td>
-            <td>${esc(r.meta.channelTitle || '')}</td><td class="r">${r.meta.score != null ? `${esc(r.meta.score)}×` : '<span class="muted">–</span>'}</td>
-            <td>${esc(r.bricks.topic)}</td><td>${chip(r.bricks.pillar)}</td><td>${chip(r.bricks.concept)}</td><td>${chip(r.bricks.hook.archetype)}</td>
-            <td class="br-hook"><i>${esc(r.bricks.hook.spoken)}</i></td><td>${r.bricks.fit.verdict === 'unclear' ? '<span class="muted">–</span>' : chip(FIT[r.bricks.fit.verdict], r.bricks.fit.verdict === 'yes' ? '' : 'soft')}</td></tr>`).join('')}</tbody></table></div>
+        <div class="br-cards">${rows.map(cardHtml).join('')}</div>
         ${rows.length ? '' : '<div class="card-pad muted">Không video nào khớp bộ lọc.</div>'}</div>`
-        : emptyState('Thư viện còn trống', ' Dán link ở trên, hoặc bấm "Bóc gạch" trên một báo cáo Phân tích video.')}`;
+        : emptyState('Thư viện còn trống', ' Dán link ở trên, hoặc bấm "Breakdown" trên một báo cáo Phân tích video.')}`;
   }
 
   /** One field of the detail: uppercase label, the value, its evidence button, and an edit box when the field is editable. */
@@ -103,7 +108,7 @@ export async function mount(root, params) {
       const val = (t) => `<div class="fw-value">${esc(t)}</div>`;
       const mark = (path) => (d.flagged.includes(path) ? ' <span class="fw-chip outline">chưa đủ đời thường</span>' : '');
       const factors = (items, key) => items.map((x, i) => `<div class="fw-value"><b>${esc(x.what)}</b>${mark(`${key}.${i}.what`)} ${esc(x.why)}${mark(`${key}.${i}.why`)}</div>`).join('') || val('(không có)');
-      return `<div class="row"><span class="muted small">Viết ${ago(d.at)} bằng ${esc(d.model)}. Mọi nhận định là giả thiết.</span><span class="spacer"></span><a class="btn sm" href="${bricks.deepDiveUrl(r.platform, r.videoId)}">${icon('download')} Markdown</a><button type="button" class="btn sm" data-dive ${lib.ai ? '' : 'disabled'}>${icon('refresh')} Viết lại</button></div>
+      return `<div class="row"><span class="muted small">Viết ${ago(d.at)} bằng ${esc(d.model)}. Mọi nhận định là giả thiết.</span><span class="spacer"></span><a class="btn sm" href="${bricks.deepDiveUrl(r.platform, r.videoId)}">${icon('download')} Export .md</a><button type="button" class="btn sm" data-dive ${lib.ai ? '' : 'disabled'}>${icon('refresh')} Viết lại</button></div>
         <div class="fw-field">${cap('ĐIỂM ẤN TƯỢNG')}${d.impressions.map(val).join('')}</div>
         <div class="fw-field">${cap('HÌNH THỨC')}${val(d.form)}</div>
         <div class="fw-field">${cap('3 GIÂY ĐẦU')}${val(d.timeline.first3s)}</div><div class="fw-field">${cap('10 GIÂY TIẾP')}${val(d.timeline.next10s)}</div><div class="fw-field">${cap('30 GIÂY TIẾP')}${val(d.timeline.next30s)}</div>
@@ -117,19 +122,19 @@ export async function mount(root, params) {
         <div class="fw-field">${cap('TỰ PHẢN BIỆN')}${d.doubts.map(val).join('')}</div>`;
     }
     const byId = new Map(r.source.comments.map((c) => [c.id, c]));
-    return b.audience.total ? lib.audience.map(([k, l]) => `<div class="fw-field"><div class="fw-cap">${esc(l)} · ${b.audience.counts[k]}</div>${(b.audience.examples[k] ?? []).map((id) => (byId.has(id) ? `<div class="fw-quote"><i>"${esc(byId.get(id).text)}"</i> <span class="muted small">${fmt(byId.get(id).likes)} tim</span></div>` : '')).join('') || '<div class="fw-value muted">–</div>'}</div>`).join('')
+    return b.audience.total ? lib.audience.map(([k, l]) => `<div class="fw-field"><div class="fw-cap">${esc(l)} · ${b.audience.counts[k]}</div>${(b.audience.examples[k] ?? []).map((id) => (byId.has(id) ? `<div class="fw-quote"><i>"${esc(byId.get(id).text)}"</i> <span class="muted small">${fmt(byId.get(id).likes)} like</span></div>` : '')).join('') || '<div class="fw-value muted">–</div>'}</div>`).join('')
       + `<p class="muted small">Đếm trên ${r.source.comments.length} bình luận được chú ý nhất đã có trong app.</p>` : '<div class="fw-field"><div class="fw-value muted">Chưa có bình luận nào của video này trong app.</div></div>';
   }
 
   function detailHtml() {
     const r = state.open;
     const b = r.bricks;
-    const notes = [b.flags.noTranscript ? 'Không có lời thoại: gạch được bóc từ tiêu đề và bình luận.' : '', b.flags.truncated ? 'Video dài: chỉ 20 phút đầu được đọc.' : '', b.flags.unsupported.length ? `AI không dẫn được căn cứ cho: ${b.flags.unsupported.join(', ')}. Các ô đó để trống.` : ''].filter(Boolean);
+    const notes = [b.flags.noTranscript ? 'Không có lời thoại: element được lấy từ tiêu đề và bình luận.' : '', b.flags.truncated ? 'Video dài: chỉ 20 phút đầu được đọc.' : '', b.flags.unsupported.length ? `AI không dẫn được căn cứ cho: ${b.flags.unsupported.join(', ')}. Các ô đó để trống.` : ''].filter(Boolean);
     return `
-      <div class="page-head"><div><h1>${icon('target')} ${esc(r.meta.title || r.videoId)}</h1>
-        <p>${NAMES[r.platform] ?? ''}${r.meta.channelTitle ? ` · ${esc(r.meta.channelTitle)}` : ''}${r.meta.views != null ? ` · ${fmt(r.meta.views)} view` : ''}${r.meta.score != null ? ` · vượt kênh ${esc(r.meta.score)}×` : ''} · bóc ${ago(r.analyzedAt)} bằng ${esc(r.model)}</p></div>
+      <div class="page-head"><div><h1>${icon('layers')} ${esc(r.meta.title || r.videoId)}</h1>
+        <p>${NAMES[r.platform] ?? ''}${r.meta.channelTitle ? ` · ${esc(r.meta.channelTitle)}` : ''}${r.meta.views != null ? ` · ${fmt(r.meta.views)} view` : ''}${r.meta.score != null ? ` · outlier ${esc(r.meta.score)}×` : ''} · bóc ${ago(r.analyzedAt)} bằng ${esc(r.model)}</p></div>
         <div class="row"><a class="btn" href="#${PATH}">Về thư viện</a><a class="btn" href="#/board?from=brick:${esc(r.platform)}:${encodeURIComponent(r.videoId)}">${icon('bulb')} Tạo ý tưởng từ video này</a>${r.meta.url ? `<a class="btn" href="${esc(r.meta.url)}" target="_blank" rel="noopener">${icon('play')} Mở video</a>` : ''}
-          <a class="btn" href="${bricks.exportUrl([`${r.platform}:${r.videoId}`])}">${icon('download')} Markdown</a><button type="button" class="btn" data-redo ${lib.ai ? '' : 'disabled'}>${icon('refresh')} Bóc lại</button><button type="button" class="btn" data-remove>${icon('trash')} Xoá</button></div></div>
+          <a class="btn" href="${bricks.exportUrl([`${r.platform}:${r.videoId}`])}">${icon('download')} Export .md</a><button type="button" class="btn" data-redo ${lib.ai ? '' : 'disabled'}>${icon('refresh')} Bóc lại</button><button type="button" class="btn" data-remove>${icon('trash')} Xoá</button></div></div>
       ${notes.length ? `<div class="callout">${notes.map(esc).join(' ')}</div>` : ''}
       <div data-prog></div>
       <div class="fw-tabs" role="tablist">${TABS.map(([k, t, i]) => `<button type="button" class="fw-tab ${state.tab === k ? 'on' : ''}" role="tab" aria-selected="${state.tab === k}" data-tab="${k}">${icon(i)}<span>${t}</span></button>`).join('')}</div>
@@ -145,10 +150,10 @@ export async function mount(root, params) {
     if (!root.contains(box)) return;
     const withNew = cand.channels.filter((c) => c.fresh || c.contrast);
     box.innerHTML = `${cand.channels.length ? `<div class="br-follows"><div class="fw-cap">TỪ KÊNH ĐANG THEO DÕI (VƯỢT KÊNH TỪ ${esc(cand.min)}×)</div>
-        ${cand.channels.map((c) => `<label class="check"><input type="checkbox" data-follow="${esc(c.platform)}:${esc(c.ref)}" ${c.fresh ? 'checked' : ''}> ${esc(c.title)} <span class="muted small">${NAMES[c.platform] ?? ''} · ${c.standouts} video vượt kênh, ${c.fresh} chưa có trong thư viện · ${c.contrast} video yếu để đối chiếu</span></label>`).join('')}
+        ${cand.channels.map((c) => `<label class="check"><input type="checkbox" data-follow="${esc(c.platform)}:${esc(c.ref)}" ${c.fresh ? 'checked' : ''}> ${esc(c.title)} <span class="muted small">${NAMES[c.platform] ?? ''} · ${c.standouts} video outlier, ${c.fresh} chưa có trong thư viện · ${c.contrast} video yếu để đối chiếu</span></label>`).join('')}
         <div class="row" style="margin-top:8px"><label class="check"><input type="checkbox" data-contrast> Kèm video dưới trung vị để đối chiếu (tối đa 5 mỗi kênh)</label><span class="spacer"></span>
-          <button type="button" class="btn" data-run-follows ${lib.ai && withNew.length ? '' : 'disabled'}>${icon('target')} Bóc gạch các kênh đã chọn</button></div></div>`
-      : '<p class="muted small" style="margin-top:10px">Chưa có kênh theo dõi nào được Cập nhật. Vào Theo dõi, bấm Cập nhật, rồi quay lại đây để bóc gạch các video vượt kênh.</p>'}
+          <button type="button" class="btn" data-run-follows ${lib.ai && withNew.length ? '' : 'disabled'}>${icon('layers')} Breakdown các kênh đã chọn</button></div></div>`
+      : '<p class="muted small" style="margin-top:10px">Chưa có kênh nào trong Watchlist được Cập nhật. Vào Watchlist, bấm Cập nhật, rồi quay lại đây để breakdown các video outlier.</p>'}
       ${lib.channels?.length ? `<div class="br-compare"><div class="fw-cap">ĐỐI CHIẾU VIDEO THẮNG VÀ THUA CỦA MỘT KÊNH</div>
         <select class="select input" data-compare style="width:auto"><option value="">Chọn kênh</option>${lib.channels.map((c) => `<option value="${esc(c.channelRef)}" ${state.compare === c.channelRef ? 'selected' : ''}>${esc(c.title)} (${c.videos} video)</option>`).join('')}</select><div data-compare-out></div></div>` : ''}`;
     if (state.compare) drawCompare(state.compare);
@@ -162,7 +167,7 @@ export async function mount(root, params) {
   }
 
   function render() {
-    root.innerHTML = state.open ? detailHtml() : `<div class="page-head"><div><h1>${icon('target')} Thư viện gạch</h1><p>Video đã thắng, được AI bóc thành từng viên gạch: chủ đề, góc, niềm tin, hook, cách kể, phản ứng khán giả. Mỗi viên gạch có căn cứ từ lời thoại hoặc bình luận.</p></div></div>${listHtml()}`;
+    root.innerHTML = state.open ? detailHtml() : `<div class="page-head"><div><h1>${icon('layers')} Swipe File</h1><p>Video đã thắng, được AI bóc thành từng element: chủ đề, góc, niềm tin, hook, cách kể, phản ứng khán giả. Mỗi element có căn cứ từ lời thoại hoặc bình luận.</p></div></div>${listHtml()}`;
     if (!state.open) moreBlocks();
   }
 
@@ -203,11 +208,9 @@ export async function mount(root, params) {
     if (!el.dataset.f) return;
     state.filter[el.dataset.f] = el.type === 'checkbox' ? el.checked : el.value;
     if (el.dataset.f !== 'q') return render();
-    // Typing in the search box: redraw only the table, so the box keeps its focus.
-    const body = root.querySelector('.br-table tbody');
-    const tmp = document.createElement('div');
-    tmp.innerHTML = listHtml();
-    if (body && tmp.querySelector('.br-table tbody')) body.innerHTML = tmp.querySelector('.br-table tbody').innerHTML;
+    // Typing in the search box: redraw only the cards, so the box keeps its focus.
+    const body = root.querySelector('.br-cards');
+    if (body) body.innerHTML = visible().map(cardHtml).join('');
   });
   root.addEventListener('click', async (e) => {
     const t = /** @type {HTMLElement} */ (e.target);
@@ -219,11 +222,11 @@ export async function mount(root, params) {
     if (d.runFollows !== undefined) {
       const chosen = [...root.querySelectorAll('[data-follow]:checked')].map((el) => /** @type {HTMLElement} */ (el).dataset.follow);
       if (!chosen.length) return toast('Chọn ít nhất một kênh', 'error');
-      extract({ follows: chosen.join(','), contrast: /** @type {HTMLInputElement} */ (root.querySelector('[data-contrast]')).checked }, 'Đang bóc gạch video của kênh theo dõi');
+      extract({ follows: chosen.join(','), contrast: /** @type {HTMLInputElement} */ (root.querySelector('[data-contrast]')).checked }, 'Đang breakdown video của kênh trong Watchlist');
     } else if (d.run !== undefined) {
       const links = /** @type {HTMLTextAreaElement} */ (root.querySelector('[data-links]')).value.trim();
       if (!links) return toast('Dán ít nhất một link video', 'error');
-      extract({ links }, 'Đang bóc gạch');
+      extract({ links }, 'Đang breakdown');
     } else if (d.tab) { state.tab = d.tab; state.editing = ''; render(); }
     else if (d.evidence) { state.evidence = d.evidence.split(',').map(Number); state.tab = 'transcript'; render(); root.querySelector('.br-line.hit')?.scrollIntoView({ block: 'center' }); }
     else if (d.edit) { state.editing = d.edit; render(); /** @type {HTMLElement|null} */ (root.querySelector('[data-edit-value]'))?.focus(); }
@@ -266,7 +269,7 @@ export async function mount(root, params) {
   if (params.v) await open(params.v);
   else if (params.record) {
     setUrl(PATH, {});
-    if (lib.ai) extract({ recordId: Number(params.record) }, 'Đang bóc gạch các video của báo cáo');
+    if (lib.ai) extract({ recordId: Number(params.record) }, 'Đang breakdown các video của báo cáo');
     else toast(`${NO_KEY}. Vào Cài đặt để nhập.`, 'error');
   }
 }

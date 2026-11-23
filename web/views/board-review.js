@@ -1,4 +1,4 @@
-// Chấm lô (spec 2026-11-16-batch-review-design.md): the posted videos of a batch ranked by Soulprint's game, the
+// Batch Review (spec 2026-11-16-batch-review-design.md): the posted videos of a batch ranked by Soulprint's game, the
 // bricks that go with its top and bottom halves, and closing it with what to keep. Counting only; the numbers come
 // from each card's Kết quả tab and the batch_refresh job.
 import { ideas } from '../http/client.js';
@@ -32,7 +32,7 @@ export async function mount(root, params) {
   const chip = (t, cls = '') => `<span class="fw-chip ${cls}">${esc(t)}</span>`;
 
   function rankHtml() {
-    if (!r.rows.length) return emptyState('Chưa có video nào được gắn link', 'Mở một thẻ ở Bảng ý tưởng, tab Kết quả, rồi dán link video đã đăng.');
+    if (!r.rows.length) return emptyState('Chưa có video nào được gắn link', 'Mở một thẻ ở Idea Board, tab Kết quả, rồi dán link video đã đăng.');
     const conv = r.game === 'conversion';
     const reach = r.game === 'reach';
     // Kallaway: for a business, views of the wrong people are empty calories; the column stays, dimmed, never ranked by.
@@ -55,13 +55,13 @@ export async function mount(root, params) {
 
   function losersHtml() {
     if (!r.losers.length) return '';
-    return `<div class="fw-field">${cap('NỬA DƯỚI: GẠCH NÀO KHÁC')}${r.losers.map((l) => `<div class="bd-issue"><b>${esc(l.title)}</b>
+    return `<div class="fw-field">${cap('NỬA DƯỚI: ELEMENT NÀO KHÁC')}${r.losers.map((l) => `<div class="bd-issue"><b>${esc(l.title)}</b>
         ${l.diffs.length ? l.diffs.map((d) => `<div class="small">${esc(d.attr)}: <b>${esc(d.mine)}</b>, nửa trên cùng pillar: ${esc(d.theirs.join(', '))}</div>`).join('') : `<div class="muted small">${esc(l.note)}</div>`}</div>`).join('')}
-      <p class="muted small">Lần làm lại, sửa đúng gạch khác đó, đừng bỏ cả format.</p></div>`;
+      <p class="muted small">Lần làm lại, sửa đúng element khác đó, đừng bỏ cả format.</p></div>`;
   }
 
   function levelsHtml() {
-    return `<details class="fw-field"><summary class="small">Mức kẹt view của Kallaway</summary>${r.levels.map(([a, b]) => `<div class="small"><b>${esc(a)}:</b> ${esc(b)}</div>`).join('')}
+    return `<details class="fw-field"><summary class="small">Các mức kẹt view</summary>${r.levels.map(([a, b]) => `<div class="small"><b>${esc(a)}:</b> ${esc(b)}</div>`).join('')}
       <p class="muted small">Chỉ từ một bài đăng, không phải luật. App không tự xếp video nào vào mức nào.</p></details>`;
   }
 
@@ -87,11 +87,11 @@ export async function mount(root, params) {
     const open = r.batch.status === 'open';
     const how = r.game === 'conversion' ? 'xếp theo khách, rồi follower tăng, rồi view' : 'xếp theo view, rồi tỉ lệ chia sẻ';
     root.innerHTML = `
-      <div class="page-head"><div><h1>${icon('bars')} Chấm lô</h1>
-        <p>Xem theo lô 10, không phán từng video. Xếp theo game trong Soulprint, rồi xem gạch nào đi với video thắng, gạch nào đi với video thua.</p></div>
+      <div class="page-head"><div><h1>${icon('grid')} Batch Review</h1>
+        <p>Xem theo lô 10, không phán từng video. Xếp theo game trong Soulprint, rồi xem element nào đi với video thắng, element nào đi với video thua.</p></div>
         <div class="row"><select class="select input" data-batch style="width:auto">${batches.map((x) => `<option value="${x.id}" ${x.id === r.batch.id ? 'selected' : ''}>${esc(x.title)}${x.status === 'open' ? ' (đang mở)' : ''}</option>`).join('')}</select>
           <button type="button" class="btn" data-refresh ${r.posted && !busy ? '' : 'disabled'}>${icon('refresh')} Cập nhật số liệu cả lô</button>
-          <a class="btn" href="${ideas.reviewUrl(r.batch.id)}">${icon('download')} Markdown</a>
+          <a class="btn" href="${ideas.reviewUrl(r.batch.id)}">${icon('download')} Export .md</a>
           <button type="button" class="btn primary" data-close ${closing ? 'disabled' : ''}>${open ? 'Đóng lô' : 'Sửa điều mang sang'}</button></div></div>
       <div data-prog></div><div data-err></div>
       <div class="card card-pad bd-head"><b>${esc(r.batch.title)}</b><span>${r.posted}/${r.live} thẻ đã gắn link</span>${r.gameLabel ? `<span class="muted">Game ${esc(r.gameLabel)}: ${how}</span>` : ''}</div>
@@ -100,7 +100,7 @@ export async function mount(root, params) {
       <div class="card fw-panel"><div class="fw-panel-head">${icon('bars')}<b>Xếp hạng</b></div><div class="fw-body">${rankHtml()}
         ${r.winner && !open ? `<div class="row" style="margin-top:8px"><a class="btn sm primary" href="#/board?from=redo:${r.winner.id}">${icon('refresh')} Làm lại video này: ${esc(r.winner.title)}</a></div>` : ''}
         ${r.winner && open ? '<p class="muted small">Đóng lô xong sẽ có nút làm lại video thắng nhất, vào lô sau.</p>' : ''}</div></div>
-      <div class="card fw-panel"><div class="fw-panel-head">${icon('layers')}<b>Gạch thắng và thua</b></div><div class="fw-body">${tableHtml()}${losersHtml()}${levelsHtml()}</div></div>`;
+      <div class="card fw-panel"><div class="fw-panel-head">${icon('layers')}<b>Element thắng và thua</b></div><div class="fw-body">${tableHtml()}${losersHtml()}${levelsHtml()}</div></div>`;
   }
 
   const fail = (e) => {

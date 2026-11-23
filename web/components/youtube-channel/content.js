@@ -5,7 +5,7 @@ import { on } from '../../dom.js';
 import { pct } from '../tiktok-channel/util.js';
 import { FORMATS, times } from './videos.js';
 
-const COLORS = ['#7c5cff', '#f2a7c8', '#9fb7ff', '#cbd5e1'];
+const COLORS = ['#e8590c', '#f6a76b', '#9fb7ff', '#cbd5e1'];
 const lift = (x) => (x == null ? 'plain' : x >= 1.2 ? 'tc-up' : x < 0.8 ? 'tc-down' : 'plain');
 const avg = (xs) => (xs.length ? xs.reduce((a, x) => a + x, 0) / xs.length : null);
 const rateOf = (list) => {

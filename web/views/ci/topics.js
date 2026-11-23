@@ -1,4 +1,4 @@
-// Customer Intelligence → Chủ đề & Nỗi đau: the topic tree and the pain points (PRD §8.2); with ?pain= the detail of one
+// Audience Insights → Chủ đề & Nỗi đau: the topic tree and the pain points (PRD §8.2); with ?pain= the detail of one
 // pain point: customer words, segment, insight with its checks, and the evidence (supports / contradicts).
 import { ci } from '../../http/client.js';
 import { esc, icon, fmt, toast } from '../../lib.js';
@@ -11,7 +11,7 @@ const SORTS = [['count', 'Số bình luận giảm dần'], ['share', 'Tỷ tr�
 export async function mount(root, params) {
   root.innerHTML = loading();
   const { runs, run } = await resolveRun(params);
-  if (!run) return noRuns(root, 'Chủ đề & Nỗi đau');
+  if (!run) return noRuns(root, 'Pain Points', { iconName: 'alert', sub: 'Chủ đề, nỗi đau, câu hỏi và nỗi lo của khách, gom từ comment.' });
   const drawer = evidenceDrawer();
   const offs = [drawer.off, bindRefs(root, run.id, drawer)];
   if (params.pain) await detail(root, run, runs, Number(params.pain), offs);
@@ -22,7 +22,7 @@ export async function mount(root, params) {
 async function list(root, run, runs, params, offs) {
   const st = { kind: params.kind || 'all', sort: params.sort || 'count', topic: Number(params.topic) || 0, q: '', merge: new Set() };
   let d = await ci.topics(run.id);
-  root.innerHTML = `${runBar(d.run, runs, { title: 'Chủ đề & Nỗi đau', sub: `Nhóm các vấn đề, câu hỏi và nỗi lo từ ${fmt(d.total)} comment hợp lệ.`, iconName: 'target' })}
+  root.innerHTML = `${runBar(d.run, runs, { title: 'Pain Points', sub: `Nhóm các vấn đề, câu hỏi và nỗi lo từ ${fmt(d.total)} comment hợp lệ.`, iconName: 'target' })}
     ${stageHint(d.run, 'topics')}<div data-body></div>`;
   offs.push(bindRunBar(root, d.run, PATH, reload));
   const body = /** @type {HTMLElement} */ (root.querySelector('[data-body]'));
@@ -145,7 +145,7 @@ async function detail(root, run, runs, painId, offs) {
     const seg = ins?.data.segment;
     const supports = new Set(ins?.data.supporting ?? []);
     const contra = new Set(ins?.data.contradicting ?? []);
-    root.innerHTML = `${runBar(d.run, runs, { title: 'Chủ đề & Nỗi đau', iconName: 'target' })}
+    root.innerHTML = `${runBar(d.run, runs, { title: 'Pain Points', iconName: 'alert' })}
       <div class="ci-crumb"><a href="#${PATH}?run=${run.id}">Chủ đề & Nỗi đau</a> ${icon('chevron')} <span>${esc(d.topic?.name ?? '')}</span> ${icon('chevron')} <b>${esc(p.title)}</b></div>
       <div class="card card-pad ci-pain-head">
         <div><h2>${esc(p.title)} ${epiChip(p.status)}</h2><p class="muted">${esc(p.statement)}</p></div>

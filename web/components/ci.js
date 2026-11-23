@@ -1,4 +1,4 @@
-// Shared pieces of the Customer Intelligence screens: which run is open, the run bar above every screen (platforms,
+// Shared pieces of the Audience Insights screens: which run is open, the run bar above every screen (platforms,
 // counts, status, re-analyse, export, AI cost), status chips that keep fact, inference and hypothesis apart, and
 // comment rows used as evidence. Components return HTML; the screens bind events.
 import { ci } from '../http/client.js';
@@ -85,9 +85,9 @@ export async function resolveRun(params) {
   return { runs, run };
 }
 
-/** Screen with no run yet. */
-export function noRuns(root, title) {
-  root.innerHTML = `<div class="page-head"><div><h1>${icon('pie')} ${esc(title)}</h1><p>Phân tích bình luận TikTok, YouTube, Facebook (nhập tay) thành chủ đề, nỗi đau, nguyên nhân và cơ hội nội dung có bằng chứng.</p></div></div>
+/** Screen with no run yet: the screen's own title, icon and one line on what it will show. */
+export function noRuns(root, title, { iconName = 'pie', sub = 'Phân tích comment TikTok, YouTube, Facebook (nhập tay) thành chủ đề, nỗi đau, nguyên nhân và cơ hội nội dung có bằng chứng.' } = {}) {
+  root.innerHTML = `<div class="page-head"><div><h1>${icon(iconName)} ${esc(title)}</h1><p>${esc(sub)}</p></div></div>
     <div class="card card-pad">${emptyState('Chưa có lần phân tích nào', ' Tạo lần phân tích đầu tiên từ comment đã thu thập hoặc dán dữ liệu.')}
     <div class="row" style="justify-content:center;margin-top:8px"><a class="btn primary" href="#/ci/runs?new=1">${icon('plus')} Tạo lần phân tích</a></div></div>`;
 }
@@ -106,17 +106,17 @@ export function runBar(run, runs, { title, sub, iconName = 'pie' }) {
           <button type="button" data-stage="classify" data-scope="new"><b>Chỉ phần mới</b><span>Phân loại comment chưa có nhãn (rẻ nhất)</span></button>
           <button type="button" data-stage="all" data-scope="new"><b>Phân tích đầy đủ</b><span>Phân loại phần mới → gom chủ đề → insight</span></button>
           <button type="button" data-stage="classify" data-scope="full"><b>Phân loại lại toàn bộ</b><span>Comment đã có kết quả cùng prompt/model lấy từ cache</span></button>
-          <button type="button" data-stage="topics" data-confirm="Gom lại chủ đề sẽ xoá nỗi đau, insight, 5 Whys, brief và cơ hội của lần này (thẻ đã sang Bảng ý tưởng vẫn giữ). Tiếp tục?"><b>Gom lại chủ đề</b><span>Viết lại chủ đề, nỗi đau và insight</span></button>
+          <button type="button" data-stage="topics" data-confirm="Gom lại chủ đề sẽ xoá nỗi đau, insight, 5 Whys, brief và cơ hội của lần này (thẻ đã sang Idea Board vẫn giữ). Tiếp tục?"><b>Gom lại chủ đề</b><span>Viết lại chủ đề, nỗi đau và insight</span></button>
           <button type="button" data-stage="insights" data-confirm="Tổng hợp lại sẽ xoá insight, 5 Whys, brief và cơ hội của lần này. Tiếp tục?"><b>Tổng hợp lại insight</b><span>Giữ chủ đề, viết lại insight</span></button>
         </div></div>
-      <div class="ci-menu-wrap"><button type="button" class="btn" data-export aria-haspopup="true" aria-expanded="false">${icon('download')} Xuất</button>
+      <div class="ci-menu-wrap"><button type="button" class="btn" data-export aria-haspopup="true" aria-expanded="false">${icon('download')} Export</button>
         <div class="ci-menu" data-menu hidden><a href="${ci.exportUrl(run.id, 'md')}"><b>Markdown</b><span>Báo cáo đọc được, có trích dẫn</span></a><a href="${ci.exportUrl(run.id, 'csv')}"><b>CSV</b><span>Comment và nhãn</span></a><a href="${ci.exportUrl(run.id, 'json')}"><b>JSON</b><span>Toàn bộ dữ liệu</span></a></div></div>
     </div>
   </div>
   <div class="ci-runline">
     ${(run.config?.platforms ?? []).map((p) => `<span class="ci-plat ${esc(p)}">${esc(PLATFORM_VI[p] ?? p)}</span>`).join('')}
     <span><b>${fmt(run.sources)}</b> nguồn</span><span><b>${fmt(run.analysable)}</b> comment</span>
-    <span title="Chỉ đếm được khi nguồn cho biết tác giả"><b>${run.uniqueCommenters == null ? 'Không rõ' : fmt(run.uniqueCommenters)}</b> người bình luận</span>
+    <span title="Chỉ đếm được khi nguồn cho biết tác giả"><b>${run.uniqueCommenters == null ? 'Không rõ' : fmt(run.uniqueCommenters)}</b> người comment</span>
     ${runChip(run.status)}<span class="muted">Cập nhật ${last ? ago(last) : '–'}</span>
   </div>
   <div data-run-progress></div>`;
@@ -131,7 +131,7 @@ export function bindRunBar(root, run, path, onDone) {
   const box = () => /** @type {HTMLElement} */ (root.querySelector('[data-run-progress]') ?? document.createElement('div'));
   const closeMenus = () => root.querySelectorAll('[data-menu]').forEach((m) => { /** @type {HTMLElement} */ (m).hidden = true; m.previousElementSibling?.setAttribute('aria-expanded', 'false'); });
   const follow = async (p) => {
-    box().innerHTML = progressCard('Customer Intelligence đang phân tích');
+    box().innerHTML = progressCard('Audience Insights đang phân tích');
     try {
       await p;
       box().innerHTML = '';

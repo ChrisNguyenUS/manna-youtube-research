@@ -9,13 +9,13 @@ export async function mount(root, params) {
   const st = store('ideas-form', { ideas: '', gl: '' });
   if (params.ideas) st.ideas = params.ideas;
   root.innerHTML = `
-    <div class="page-head"><div><h1>${icon('bulb')} Chấm điểm từ khoá</h1>
+    <div class="page-head"><div><h1>${icon('trend')} Chấm điểm từ khoá</h1>
       <p>Kiểu vidIQ: điểm tổng, Volume, Competition và thống kê top 20 kết quả. Dùng để kiểm tra từ khoá, tiêu đề hay format đã có ai làm chưa và làm tốt đến đâu.</p></div></div>
     <div class="card card-pad">
       <div class="form-grid"><div class="field"><label>Từ khoá / ý tưởng / tiêu đề (mỗi dòng một cái, tối đa 30)</label><textarea class="input" rows="4" data-ideas placeholder="ăn chay lành mạnh&#10;nghe thử tiếng việt 2000 năm trước">${esc(st.ideas)}</textarea>
         <div class="help">Mẹo: lấy format đang thắng ở ngách A, áp sang ngách B, rồi chấm điểm ở đây.</div></div>
         <div class="field"><label>Khu vực</label><select class="select input" data-gl>${REGIONS.map(([v, l]) => `<option value="${v}" ${st.gl === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div></div>
-      <div class="row" style="margin-top:12px"><button class="btn primary lg" data-run>${icon('bulb')} Chấm điểm</button><span class="muted small">~5 giây mỗi từ khoá · miễn phí</span></div>
+      <div class="row" style="margin-top:12px"><button class="btn primary lg" data-run>${icon('trend')} Chấm điểm</button><span class="muted small">~5 giây mỗi từ khoá · miễn phí</span></div>
       <details class="small" style="margin-top:12px"><summary class="muted" style="cursor:pointer">Điểm được tính thế nào?</summary>
         <div class="callout info" style="margin-top:8px;line-height:1.6">
           <b>Volume (ước tính)</b> = 50% view trung vị top 20 + 30% view/ngày trung vị + 20% YouTube có gợi ý khi gõ. vidIQ dùng lượng tìm kiếm thật; app không có số đó, nên Volume cao có thể chỉ vì video cũ tích luỹ view lâu năm: xem thêm "Tuổi trung bình".<br>
@@ -53,10 +53,10 @@ export async function mount(root, params) {
       root.querySelector('[data-ideas]').value = results.map((r) => r.idea).join('\n');
       return;
     }
-    out.innerHTML = `<div class="row" style="margin-bottom:10px"><span class="muted small">${results.length} từ khoá · ${ago(rec.created_at)}</span><span class="spacer"></span><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div>
+    out.innerHTML = `<div class="row" style="margin-bottom:10px"><span class="muted small">${results.length} từ khoá · ${ago(rec.created_at)}</span><span class="spacer"></span><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} Export .csv</a></div>
       <div class="score-grid">${results.map((r) => scoreCard(r)).join('')}</div>`;
   }
-  const history = historyList(root.querySelector('[data-history]'), { kind: 'idea_check', path: '/ideas', title: 'Đã chấm', empty: 'Chưa chấm từ khoá nào' });
+  const history = historyList(root.querySelector('[data-history]'), { kind: 'idea_check', path: '/ideas', empty: 'Chưa chấm từ khoá nào' });
   history();
   if (params.id) show(params.id);
   else if (params.ideas && params.run) run();

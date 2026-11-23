@@ -2,7 +2,7 @@ import { scope } from '../dom.js';
 import { findHead, platformTabs, searchBar, section, fieldRows, advanced, changedCount, estimate, regionSelect, bindShell } from '../components/find-shell.js';
 import { findHistory, rerunRecord } from '../components/find-history.js';
 import { records } from '../http/client.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, full, ago, emptyState, thumb, ytVideo, ytChannel, isSaved, toggleSave, bindTips, ageText, setUrl, resumeJob, errorCallout } from '../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, full, ago, emptyState, thumb, ytVideo, ytChannel, isSaved, toggleSave, bindTips, ageText, setUrl, resumeJob, errorCallout, img } from '../lib.js';
 import { REGIONS, knownRegion } from '../search-options.js';
 
 const FORM = { keywords: '', source: 'both', perKeyword: 40, gl: '', upload: 'year' };
@@ -64,7 +64,7 @@ export async function mount(root, params) {
   if (params.q) st.keywords = params.q;
   if (knownRegion(params.gl, REGIONS)) st.gl = params.gl;
   root.innerHTML = `
-    ${findHead('users', 'Tìm kênh', 'Kênh theo từ khoá, rồi lọc theo sub, view gần đây, tỉ lệ view/sub ("nhiều view nhưng ít sub"), tuổi kênh, quốc gia, nhịp đăng.')}
+    ${findHead('users', 'Channel Search', 'Kênh theo từ khoá, rồi lọc theo sub, view gần đây, tỉ lệ view/sub ("nhiều view nhưng ít sub"), tuổi kênh, quốc gia, nhịp đăng.')}
     ${platformTabs('/channels')}
     <div data-form>
       ${searchBar({ key: 'keywords', value: st.keywords, label: 'Từ khoá', placeholder: 'Từ khoá, cách nhau bằng dấu phẩy. VD: storytelling, kể chuyện đêm khuya', button: `<button class="btn primary lg" data-run>${icon('users')} Tìm kênh</button>` })}
@@ -78,7 +78,7 @@ export async function mount(root, params) {
     </div>
     <div data-out style="margin-top:14px"></div>
     <div class="card" data-history style="margin-top:18px"></div>`;
-  bindShell(root, { carry: () => ({}), changed: () => changedCount(st, FORM, ['perKeyword']) });
+  bindShell(root, { carry: () => ({ q: /** @type {HTMLInputElement} */ (root.querySelector('[data-k="keywords"]')).value.trim(), gl: st.gl }), changed: () => changedCount(st, FORM, ['perKeyword']) });
 
   bindChips(root.querySelector('[data-form]'), (name, v) => {
     st[name] = name === 'perKeyword' ? Number(v) : v;
@@ -125,7 +125,7 @@ export async function mount(root, params) {
     const countries = [...new Set(all.map((c) => c.country || '?'))].sort((a, b) => all.filter((c) => (c.country || '?') === b).length - all.filter((c) => (c.country || '?') === a).length);
     out.innerHTML = `
       <div class="row" style="margin-bottom:10px"><span class="muted">Khoảng <b style="color:var(--accent)">${all.length}</b> kênh cho <b>"${esc(rec.data.keywords.join(', '))}"</b>${rec.data.regions?.length > 1 ? ` · 🌐 tìm ở ${rec.data.regions.length} nước` : ''} · tìm ${ago(rec.created_at)}</span><span class="spacer"></span>
-        <a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div>
+        <a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} Export .csv</a></div>
       <div class="filter-table" data-filters>
         <div class="filter-row"><div class="fr-label">Người theo dõi</div>${chips('subs', SUBS, f.subs)}
           <div class="range"><input class="input sm" data-f="subsMin" placeholder="Min (N)" value="${esc(f.subsMin)}"> – <input class="input sm" data-f="subsMax" placeholder="Max (N)" value="${esc(f.subsMax)}"></div></div>
@@ -186,7 +186,7 @@ export async function mount(root, params) {
   function card(c) {
     const v = c.topVideo;
     return `<div class="ccard">
-      ${c.avatar ? `<img class="avatar" loading="lazy" src="${esc(c.avatar)}" referrerpolicy="no-referrer" alt="">` : '<div class="avatar"></div>'}
+      ${c.avatar ? `<img class="avatar" loading="lazy" src="${esc(img(c.avatar))}" referrerpolicy="no-referrer" alt="">` : '<div class="avatar"></div>'}
       <div><h3><a href="${ytChannel(c)}" target="_blank" rel="noopener">${esc(c.title)}</a>
           ${c.channelAgeDays != null && c.channelAgeDays <= 365 ? `<span class="badge blue">Kênh mới · ${ageText(c.channelAgeDays)}</span>` : ''}
           ${c.viewSubRatio >= 1 ? `<span class="badge good">View &gt; sub</span>` : ''}</h3>

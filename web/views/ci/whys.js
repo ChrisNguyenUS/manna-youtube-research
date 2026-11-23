@@ -11,7 +11,7 @@ const USER_VI = { pending: 'Chờ bạn xem', accepted: 'Đã chấp nhận', ed
 export async function mount(root, params) {
   root.innerHTML = loading();
   const { runs, run } = await resolveRun(params);
-  if (!run) return noRuns(root, '5 Whys');
+  if (!run) return noRuns(root, '5 Whys', { iconName: 'flask', sub: 'Đào nguyên nhân gốc của một insight: vì sao khách gặp vấn đề này.' });
   const drawer = evidenceDrawer();
   const offs = [drawer.off, bindRefs(root, run.id, drawer)];
   if (params.insight) await analysisScreen(root, run, runs, Number(params.insight), Number(params.analysis) || 0, offs, drawer);

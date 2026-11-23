@@ -4,27 +4,27 @@ import { REGIONS } from './videos.js';
 
 export async function mount(root) {
   const s = await settingsApi.get();
-  root.innerHTML = `<div class="page-head"><div><h1>${icon('settings')} Cài đặt</h1><p>Lưu trên máy này.</p></div></div>
+  root.innerHTML = `<div class="page-head"><div><h1>${icon('settings')} Settings</h1><p>Lưu trên máy này.</p></div></div>
     <div class="card card-pad" style="max-width:760px">
       <div class="grid grid-2">
         <div class="field"><label>Khu vực mặc định</label><select class="select input" data-k="gl">${REGIONS.slice(1).map(([v, l]) => `<option value="${v}" ${s.gl === v ? 'selected' : ''}>${l} (${v})</option>`).join('')}</select>
           <div class="help">Ảnh hưởng thứ tự kết quả tìm kiếm của YouTube.</div></div>
         <div class="field"><label>Số request chạy song song</label><input class="input" type="number" min="1" max="8" data-k="concurrency" value="${s.concurrency}"><div class="help">4 là vừa. Tăng thì nhanh hơn nhưng dễ bị YouTube chặn tạm.</div></div>
         <div class="field"><label>Nghỉ giữa các request (ms)</label><input class="input" type="number" min="0" max="3000" data-k="delayMs" value="${s.delayMs}"></div>
-        <div class="field"><label>Bỏ kênh dưới bao nhiêu sub khi tính "vượt kênh"</label><input class="input" type="number" min="0" data-k="minSubsForOutlier" value="${s.minSubsForOutlier}"><div class="help">Kênh quá nhỏ cho số vượt kênh rất nhiễu.</div></div>
+        <div class="field"><label>Bỏ kênh dưới bao nhiêu sub khi tính "outlier"</label><input class="input" type="number" min="0" data-k="minSubsForOutlier" value="${s.minSubsForOutlier}"><div class="help">Kênh quá nhỏ cho số outlier rất nhiễu.</div></div>
         <div class="field"><label>Các nước dùng khi chọn 🌐 Toàn cầu</label><input class="input" data-k="globalRegions" value="${esc(s.globalRegions)}" placeholder="US,GB,IN,CA,AU,PH,VN,ID"><div class="help">Mã 2 chữ, cách nhau bằng dấu phẩy. Mỗi nước thêm 1 lượt tìm cho mỗi từ khoá.</div></div>
         <div class="field"><label>Video nổi bật = view ≥ bao nhiêu lần trung vị kênh</label><input class="input" type="number" min="1.5" step="0.5" data-k="outlierMultiple" value="${s.outlierMultiple}"></div>
-        <div class="field"><label>Vượt kênh từ mấy lần thì đưa vào Thư viện gạch</label><input class="input" type="number" min="1.5" step="0.5" data-k="bricksMinScore" value="${s.bricksMinScore}"><div class="help">Mặc định 3. Bắt đầu từ 5 nếu muốn chỉ lấy video thắng rõ.</div></div>
+        <div class="field"><label>Outlier từ mấy lần thì đưa vào Swipe File</label><input class="input" type="number" min="1.5" step="0.5" data-k="bricksMinScore" value="${s.bricksMinScore}"><div class="help">Mặc định 3. Bắt đầu từ 5 nếu muốn chỉ lấy video thắng rõ.</div></div>
 
       </div>
       <div class="section-label">AI phân tích (OpenRouter)</div>
       <div class="grid grid-2">
         <div class="field"><label>API key OpenRouter</label><input class="input" type="password" data-k="aiKey" value="${esc(s.aiKey)}" placeholder="sk-or-…"><div class="help">Lấy ở openrouter.ai, mục Keys. Lưu trên máy này.</div></div>
-        <div class="field"><label>Model suy luận 5 Whys (Customer Intelligence)</label><input class="input" data-k="ciReasonModel" value="${esc(s.ciReasonModel ?? '')}" placeholder="Để trống = dùng model tổng hợp"><div class="help">Chỉ dùng khi bạn bấm đào 5 Whys. Có thể chọn model suy luận mạnh hơn.</div></div>
+        <div class="field"><label>Model suy luận 5 Whys (Audience)</label><input class="input" data-k="ciReasonModel" value="${esc(s.ciReasonModel ?? '')}" placeholder="Để trống = dùng model tổng hợp"><div class="help">Chỉ dùng khi bạn bấm đào 5 Whys. Có thể chọn model suy luận mạnh hơn.</div></div>
         <div class="field"><label>Model gắn mã (việc nhiều, đơn giản)</label><input class="input" data-k="aiTagModel" value="${esc(s.aiTagModel)}" placeholder="deepseek/deepseek-v4.1-flash-1017"><div class="help">Mã model đúng như trên OpenRouter, có số phiên bản. Không dùng tên kiểu "latest".</div></div>
         <div class="field"><label>Model tổng hợp (việc ít, cần viết tốt)</label><input class="input" data-k="aiWriteModel" value="${esc(s.aiWriteModel)}" placeholder="deepseek/deepseek-v4.1-flash-1017"></div>
       </div>
-      <div class="callout info" style="margin-top:10px">AI chỉ chạy khi bạn bấm (ví dụ <b>Phân tích 5W1H</b> ở mục Thu thập bình luận). Bình luận được gửi lên OpenRouter, không kèm tên người bình luận. Muốn AI viết bài: bấm <b>Markdown</b> ở báo cáo rồi đưa cho Claude.</div>
+      <div class="callout info" style="margin-top:10px">AI chỉ chạy khi bạn bấm (ví dụ <b>New run</b> ở Audience, hoặc <b>Breakdown</b> ở Swipe File). Comment được gửi lên OpenRouter, không kèm tên người bình luận. Muốn AI viết bài: bấm <b>Markdown</b> ở báo cáo rồi đưa cho Claude.</div>
       <div class="row" style="margin-top:16px"><button class="btn primary" data-save>${icon('check')} Lưu</button></div></div>`;
   root.querySelector('[data-save]').addEventListener('click', async () => {
     const body = {};

@@ -5,10 +5,10 @@ import fs from 'node:fs';
 
 const view = () => fs.readFileSync('web/views/soulprint.js', 'utf8');
 
-test('Soulprint sits right under Tổng quan in the menu and has its client', () => {
+test('Soulprint sits right under Home in the menu and has its client', () => {
   const nav = fs.readFileSync('web/nav.js', 'utf8');
   const app = fs.readFileSync('web/app.js', 'utf8');
-  assert.match(nav, /const SOULPRINT = \{ icon: 'target', label: 'Soulprint', tabs: \[\['\/soulprint', 'Soulprint', \(\) => import\('\.\/views\/soulprint\.js'\)\]\] \};/);
+  assert.match(nav, /const SOULPRINT = \{ icon: 'fingerprint', label: 'Soulprint', tabs: \[\['\/soulprint', 'Soulprint', \(\) => import\('\.\/views\/soulprint\.js'\)\]\] \};/);
   assert.match(nav, /export const ITEMS = \[HOME, SOULPRINT, /);
   assert.match(app, /navItem\(HOME, path\) \+\s*navItem\(SOULPRINT, path\)/);
   const client = fs.readFileSync('web/http/client.js', 'utf8');

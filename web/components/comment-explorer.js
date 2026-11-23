@@ -1,4 +1,4 @@
-// The one comment explorer of the app (TikTok; YouTube via o.platform): Thu thập bình luận (full), Phân tích video (embedded) and Insight
+// The one comment explorer of the app (TikTok; YouTube via o.platform): Collect Comments (full), Phân tích video (embedded) and Insight
 // (full, with the report's extra filters) all use it. Intent (Câu hỏi, Ý định mua…), type (comment / reply) and
 // sorting are separate controls. Comments carry `intents` from the server (core/analysis/comment-intents.js).
 // Commenter names are never stored, so they are never shown.
@@ -12,7 +12,7 @@ export const INTENTS = [
 const INTENT_LABEL = Object.fromEntries(INTENTS);
 export const SORTS = {
   newest: ['Mới nhất', (c) => Date.parse(c.createdAt) || 0],
-  likes: ['Nhiều tim nhất', (c) => c.likes ?? 0],
+  likes: ['Nhiều like nhất', (c) => c.likes ?? 0],
   replies: ['Nhiều trả lời nhất', (c) => c.replies ?? 0],
   attention: ['Được chú ý nhất (tim + trả lời)', (c) => (c.likes ?? 0) + (c.replies ?? 0)],
 };
@@ -45,7 +45,7 @@ function pageNumbers(cur, total) {
  *   facets?: Facet[], tags?: (c: any) => string, source?: {title: string, recordId?: number},
  *   head?: string, openFull?: string, initial?: Record<string, any>, placeholder?: string, note?: string,
  * }} o
- *   tags: extra badges on a row (Insight groups and keywords); openFull: link "Mở trong Thu thập bình luận" (embedded)
+ *   tags: extra badges on a row (Insight groups and keywords); openFull: link "Mở trong Collect Comments" (embedded)
  * @returns {{off: () => void, set: (patch: Record<string, any>) => void}}
  */
 export function commentExplorer(box, o) {
@@ -145,7 +145,7 @@ export function commentExplorer(box, o) {
       <button type="button" class="btn sm" data-copy ${n ? '' : 'disabled'}>${icon('doc')} Sao chép${n ? ` (${n})` : ''}</button>
       <button type="button" class="btn sm" data-save-picked ${n ? '' : 'disabled'}>${icon('bookmark')} Lưu${n ? ` (${n})` : ''}</button>
       <button type="button" class="btn sm" data-csv ${n ? '' : 'disabled'} title="Tải các comment đã chọn thành file CSV">${icon('download')} CSV${n ? ` (${n})` : ''}</button>
-      ${o.openFull ? `<a class="btn sm" href="${esc(o.openFull)}">${icon('message')} Mở trong Thu thập bình luận</a>` : ''}
+      ${o.openFull ? `<a class="btn sm" href="${esc(o.openFull)}">${icon('message')} Mở trong Collect Comments</a>` : ''}
       <span class="spacer"></span>
       ${pages > 1 ? `<div class="tx-pager"><button type="button" data-page="${st.page - 1}" ${st.page > 1 ? '' : 'disabled'} aria-label="Trang trước">${icon('back')}</button>
         ${pageNumbers(st.page, pages).map((p) => (p === '…' ? '<span class="muted">…</span>' : `<button type="button" class="${p === st.page ? 'on' : ''}" data-page="${p}">${p}</button>`)).join('')}
@@ -206,7 +206,7 @@ export function commentExplorer(box, o) {
     render();
   });
   on('click', '[data-csv]', () => {
-    const head = ['Comment', 'Tim', 'Trả lời', 'Ngày', 'Là trả lời', 'Ý định', 'Link video'];
+    const head = ['Comment', 'Like', 'Trả lời', 'Ngày', 'Là trả lời', 'Ý định', 'Link video'];
     const lines = picked().map((c) => [c.text, c.likes ?? 0, c.replies ?? 0, c.createdAt ?? '', c.parentId ? 'Có' : '', (c.intents ?? []).map((k) => INTENT_LABEL[k]).join('; '), o.videos.get(String(c.videoId))?.url ?? ''].map(csvCell).join(','));
     const url = URL.createObjectURL(new Blob([`﻿${head.map(csvCell).join(',')}\n${lines.join('\n')}\n`], { type: 'text/csv;charset=utf-8' }));
     const a = Object.assign(document.createElement('a'), { href: url, download: `comment-da-chon-${new Date().toISOString().slice(0, 10)}.csv` });

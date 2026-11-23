@@ -1,4 +1,4 @@
-// Insight khách hàng on TikTok: the shared insight screen (web/views/insight-view.js) with TikTok's search filters.
+// Insight theo từ khoá on TikTok: the shared insight screen (web/views/insight-view.js) with TikTok's search filters.
 import { mountInsight } from '../insight-view.js';
 import { tiktokLoginNotice } from '../../components/tiktok-login.js';
 import { tiktokFilterSelects, offTopicDetails, tiktokCriteria } from '../../components/index.js';
@@ -13,7 +13,7 @@ const TIKTOK = {
   formKey: 'tt-insight-form',
   form: FORM,
   label: 'TikTok',
-  title: 'Insight khách hàng (TikTok)',
+  title: 'Insight theo từ khoá (TikTok)',
   intro: 'Đọc comment của các video TikTok top đúng chủ đề để biết khách đang hỏi gì, sợ gì, ai đang cân nhắc thuê dịch vụ, và câu chữ thật của họ.',
   placeholder: 'Ví dụ: di trú mỹ, phỏng vấn quốc tịch',
   help: 'Viết tiếng Việt, ghi rõ nước (“di trú mỹ”, không chỉ “di trú”). Nhiều từ khoá thì cách nhau bằng dấu phẩy.',

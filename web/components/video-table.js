@@ -7,7 +7,7 @@ export function videoToolbar(f, count, total) {
     <span class="spacer"></span>
     <label class="small muted">Xếp theo</label>
     <select class="select input sm" style="width:auto" data-f="sort">
-      ${[['views', 'Lượt xem'], ['oscore', 'Outlier (× kênh)'], ['viewSub', 'View/sub'], ['vph', 'VPH (view/giờ)'], ['vpd', 'View/ngày'], ['new', 'Mới nhất'], ['subsAsc', 'Kênh ít sub nhất'], ['likes', 'Like'], ['dur', 'Dài nhất']].map(([v, l]) => `<option value="${v}" ${f.sort === v ? 'selected' : ''}>${l}</option>`).join('')}
+      ${[['views', 'View'], ['oscore', 'Outlier (× kênh)'], ['viewSub', 'View/sub'], ['vph', 'VPH (view/giờ)'], ['vpd', 'View/ngày'], ['new', 'Mới nhất'], ['subsAsc', 'Kênh ít sub nhất'], ['likes', 'Like'], ['dur', 'Dài nhất']].map(([v, l]) => `<option value="${v}" ${f.sort === v ? 'selected' : ''}>${l}</option>`).join('')}
     </select>
     <button class="icon-btn ${f.view === 'grid' ? 'on' : ''}" data-viewmode="grid" title="Dạng lưới">${icon('grid')}</button>
     <button class="icon-btn ${f.view === 'table' ? 'on' : ''}" data-viewmode="table" title="Dạng bảng">${icon('list')}</button>

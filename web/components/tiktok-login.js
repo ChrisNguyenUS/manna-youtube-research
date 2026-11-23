@@ -14,7 +14,7 @@ export function tiktokLoginNotice(el) {
     if (!alive || !st || !login) return;
     const left = login.expiresAt ? Date.parse(login.expiresAt) - Date.now() : Infinity;
     if (!st.tiktok?.searchReady) el.innerHTML = `<div class="callout tt-login">Tìm kiếm TikTok chưa sẵn sàng trên máy này. ${esc(st.tiktok?.reason || '')} Lấy comment theo link vẫn dùng được.</div>`;
-    else if (!login.loggedIn || left <= 0) el.innerHTML = `<div class="callout tt-login"><div><b>${left <= 0 ? 'Phiên đăng nhập TikTok đã hết hạn.' : 'Chưa đăng nhập TikTok.'}</b> TikTok chỉ cho tìm kiếm khi đã đăng nhập, nên màn này chưa chạy được. Bấm nút bên cạnh: một cửa sổ Chromium mở ra, bạn tự đăng nhập ở đó (quét mã QR bằng app TikTok là nhanh nhất). App chỉ giữ phiên trên máy này, không thấy mật khẩu.</div>
+    else if (!login.loggedIn || left <= 0) el.innerHTML = `<div class="callout tt-login"><div><b>${left <= 0 ? 'Phiên TikTok đã hết hạn.' : 'Chưa đăng nhập TikTok.'}</b> Tìm kiếm TikTok cần đăng nhập. <span class="tt-login-more" title="Một cửa sổ Chromium mở ra, bạn tự đăng nhập ở đó (quét mã QR bằng app TikTok là nhanh nhất). App chỉ giữ phiên trên máy này, không thấy mật khẩu.">${icon('info')}</span></div>
         <button type="button" class="btn primary" data-tt-login>${icon('key')} Đăng nhập TikTok</button></div>`;
     else if (left < SOON) el.innerHTML = `<div class="callout info tt-login"><div>Phiên đăng nhập TikTok hết hạn ngày <b>${day(login.expiresAt)}</b>. Đăng nhập lại trước để lần quét sau không bị dừng giữa chừng.</div>
         <button type="button" class="btn" data-tt-login>${icon('refresh')} Đăng nhập lại</button></div>`;

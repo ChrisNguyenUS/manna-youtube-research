@@ -2,20 +2,21 @@
 // earlier analyses of the same channel (each one a snapshot of its public numbers). Modules: web/components/youtube-channel/.
 import { scope } from '../dom.js';
 import { records, channelHistory } from '../http/client.js';
-import { esc, icon, runJob, progressCard, updateProgress, toast, fmt, ago, emptyState, ytChannel, bindTips, isSaved, toggleSave, isFollowing, followLabel, toggleFollow, setUrl, resumeJob, errorCallout } from '../lib.js';
+import { esc, icon, runJob, progressCard, updateProgress, toast, fmt, ago, emptyState, ytChannel, bindTips, isSaved, toggleSave, isFollowing, followLabel, toggleFollow, setUrl, resumeJob, errorCallout, img } from '../lib.js';
 import { section, num, pct, fullDate } from '../components/tiktok-channel/util.js';
 import { trendChart, videosChart, scheduleHeatmap } from '../components/youtube-channel/charts.js';
 import { allVideos, videoTable } from '../components/youtube-channel/videos.js';
 import { formatModule, topicModule, keywordModule, commentModule } from '../components/youtube-channel/content.js';
+import { nextSteps, link } from '../components/next-steps.js';
 
-const NAV = [['overview', 'Tổng quan'], ['trend', 'Xu hướng'], ['format', 'Định dạng'], ['schedule', 'Lịch đăng'], ['topics', 'Chủ đề'], ['keywords', 'Từ khoá & tiêu đề'], ['videos', 'Hiệu suất video'], ['library', 'Thư viện video'], ['comments', 'Bình luận']];
+const NAV = [['overview', 'Tổng quan'], ['trend', 'Xu hướng'], ['format', 'Định dạng'], ['schedule', 'Lịch đăng'], ['topics', 'Chủ đề'], ['keywords', 'Từ khoá & tiêu đề'], ['videos', 'Hiệu suất video'], ['library', 'Thư viện video'], ['comments', 'Comment']];
 const kpi = (ic, label, value, hint, tip) => `<div class="tc-kpi" data-tip="${esc(tip)}"><div class="tc-kpi-label">${icon(ic)}${label}</div><div class="tc-kpi-value">${value}</div><div class="tc-kpi-hint">${hint}</div></div>`;
 
 export async function mount(root, params) {
   root.innerHTML = `<div class="tc">
-    <div class="tc-top"><div><h1>Phân tích kênh YouTube</h1><p>Nghiên cứu kênh công khai (đối thủ): đăng gì, video nào hiệu quả, chủ đề và lịch đăng. Chỉ dùng số liệu công khai.</p></div>
-      <form class="tc-form" data-form><input class="input" data-input placeholder="@tenkenh, link kênh, hoặc link một video của kênh" value="${esc(params.input && !params.input.startsWith('UC') ? params.input : '')}" aria-label="Kênh YouTube">
-        <button class="btn primary" type="submit">${icon('bars')} Phân tích</button></form></div>
+    <div class="page-head"><div><h1>${icon('bars')} Channel Analysis</h1><p>Nghiên cứu kênh công khai (đối thủ): đăng gì, video nào hiệu quả, chủ đề và lịch đăng. Chỉ dùng số liệu công khai.</p></div></div>
+      <form class="card card-pad tc-form" data-form><input class="input" data-input placeholder="@kênh, link kênh hoặc link video" value="${esc(params.input && !params.input.startsWith('UC') ? params.input : '')}" aria-label="Kênh YouTube">
+        <button class="btn primary" type="submit">${icon('bars')} Phân tích</button></form>
     <div data-prog></div>
     <div data-out></div>
     <div class="card" data-list></div></div>`;
@@ -56,19 +57,26 @@ export async function mount(root, params) {
     input.value = info.handle || info.title;
     out.innerHTML = `
       <div class="card tc-head">
-        ${info.avatar ? `<img class="tc-avatar" src="${esc(info.avatar)}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : '<span class="tc-avatar"></span>'}
+        ${info.avatar ? `<img class="tc-avatar" src="${esc(img(info.avatar))}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : '<span class="tc-avatar"></span>'}
         <div class="tc-id"><div class="yc-label">KÊNH CÔNG KHAI · PHÂN TÍCH ĐỐI THỦ</div><h2>${esc(info.title)}</h2>
           <a href="${ytChannel(info)}" target="_blank" rel="noopener">${esc(info.handle || info.id)} ${icon('ext')}</a>
           <p class="yc-ids">ID ${esc(info.id)}${info.country ? ` · ${esc(info.country)}` : ''}${info.joined ? ` · tạo kênh ${new Date(info.joined).toLocaleDateString('vi-VN')}` : ''}</p></div>
         <div class="tc-meta"><span>Phân tích lần này: <b>${fullDate(new Date(rec.created_at).toISOString())}</b> (${ago(rec.created_at)})</span>
-          <span>Theo dõi từ: <b>${first ? fullDate(new Date(first.at).toISOString()) : '–'}</b> · ${history.length} lần chụp số liệu</span><span>Nguồn: dữ liệu công khai trên YouTube</span></div>
+          <span>Trong Watchlist từ: <b>${first ? fullDate(new Date(first.at).toISOString()) : '–'}</b> · ${history.length} lần chụp số liệu</span><span>Nguồn: dữ liệu công khai trên YouTube</span></div>
         <div class="tc-actions">
-          <button class="btn sm ${isFollowing('youtube', info.id) ? 'on' : ''}" data-follow title="Thêm vào danh sách Theo dõi">${followLabel('youtube', info.id)}</button>
+          <button class="btn sm ${isFollowing('youtube', info.id) ? 'on' : ''}" data-follow title="Thêm kênh vào Watchlist">${followLabel('youtube', info.id)}</button>
           <button class="btn sm ${isSaved('channel', info.id) ? 'on' : ''}" data-save>${icon('bookmark')} ${isSaved('channel', info.id) ? 'Đã lưu' : 'Lưu kênh'}</button>
-          <details class="tc-menu"><summary class="btn sm">${icon('download')} Xuất báo cáo</summary><div><a href="${records.exportUrl(rec.id, 'md')}">Markdown (.md)</a><a href="${records.exportUrl(rec.id, 'csv')}">Bảng video (.csv)</a></div></details>
+          <details class="tc-menu"><summary class="btn sm">${icon('download')} Export</summary><div><a href="${records.exportUrl(rec.id, 'md')}">Markdown (.md)</a><a href="${records.exportUrl(rec.id, 'csv')}">Bảng video (.csv)</a></div></details>
           <a class="btn sm" href="${ytChannel(info)}" target="_blank" rel="noopener">${icon('ext')} Mở kênh</a>
           <button class="btn sm primary" data-rerun>${icon('refresh')} Làm mới số liệu</button></div>
       </div>
+      ${(() => {
+        const top = long.filter((v) => v.id && v.score != null).sort((a, b) => b.score - a.score).slice(0, 5).map((v) => v.id);
+        return top.length ? nextSteps([
+          { href: link('/video', { videos: top.map((id) => `https://www.youtube.com/watch?v=${id}`).join('\n'), run: 1 }), icon: 'play', label: `Video Analysis ${top.length} video vượt trung vị`, hint: 'Script, số liệu và comment của các video vượt trung vị kênh nhiều nhất', primary: true },
+          { href: link('/comments', { videos: top.join(',') }), icon: 'download', label: 'Collect comment các video này', hint: 'Mở Collect Comments với video đã điền sẵn' },
+        ]) : '';
+      })()}
       ${s.detailSample == null ? '<div class="callout info">Báo cáo này được tạo trước khi app lấy lượt thích và bình luận. Bấm Làm mới số liệu để có tỷ lệ tương tác, danh mục và tag.</div>' : ''}
       <nav class="tc-nav" aria-label="Các phần của báo cáo">${NAV.map(([k, l]) => `<button type="button" data-go="${k}">${l}</button>`).join('')}</nav>
       <div class="tc-kpis" data-sec="overview">
@@ -124,7 +132,7 @@ export async function mount(root, params) {
     for (const r of rows) if (!latest.has(r.ref)) latest.set(r.ref, r);
     const items = [...latest.values()];
     const box = /** @type {HTMLElement} */ (root.querySelector('[data-list]'));
-    box.innerHTML = `<div class="card-head"><h3>Kênh đã phân tích</h3><span class="sub">Tích 2–4 kênh rồi bấm So sánh</span></div>
+    box.innerHTML = `<div class="card-head"><h3>${icon('clock')} Recent</h3><span class="sub">Tích 2–4 kênh rồi bấm So sánh</span></div>
       ${items.length ? `<div class="table-wrap"><table class="t"><thead><tr><th style="width:30px"></th><th>Kênh</th><th class="r">Phân tích lúc</th><th></th></tr></thead><tbody>
         ${items.map((r) => `<tr><td><input type="checkbox" data-cmp="${r.ref}" aria-label="Chọn để so sánh"></td><td><a class="name" style="color:var(--accent);font-weight:600" href="#/channel?id=${r.id}">${esc(r.title)}</a></td><td class="r muted">${ago(r.created_at)}</td>
           <td class="actions"><button class="btn sm" data-re="${r.ref}">${icon('refresh')} Phân tích lại</button> <button class="icon-btn" data-del="${r.id}" aria-label="Xoá">${icon('trash')}</button></td></tr>`).join('')}</tbody></table></div>

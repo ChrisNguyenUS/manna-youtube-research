@@ -1,26 +1,23 @@
 import { records as recordsApi, saved as savedApi, jobs as jobsApi, soulprint as soulprintApi } from '../http/client.js';
-import { esc, icon, ago, emptyState, fmt, store, persist, toast } from '../lib.js';
+import { esc, icon, ago, emptyState, fmt, store, persist, toast, img } from '../lib.js';
 import { KINDS, PLATFORMS, recordHref } from '../kinds.js';
+import { routeInput } from '../smart-input.js';
 
-// What the topic box starts on each platform: [screen, icon, button text, extra URL params]. The first one is what Enter does.
-const STARTS = {
-  tiktok: [
-    ['/tiktok/topic', 'compass', 'Tìm theo chủ đề', { run: 1 }],
-    ['/tiktok/insight', 'message', 'Insight khách hàng', {}],
-  ],
-  youtube: [
-    ['/videos', 'search', 'Tìm video', { run: 1 }],
-    ['/channels', 'users', 'Tìm kênh', {}],
-    ['/research', 'compass', 'Nghiên cứu chủ đề', {}],
-  ],
+// Other things a topic can start, next to the main button: [screen, icon, button text, extra URL params].
+const MORE = {
+  tiktok: [['/tiktok/insight', 'download', 'Collect theo từ khoá', {}]],
+  youtube: [['/videos', 'search', 'Video Search', { run: 1 }], ['/channels', 'users', 'Channel Search', {}]],
 };
-const PLACEHOLDER = { tiktok: 'Chủ đề trên TikTok, ví dụ: di trú mỹ, bảo lãnh vợ chồng', youtube: 'Từ khoá trên YouTube, ví dụ: kể chuyện đêm khuya' };
+const ROUTE_ICON = { videos: 'play', channel: 'bars', topic: 'compass', empty: 'compass' };
+const PLACEHOLDER = { tiktok: 'Chủ đề (vd: di trú mỹ), link video hoặc link kênh TikTok/YouTube', youtube: 'Chủ đề (vd: kể chuyện đêm khuya), link video hoặc link kênh' };
 
+// The four steps of the sidebar, in order: [step, group, what you do there, where it starts, button text, icon, the
+// result kinds of that step (its latest one is shown, to pick it up again)].
 const STEPS = [
-  ['1', 'Tìm ngách', 'Chủ đề bạn thích, làm được lâu dài. Ưu tiên kênh nhiều view nhưng ít sub, video mới trong năm có view tốt.', '#/channels', 'Tìm kênh'],
-  ['2', 'Tìm format thắng', 'Format đã thắng ở lĩnh vực A, áp sang lĩnh vực B. Nội dung cũ làm lại với góc nhìn mới. Kiểm tra xem đã có ai làm chưa.', '#/ideas', 'Chấm điểm từ khoá'],
-  ['3', 'Mổ xẻ video viral', 'Gom 10 video viral của đối thủ: hook, bố cục, cách kể, nhịp, CTA → thành khung kịch bản.', '#/channel', 'Phân tích kênh'],
-  ['4', 'Nghe khán giả', 'Comment: họ hỏi gì, than gì, muốn xem gì tiếp → khoảng trống cho video tiếp theo.', '#/research', 'Nghiên cứu chủ đề'],
+  ['1', 'Research', 'Tìm chủ đề, video và kênh đang thắng.', '#/tiktok/topic', 'Topic Research', 'compass', ['tiktok_topic', 'research', 'tiktok_search', 'video_search', 'channel_search', 'keywords', 'idea_check', 'keyword_score']],
+  ['2', 'Analyze', 'Mổ xẻ video và kênh đối thủ: hook, cách kể, CTA.', '#/video', 'Video Analysis', 'play', ['tiktok_video_analysis', 'video_analysis', 'tiktok_channel', 'channel_analysis']],
+  ['3', 'Audience', 'Đọc comment: khách hỏi gì, lo gì, muốn xem gì.', '#/tiktok/comments', 'Collect Comments', 'download', ['tiktok_comments', 'comments', 'tiktok_insight', 'youtube_insight', 'comment_5w1h']],
+  ['4', 'Create', 'Biến cơ hội thành ý tưởng, làm theo lô 10.', '#/board', 'Idea Board', 'bulb', []],
 ];
 
 const ACTIVE = ['queued', 'running'];
@@ -28,25 +25,29 @@ const RECENT = 12;
 
 export async function mount(root) {
   const st = store('home', { platform: 'tiktok', show: 'all' });
-  if (!STARTS[st.platform]) st.platform = 'tiktok';
+  if (!MORE[st.platform]) st.platform = 'tiktok';
   const [records, saved] = await Promise.all([recordsApi.list(null, 60), savedApi.list('channel')]);
 
   root.innerHTML = `
-    <div class="page-head"><div><h1>${icon('home')} Tổng quan</h1><p>Nghiên cứu content TikTok và YouTube trên máy của bạn: miễn phí, không cần key.</p></div></div>
+    <div class="page-head"><div><h1>${icon('home')} Home</h1><p>Nghiên cứu content TikTok và YouTube trên máy của bạn: miễn phí, không cần key.</p></div></div>
     <a class="card card-pad sp-home" href="#/soulprint" data-soulprint hidden></a>
     <div class="card card-pad home-start">
-      <div class="row"><b>Bắt đầu nghiên cứu trên</b>
+      <div class="row"><b>Bắt đầu</b>
         <div class="ix-seg" role="radiogroup" aria-label="Nền tảng" data-platform>${Object.entries(PLATFORMS).map(([k, l]) => `<button type="button" role="radio" data-v="${k}">${l}</button>`).join('')}</div></div>
-      <div class="input-row" style="margin-top:12px"><input class="input" data-q autocomplete="off"><span class="row home-go" data-starts></span></div>
+      <div class="input-row" style="margin-top:12px"><input class="input" data-q autocomplete="off" aria-label="Chủ đề, link video hoặc link kênh"><span class="row home-go" data-starts></span></div>
+      <div class="muted small home-route" data-route aria-live="polite"></div>
     </div>
-    <div class="grid grid-2 home-grid" style="margin-top:14px">
+    <div class="home-steps">${STEPS.map(([n, t, d, href, cta, ic, kinds]) => {
+      const last = records.find((r) => kinds.includes(r.kind));
+      return `<div class="card home-step"><div class="home-step-h"><span class="badge accent">${n}</span><b>${t}</b></div>
+        <p class="muted small">${d}</p>
+        ${last ? `<a class="home-step-last small" href="${recordHref(last)}" title="Mở lại kết quả gần nhất của bước này">${icon('clock')}<span>${esc(last.title)}</span><em>${ago(last.created_at)}</em></a>` : '<span class="home-step-last small muted">Chưa có kết quả</span>'}
+        <a class="btn sm" href="${href}">${icon(ic)} ${cta}</a></div>`;
+    }).join('')}</div>
+    <div class="${saved.length ? 'grid grid-2 home-grid' : ''}" style="margin-top:14px">
       <div class="card" data-resume></div>
-      <div>
-        ${saved.length ? `<div class="card"><div class="card-head"><h3>${icon('bookmark')} Kênh đã lưu</h3><a class="btn sm" href="#/saved">Xem tất cả</a></div>
-          ${saved.slice(0, 6).map((s) => `<div class="list-row">${s.data.avatar ? `<img src="${esc(s.data.avatar)}" referrerpolicy="no-referrer" style="width:30px;height:30px;border-radius:50%" alt="">` : ''}<a class="name" href="#/channel?input=${encodeURIComponent(s.data.id)}">${esc(s.title)}</a><span class="muted small">${fmt(s.data.subs)} sub${s.note ? ' · ' + esc(s.note) : ''}</span></div>`).join('')}</div>` : ''}
-        <div class="card"><div class="card-head"><h3>${icon('compass')} Quy trình nghiên cứu YouTube</h3><span class="sub">theo Thanh Hải – Learn AI</span></div>
-          ${STEPS.map(([n, t, d, href, cta]) => `<div class="list-row" style="align-items:flex-start"><span class="badge accent" style="margin-top:2px">${n}</span><div><b>${t}</b><div class="muted small">${d}</div></div><a class="btn sm" style="margin-left:auto;flex:none" href="${href}">${cta}</a></div>`).join('')}</div>
-      </div>
+      ${saved.length ? `<div class="card"><div class="card-head"><h3>${icon('bookmark')} Kênh đã lưu</h3><a class="btn sm" href="#/saved">Xem tất cả</a></div>
+          ${saved.slice(0, 6).map((s) => `<div class="list-row">${s.data.avatar ? `<img src="${esc(img(s.data.avatar))}" referrerpolicy="no-referrer" style="width:30px;height:30px;border-radius:50%" alt="">` : ''}<a class="name" href="#/channel?input=${encodeURIComponent(s.data.id)}">${esc(s.title)}</a><span class="muted small">${fmt(s.data.subs)} sub${s.note ? ' · ' + esc(s.note) : ''}</span></div>`).join('')}</div>` : ''}
     </div>`;
 
   // Soulprint progress: what the AI features know about this channel so far.
@@ -54,17 +55,30 @@ export async function mount(root) {
     const el = root.querySelector('[data-soulprint]');
     if (!el) return;
     const missing = s.readiness.checks.filter((c) => !c.ok).map((c) => c.label);
-    el.innerHTML = `${icon('target')}<span><b>Soulprint ${s.readiness.done}/${s.readiness.total}</b><span class="muted small">${s.readiness.ready ? 'Hồ sơ đủ dùng: game, avatar, nỗi đau, câu định vị và pillars đã có.' : `Còn thiếu: ${esc(missing.join(', '))}`}</span></span>`;
+    el.innerHTML = `${icon('fingerprint')}<span><b>Soulprint ${s.readiness.done}/${s.readiness.total}</b><span class="muted small">${s.readiness.ready ? 'Hồ sơ đủ dùng: game, avatar, nỗi đau, câu định vị và pillars đã có.' : `Còn thiếu: ${esc(missing.join(', '))}`}</span></span>`;
     el.hidden = false;
   }).catch(() => {});
 
   // ---------- start box ----------
   const q = /** @type {HTMLInputElement} */ (root.querySelector('[data-q]'));
-  function start(i = 0) {
-    const [path, , label, extra] = STARTS[st.platform][i];
+  /** The main button follows what is in the box (smart-input.js); the others start another screen with it as a topic. */
+  function start(i = -1) {
     const text = q.value.trim();
-    if (!text) return q.focus(), toast(`Nhập chủ đề rồi bấm ${label}`, 'error');
+    if (!text) return q.focus(), toast('Nhập chủ đề, link video hoặc link kênh', 'error');
+    if (i < 0) {
+      const r = routeInput(text, st.platform);
+      return window.__go(r.path, r.params);
+    }
+    const [path, , , extra] = MORE[st.platform][i];
     window.__go(path, { q: text, ...extra });
+  }
+  function renderRoute() {
+    const r = routeInput(q.value, st.platform);
+    const main = r.kind === 'empty' ? routeInput('x', st.platform) : r;
+    const label = { videos: 'Video Analysis', channel: 'Channel Analysis', topic: 'Topic Research', empty: 'Topic Research' }[main.kind];
+    root.querySelector('[data-starts]').innerHTML = `<button class="btn primary" data-start="-1">${icon(ROUTE_ICON[main.kind])} ${label}</button>${
+      main.kind === 'topic' ? MORE[st.platform].map(([, ic, l], i) => `<button class="btn" data-start="${i}">${icon(ic)} ${l}</button>`).join('') : ''}`;
+    root.querySelector('[data-route]').textContent = r.kind === 'empty' ? 'Gõ chủ đề, hoặc dán link video / link kênh: app tự mở đúng màn.' : `Nhận ra: ${r.label}`;
   }
   function renderStart() {
     root.querySelectorAll('[data-platform] button').forEach((b) => {
@@ -73,7 +87,7 @@ export async function mount(root) {
       b.setAttribute('aria-checked', String(on));
     });
     q.placeholder = PLACEHOLDER[st.platform];
-    root.querySelector('[data-starts]').innerHTML = STARTS[st.platform].map(([, ic, label], i) => `<button class="btn ${i ? '' : 'primary'}" data-start="${i}">${icon(ic)} ${label}</button>`).join('');
+    renderRoute();
   }
   root.querySelector('[data-platform]').addEventListener('click', (e) => {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
@@ -87,7 +101,8 @@ export async function mount(root) {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-start]'));
     if (b) start(Number(b.dataset.start));
   });
-  q.addEventListener('keydown', (e) => e.key === 'Enter' && start(0));
+  q.addEventListener('keydown', (e) => e.key === 'Enter' && start());
+  q.addEventListener('input', renderRoute);
   renderStart();
 
   // ---------- pick up where you left off: running jobs first, then the latest results of both platforms ----------

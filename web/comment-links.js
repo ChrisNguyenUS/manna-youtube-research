@@ -1,4 +1,4 @@
-// Which pasted lines are video links, per platform (Thu thập bình luận, web/views/comment-collect.js). No DOM: tested in node.
+// Which pasted lines are video links, per platform (Collect Comments, web/views/comment-collect.js). No DOM: tested in node.
 const TT_ID = /(?:\/(?:video|photo|v)\/|^)(\d{15,25})(?:\D|$)/;
 const TT_SHORT = /^https?:\/\/(vm|vt)\.tiktok\.com\/|^https?:\/\/(www\.)?tiktok\.com\/t\//i;
 const YT_ID = /(?:[?&]v=|youtu\.be\/|\/shorts\/|\/live\/|\/embed\/)([\w-]{11})(?![\w-])/;

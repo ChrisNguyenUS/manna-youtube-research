@@ -12,7 +12,7 @@ const FORMAT_VI = { step_by_step_explainer: 'Giải thích từng bước', shor
 export async function mount(root, params) {
   root.innerHTML = loading();
   const { runs, run } = await resolveRun(params);
-  if (!run) return noRuns(root, '5W1H Brief');
+  if (!run) return noRuns(root, '5W1H Brief', { iconName: 'doc', sub: 'Brief nội dung Who, What, Why, When, Where, How dựa trên insight và 5 Whys.' });
   const drawer = evidenceDrawer();
   const offs = [drawer.off, bindRefs(root, run.id, drawer)];
   if (params.brief) await briefScreen(root, run, runs, Number(params.brief), offs);

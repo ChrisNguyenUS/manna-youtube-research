@@ -17,7 +17,7 @@ export async function mount(root, params) {
   let armed = ''; // id of the row whose delete button waits for a second click
 
   root.innerHTML = `
-    <div class="page-head"><div><h1>${icon('clock')} Lịch sử</h1><p>Mọi báo cáo và lần tìm đã chạy trên TikTok và YouTube. Bấm tên để mở lại.</p></div></div>
+    <div class="page-head"><div><h1>${icon('clock')} History</h1><p>Mọi báo cáo và lần tìm đã chạy trên TikTok và YouTube. Bấm tên để mở lại.</p></div></div>
     <div class="card">
       <div class="hist-bar">
         <label class="tt-searchmini hist-q">${icon('search')}<input data-q placeholder="Tìm theo tên, không cần gõ dấu" value="${esc(st.q)}" autocomplete="off"></label>

@@ -1,19 +1,21 @@
-// "Thu thập bình luận": one screen for TikTok and YouTube. The TikTok | YouTube switch above the page (two paths,
+// "Collect Comments": one screen for TikTok and YouTube. The TikTok | YouTube switch above the page (two paths,
 // /tiktok/comments and /comments, so every old link still works) changes only what differs between the platforms:
 // which links are accepted, the options, and the job that collects. Reading the result (the shared comment explorer),
 // "already collected" notes and the history look the same on both. Commenter names are never stored.
 import { records, tiktokCommentData, youtubeCommentData } from '../http/client.js';
-import { esc, icon, fmt, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, resumeJob, errorCallout, chips, bindChips } from '../lib.js';
+import { esc, icon, fmt, runJob, progressCard, updateProgress, toast, store, persist, ago, emptyState, resumeJob, errorCallout, chips, bindChips, img } from '../lib.js';
 import { commentExplorer } from '../components/comment-explorer.js';
 import { scope } from '../dom.js';
 import { readLinks } from '../comment-links.js';
+import { commentCountSeg } from '../search-options.js';
+import { exportMenu } from '../components/export-menu.js';
 
 /** What differs per platform. Everything else on the screen is shared. */
 const PLATFORMS = {
   tiktok: {
     label: 'TikTok', path: '/tiktok/comments', job: 'tiktok_comments', formKey: 'tt-comments-form',
     form: { videos: '', max: 100, replies: true },
-    maxes: [100, 300], maxLabel: 'Comment gốc mỗi video', perParent: 20,
+    maxes: [100, 300], cap: 300, capWhy: 'TikTok lấy tối đa 300 comment gốc mỗi video', maxLabel: 'Comment gốc mỗi video', perParent: 20,
     placeholder: 'Dán link video TikTok, mỗi dòng một link (kể cả vm.tiktok.com)',
     hint: 'Link dạng tiktok.com/@kênh/video/… hoặc vm.tiktok.com/…', badLabel: 'không phải link video TikTok',
     data: tiktokCommentData,
@@ -22,17 +24,17 @@ const PLATFORMS = {
   },
   youtube: {
     label: 'YouTube', path: '/comments', job: 'comments', formKey: 'comments-form',
-    form: { videos: '', max: 100, sort: 'top', replies: false },
-    maxes: [50, 100, 300, 1000], maxLabel: 'Comment mỗi video', perParent: 10,
+    form: { videos: '', max: 100, sort: 'top', replies: true },
+    maxes: [100, 300, 1000], cap: 1000, capWhy: '', maxLabel: 'Comment gốc mỗi video', perParent: 20,
     placeholder: 'Dán link video YouTube, mỗi dòng một link (watch?v=…, youtu.be/…, shorts/…)',
     hint: 'Link dạng youtube.com/watch?v=…, youtu.be/… hoặc youtube.com/shorts/…', badLabel: 'không phải link video YouTube',
     data: youtubeCommentData,
     params: (st, links) => ({ videos: links.join('\n'), max: st.max, sort: st.sort, replies: st.replies }),
-    why: (p) => `Đã chọn ${p.max ?? '?'} comment mỗi video, xếp ${p.sort === 'newest' ? 'mới nhất' : 'nổi bật'}${p.replies ? ', có cả trả lời (tối đa 10 mỗi comment)' : ', không lấy trả lời'}; video ít comment hơn thì lấy hết.`,
+    why: (p) => `Đã chọn ${p.max ?? '?'} comment mỗi video, xếp ${p.sort === 'newest' ? 'mới nhất' : 'nổi bật'}${p.replies ? ', có cả trả lời (tối đa 20 mỗi comment)' : ', không lấy trả lời'}; video ít comment hơn thì lấy hết.`,
   },
 };
 
-const cover = (v) => (v?.cover ? `<img src="${esc(v.cover)}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : '<span class="cc-noimg"></span>');
+const cover = (v) => (v?.cover ? `<img src="${esc(img(v.cover))}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : '<span class="cc-noimg"></span>');
 const isReply = (c) => Boolean(c.parentId || c.isReply);
 const by = (platform, author) => (author ? `${platform === 'tiktok' ? '@' : ''}${esc(author)} · ` : '');
 
@@ -45,14 +47,14 @@ export async function mount(root, params) {
   // Other screens send ids (YouTube) or links, comma or newline separated.
   if (params.videos) st.videos = String(params.videos).split(/[\n,]+/).map((x) => x.trim()).filter(Boolean).map((x) => (platform === 'youtube' && /^[\w-]{11}$/.test(x) ? `https://www.youtube.com/watch?v=${x}` : x)).join('\n');
   root.innerHTML = `
-    <div class="page-head"><div><h1>${icon('message')} Thu thập bình luận</h1><p>Lấy bình luận công khai của video ${pf.label} rồi lọc theo câu hỏi, ý định mua, lo ngại… Không lưu tên người bình luận.</p></div>
-      <a class="btn" href="#/ci/runs?new=1" title="Customer Intelligence: phân tích comment đã thu thập thành nỗi đau, nguyên nhân và cơ hội nội dung">${icon('target')} Phân tích khách hàng (AI)</a></div>
+    <div class="page-head"><div><h1>${icon('download')} Collect Comments</h1><p>Lấy bình luận công khai của video ${pf.label} rồi lọc theo câu hỏi, ý định mua, lo ngại… Không lưu tên người bình luận.</p></div>
+      <a class="btn" href="#/ci/runs?new=1" title="Audience Insights: phân tích comment đã thu thập thành nỗi đau, nguyên nhân và cơ hội nội dung">${icon('pie')} Audience Insights (AI)</a></div>
     <div class="card card-pad cc-form" data-form>
       <div class="cc-input"><textarea class="input" rows="2" data-videos placeholder="${esc(pf.placeholder)}" aria-label="Link video">${esc(st.videos)}</textarea>
         <button type="button" class="icon-btn" data-clear title="Xoá hết" aria-label="Xoá hết link">${icon('x')}</button></div>
       <div class="cc-check" data-check aria-live="polite"></div>
       <div class="cc-opts">
-        <span class="small muted">${pf.maxLabel}</span><div class="cx-seg" role="group" aria-label="${esc(pf.maxLabel)}">${pf.maxes.map((n) => `<button type="button" data-max="${n}" class="${st.max === n ? 'on' : ''}">${n.toLocaleString('vi-VN')}</button>`).join('')}</div>
+        <span class="small muted">${pf.maxLabel}</span>${commentCountSeg('max', st.max, { cap: pf.cap, capWhy: pf.capWhy })}
         ${platform === 'youtube' ? `<span class="small muted">Xếp</span>${chips('sort', [{ v: 'top', label: 'Nổi bật' }, { v: 'newest', label: 'Mới nhất' }], st.sort)}` : ''}
         <label class="check"><input type="checkbox" data-replies ${st.replies ? 'checked' : ''}> Lấy cả trả lời <span class="muted small">(tối đa ${pf.perParent} trả lời mỗi comment, tính thêm ngoài số trên)</span></label>
         <span class="spacer"></span><button class="btn primary" data-run>${icon('message')} Thu thập</button>
@@ -127,7 +129,7 @@ export async function mount(root, params) {
   };
   const videoRow = (v, nums, acts) => `<div class="cc-vrow">${cover(v)}
     <div class="cc-vtext"><a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.caption || v.url)}</a><span class="muted small">${by(platform, v.author)}${nums}</span></div>
-    <span class="cc-vacts">${acts}<a class="btn sm" href="#/video?videos=${encodeURIComponent(v.url)}">${icon('bars')} Phân tích video</a></span></div>`;
+    <span class="cc-vacts">${acts}<a class="btn sm" href="#/video?videos=${encodeURIComponent(v.url)}">${icon('play')} Video Analysis</a>${v.id ? `<a class="btn sm" href="#/ci/runs?new=1&${platform}=${encodeURIComponent(v.id)}" title="Tạo New run từ comment của video này">${icon('pie')} Phân tích audience</a>` : ''}</span></div>`;
 
   /**
    * One run (one report per video) in one explorer. TikTok reads the run's own reports; YouTube reads the comments
@@ -155,7 +157,7 @@ export async function mount(root, params) {
       const parents = list.filter((c) => !isReply(c)).length;
       const total = platform === 'tiktok' ? r.data.video.comments : null;
       return videoRow(v, `${fmt(parents)} gốc + ${fmt(list.length - parents)} trả lời${total != null ? ` · video có ${fmt(total)} bình luận` : ''}${r.data.disabled ? ' · <b style="color:var(--bad)">video tắt comment</b>' : ''}`,
-        `<a class="btn sm" href="${records.exportUrl(r.id, 'csv')}">${icon('download')} CSV</a><a class="btn sm" href="${records.exportUrl(r.id, 'md')}">${icon('download')} MD</a>`);
+        exportMenu([[records.exportUrl(r.id, 'md'), 'Markdown (.md)'], [records.exportUrl(r.id, 'csv'), 'Bảng comment (.csv)']], { sm: true }));
     }).join('');
     const note = `${pf.why(p)}${platform === 'youtube' ? ' Danh sách bên dưới gộp mọi lần đã lấy comment của các video này.' : ''}${skipped.length ? ` Bỏ qua ${skipped.length} link: ${skipped.join(', ')}.` : ''}`;
     out.innerHTML = `<div class="card cc-run">${summary(comments, recs.length, new Date(recs[0].created_at).toLocaleString('vi-VN'), `<p class="cx-note" style="padding:0 16px">${esc(note)}</p>`)}
@@ -201,13 +203,13 @@ export async function mount(root, params) {
   }
   function renderHistory() {
     const list = hist.all.slice(0, hist.limit);
-    histBox.innerHTML = `<div class="card-head"><h3>${icon('clock')} Lịch sử thu thập</h3><span class="sub">${hist.all.length} lần</span></div>
+    histBox.innerHTML = `<div class="card-head"><h3>${icon('clock')} Recent</h3><span class="sub">${hist.all.length} lần</span></div>
       ${list.length ? list.map((r) => `<div class="cc-hrow">${cover(r.video)}
         <div class="cc-vtext"><a href="#${pf.path}?id=${r.id}"><b>${esc(r.video.caption || r.video.url)}</b></a>
           <span class="muted small">${by(platform, r.video.author)}<a href="${esc(r.video.url)}" target="_blank" rel="noopener" class="muted">${esc(String(r.video.url).replace(/^https:\/\/www\./, ''))}</a></span></div>
         <span class="cc-hnums"><b>${fmt(r.parents)}</b> gốc · <b>${fmt(r.replies)}</b> trả lời${r.timesCollected > 1 ? ` <span class="badge plain" title="Video này đã thu thập ${r.timesCollected} lần">${r.timesCollected} lần</span>` : ''}</span>
         <span class="muted small cc-hwhen">${ago(r.createdAt)}</span>
-        <span class="cc-hacts"><a class="btn sm" href="#${pf.path}?id=${r.id}">Mở</a><a class="btn sm" href="#/video?videos=${encodeURIComponent(r.video.url)}" title="Phân tích video">${icon('bars')}</a>
+        <span class="cc-hacts"><a class="btn sm" href="#${pf.path}?id=${r.id}">Mở</a><a class="btn sm" href="#/video?videos=${encodeURIComponent(r.video.url)}" title="Video Analysis">${icon('play')}</a>
           ${hist.armed === String(r.id) ? `<button type="button" class="btn sm danger" data-del="${r.id}">Xoá hẳn?</button>` : `<button type="button" class="icon-btn" data-del="${r.id}" title="Xoá lần thu thập này (bình luận vẫn còn nếu nơi khác cũng đã lấy)">${icon('trash')}</button>`}</span>
       </div>`).join('') + (hist.all.length > hist.limit ? `<div class="cc-more"><button type="button" class="btn sm" data-hmore>Xem thêm ${Math.min(10, hist.all.length - hist.limit)}</button></div>` : '') : emptyState('Chưa thu thập lần nào')}`;
   }

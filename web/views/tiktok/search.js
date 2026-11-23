@@ -20,7 +20,7 @@ export async function mount(root, params) {
   if (params.q) st.keywords = params.q;
   if (knownRegion(params.gl, TIKTOK_REGIONS)) st.gl = params.gl; // carried over from the YouTube side
   root.innerHTML = `
-    ${findHead('search', 'Tìm video', 'Video TikTok hot theo từ khoá, chỉ giữ video đúng chủ đề (có từ khoá hoặc hashtag của chủ đề, không nói về nước khác).')}
+    ${findHead('search', 'Video Search', 'Video TikTok hot theo từ khoá, chỉ giữ video đúng chủ đề (có từ khoá hoặc hashtag của chủ đề, không nói về nước khác).')}
     ${platformTabs('/tiktok/search')}
     <div data-ttlogin></div>
     <div data-form>
@@ -99,7 +99,7 @@ export async function mount(root, params) {
         <label class="small muted">Xếp theo</label><select class="select input sm" style="width:auto" data-sort>${Object.entries({ hot: 'Hot', plays: 'View', likes: 'Like', shares: 'Share', saves: 'Save', new: 'Mới nhất' }).map(([k, l]) => `<option value="${k}" ${f.sort === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
         <button type="button" class="btn sm" data-selall>Chọn tất cả</button>
         <button class="btn sm primary" data-cm disabled title="Tích “Chọn” ở góc video trước">${icon('message')} Lấy comment</button>
-        <a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div><div class="vgrid" data-list></div></div>`;
+        <a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} Export .csv</a></div><div class="vgrid" data-list></div></div>`;
     const filters = out.querySelector('[data-filters]');
     filters.querySelectorAll('[data-chips]').forEach((g) => (g.dataset.allowOff = ''));
     bindChips(filters, (n, v) => ((f[n] = v), persist('tt-search-filter', f), render()));

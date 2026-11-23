@@ -12,113 +12,130 @@
 export const PLATFORM_LABELS = { tiktok: 'TikTok', youtube: 'YouTube' };
 
 /** @type {Item} */
-export const HOME = { icon: 'home', label: 'Tổng quan', tabs: [['/', 'Tổng quan', () => import('./views/dashboard.js')]] };
+export const HOME = { icon: 'home', label: 'Home', tabs: [['/', 'Home', () => import('./views/dashboard.js')]] };
 /** @type {Item} */
-export const SOULPRINT = { icon: 'target', label: 'Soulprint', tabs: [['/soulprint', 'Soulprint', () => import('./views/soulprint.js')]] };
+export const SOULPRINT = { icon: 'fingerprint', label: 'Soulprint', tabs: [['/soulprint', 'Soulprint', () => import('./views/soulprint.js')]] };
 
 /** @type {{key: string, title: string, items: Item[]}[]} */
 export const GROUPS = [
   {
-    key: 'find', title: 'Tìm',
+    key: 'find', title: 'Research',
     items: [
       // The three search screens show their own TikTok | YouTube switch inside the form (`inline`), with one screen per
-      // platform, so switching keeps you on the same job. Kênh exists on YouTube only: its TikTok side shows greyed out.
+      // platform, so switching keeps you on the same job.
       {
-        icon: 'compass', label: 'Chủ đề', inline: true,
+        icon: 'compass', label: 'Topic Research', inline: true,
         platforms: {
-          tiktok: [['/tiktok/topic', 'Nghiên cứu chủ đề', () => import('./views/tiktok/topic.js')]],
-          youtube: [['/research', 'Nghiên cứu chủ đề', () => import('./views/research.js')]],
+          tiktok: [['/tiktok/topic', 'Topic Research', () => import('./views/tiktok/topic.js')]],
+          youtube: [['/research', 'Topic Research', () => import('./views/research.js')]],
         },
       },
       {
-        icon: 'search', label: 'Video', inline: true,
+        // One entry for both searches: Video on TikTok and YouTube, Kênh on YouTube only (TikTok has no channel search).
+        icon: 'search', label: 'Search', inline: true,
         platforms: {
-          tiktok: [['/tiktok/search', 'Tìm video', () => import('./views/tiktok/search.js')]],
-          youtube: [['/videos', 'Tìm video', () => import('./views/videos.js')]],
-        },
-      },
-      { icon: 'users', label: 'Kênh', only: 'youtube', inline: true, tabs: [['/channels', 'Tìm kênh', () => import('./views/channels.js')]] },
-      {
-        icon: 'key', label: 'Từ khoá', only: 'youtube',
-        tabs: [
-          ['/keywords', 'Gợi ý từ khoá', () => import('./views/keywords.js')],
-          ['/ideas', 'Chấm điểm từ khoá', () => import('./views/ideas.js')],
-        ],
-      },
-      { icon: 'eye', label: 'Theo dõi', tabs: [['/follows', 'Kênh đang theo dõi', () => import('./views/follows.js')]] },
-    ],
-  },
-  {
-    key: 'dissect', title: 'Phân tích',
-    items: [
-      { icon: 'bars', label: 'Phân tích video', tabs: [['/video', 'Phân tích video', () => import('./views/video.js')]] },
-      {
-        icon: 'users', label: 'Phân tích kênh',
-        platforms: {
-          tiktok: [['/tiktok/channel', 'Phân tích kênh', () => import('./views/tiktok/channel.js')]],
+          tiktok: [['/tiktok/search', 'Video', () => import('./views/tiktok/search.js')]],
           youtube: [
-            ['/channel', 'Phân tích kênh', () => import('./views/channel.js')],
-            ['/compare', 'So sánh kênh', () => import('./views/compare.js')],
+            ['/videos', 'Video', () => import('./views/videos.js')],
+            ['/channels', 'Kênh', () => import('./views/channels.js')],
           ],
         },
       },
-      { icon: 'target', label: 'Thư viện gạch', tabs: [['/bricks', 'Thư viện gạch', () => import('./views/bricks.js')]] },
+      {
+        icon: 'key', label: 'Keywords', only: 'youtube',
+        tabs: [
+          ['/keywords', 'Gợi ý', () => import('./views/keywords.js')],
+          ['/ideas', 'Chấm điểm', () => import('./views/ideas.js')],
+        ],
+      },
+      { icon: 'eye', label: 'Watchlist', tabs: [['/follows', 'Watchlist', () => import('./views/follows.js')]] },
     ],
   },
   {
-    // Customer Intelligence (docs/customer-intelligence): one workflow from comments to content opportunities.
-    // The old Insight and 5W1H menus live on as the data-collection screens of this module ("Thu thập").
-    key: 'ci', title: 'Customer Intelligence',
+    key: 'dissect', title: 'Analyze',
     items: [
-      { icon: 'pie', label: 'Toàn cảnh', tabs: [['/ci', 'Toàn cảnh khách hàng', () => import('./views/ci/overview.js')]] },
-      { icon: 'target', label: 'Chủ đề & Nỗi đau', tabs: [['/ci/topics', 'Chủ đề & Nỗi đau', () => import('./views/ci/topics.js')]] },
-      { icon: 'message', label: 'Bình luận & Câu hỏi', tabs: [['/ci/comments', 'Bình luận & Câu hỏi', () => import('./views/ci/comments.js')]] },
+      { icon: 'play', label: 'Video Analysis', tabs: [['/video', 'Video Analysis', () => import('./views/video.js')]] },
+      {
+        icon: 'bars', label: 'Channel Analysis',
+        platforms: {
+          tiktok: [['/tiktok/channel', 'Channel Analysis', () => import('./views/tiktok/channel.js')]],
+          youtube: [
+            ['/channel', 'Channel Analysis', () => import('./views/channel.js')],
+            ['/compare', 'Compare', () => import('./views/compare.js')],
+          ],
+        },
+      },
+      { icon: 'layers', label: 'Swipe File', tabs: [['/bricks', 'Swipe File', () => import('./views/bricks.js')]] },
+    ],
+  },
+  {
+    // Audience (docs/customer-intelligence): collect comments, read them as one run (Audience Insights), then dig in
+    // Content Lab. The old "Từ comment đã có" screens became New run (ALIASES); the old 5W1H reports still open (HIDDEN).
+    key: 'ci', title: 'Audience',
+    items: [
+      {
+        // One screen per way in (views/comment-collect.js and views/insight-view.js), the same on both platforms.
+        icon: 'download', label: 'Collect Comments',
+        platforms: {
+          tiktok: [
+            ['/tiktok/comments', 'Theo link', () => import('./views/comment-collect.js')],
+            ['/tiktok/insight', 'Theo từ khoá', () => import('./views/tiktok/insight.js')],
+          ],
+          youtube: [
+            ['/comments', 'Theo link', () => import('./views/comment-collect.js')],
+            ['/insight', 'Theo từ khoá', () => import('./views/insight.js')],
+          ],
+        },
+      },
+      {
+        icon: 'pie', label: 'Audience Insights',
+        tabs: [
+          ['/ci', 'Overview', () => import('./views/ci/overview.js')],
+          ['/ci/topics', 'Pain Points', () => import('./views/ci/topics.js')],
+          ['/ci/comments', 'Questions', () => import('./views/ci/comments.js')],
+          ['/ci/runs', 'Runs', () => import('./views/ci/runs.js')],
+        ],
+      },
       {
         icon: 'flask', label: 'Content Lab',
         tabs: [
           ['/ci/lab/whys', '5 Whys', () => import('./views/ci/whys.js')],
           ['/ci/lab/brief', '5W1H Brief', () => import('./views/ci/brief.js')],
-          ['/ci/lab/opportunities', 'Cơ hội nội dung', () => import('./views/ci/opportunities.js')],
+          ['/ci/lab/opportunities', 'Opportunities', () => import('./views/ci/opportunities.js')],
         ],
-      },
-      { icon: 'clock', label: 'Lần phân tích & AI', tabs: [['/ci/runs', 'Lần phân tích & AI', () => import('./views/ci/runs.js')]] },
-      {
-        icon: 'download', label: 'Thu thập comment',
-        platforms: {
-          tiktok: [
-            // One screen on both platforms (views/comment-collect.js): the switch above the page only changes the platform.
-            ['/tiktok/comments', 'Thu thập bình luận', () => import('./views/comment-collect.js')],
-            ['/tiktok/insight', 'Insight theo từ khoá', () => import('./views/tiktok/insight.js')],
-            ['/tiktok/insight/collected', 'Từ comment đã có', () => import('./views/tiktok/insight-collected.js')],
-            ['/tiktok/5w1h', '5W1H (bản cũ)', () => import('./views/tiktok/five-w.js')],
-          ],
-          youtube: [
-            ['/comments', 'Thu thập bình luận', () => import('./views/comment-collect.js')],
-            ['/insight', 'Insight theo từ khoá', () => import('./views/insight.js')],
-            ['/insight/collected', 'Từ comment đã có', () => import('./views/insight-collected.js')],
-          ],
-        },
       },
     ],
   },
   {
-    key: 'make', title: 'Làm',
-    items: [{ icon: 'bulb', label: 'Bảng ý tưởng', tabs: [['/board', 'Bảng ý tưởng', () => import('./views/board.js')], ['/board/review', 'Chấm lô', () => import('./views/board-review.js')]] }],
+    key: 'make', title: 'Create',
+    items: [{ icon: 'bulb', label: 'Idea Board', tabs: [['/board', 'Idea Board', () => import('./views/board.js')], ['/board/review', 'Batch Review', () => import('./views/board-review.js')]] }],
   },
   {
-    key: 'library', title: 'Lưu trữ',
+    key: 'library', title: 'Library',
     items: [
-      { icon: 'clock', label: 'Lịch sử', tabs: [['/history', 'Lịch sử', () => import('./views/history.js')]] },
-      { icon: 'bookmark', label: 'Đã lưu', tabs: [['/saved', 'Đã lưu', () => import('./views/saved.js')]] },
-      { icon: 'settings', label: 'Cài đặt', tabs: [['/settings', 'Cài đặt', () => import('./views/settings.js')]] },
+      { icon: 'clock', label: 'History', tabs: [['/history', 'History', () => import('./views/history.js')]] },
+      { icon: 'bookmark', label: 'Saved', tabs: [['/saved', 'Saved', () => import('./views/saved.js')]] },
     ],
   },
 ];
 
-export const ITEMS = [HOME, SOULPRINT, ...GROUPS.flatMap((g) => g.items)];
+/** Pinned to the foot of the sidebar, so the sidebar fits without scrolling. @type {Item} */
+export const SETTINGS = { icon: 'settings', label: 'Settings', tabs: [['/settings', 'Settings', () => import('./views/settings.js')]] };
 
-/** Old paths that now open another screen (the query string is kept). @type {Record<string, string>} */
-export const ALIASES = { '/tiktok/video': '/video' };
+/**
+ * Screens that still open from a link (history, an old result) but have no place in the sidebar: the 5W1H reports made
+ * before Content Lab. Opened without an id, the screen sends you on to 5W1H Brief. @type {Item[]}
+ */
+export const HIDDEN = [{ icon: 'doc', label: '5W1H (bản cũ)', tabs: [['/tiktok/5w1h', '5W1H (bản cũ)', () => import('./views/tiktok/five-w.js')]] }];
+
+export const ITEMS = [HOME, SOULPRINT, ...GROUPS.flatMap((g) => g.items), SETTINGS, ...HIDDEN];
+
+/** Old paths that now open another screen (the query strings of both are kept). @type {Record<string, string>} */
+export const ALIASES = {
+  '/tiktok/video': '/video',
+  '/tiktok/insight/collected': '/ci/runs?new=1',
+  '/insight/collected': '/ci/runs?new=1',
+};
 
 /** Every screen of an entry, whatever the platform. @param {Item} item @returns {Tab[]} */
 export const allTabs = (item) => (item.platforms ? [...item.platforms.tiktok, ...item.platforms.youtube] : item.tabs ?? []);

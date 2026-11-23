@@ -51,7 +51,7 @@ export function findHistory(el, job, { limit = 5 } = {}) {
     const filter = both
       ? `<div class="chips find-hfilter">${[['all', 'Tất cả'], ...Object.entries(PLATFORM_LABELS)].map(([v, l]) => `<button type="button" class="chip ${st.plat === v ? 'on' : ''}" data-hplat="${v}">${l}</button>`).join('')}</div>`
       : '';
-    el.innerHTML = `<div class="card-head"><h3>${icon('clock')} Đã chạy gần đây</h3>${filter}<a class="btn sm" href="#/history${kind ? `?kind=${kind}` : ''}" style="margin-left:auto">Xem tất cả</a></div>${
+    el.innerHTML = `<div class="card-head"><h3>${icon('clock')} Recent</h3>${filter}<a class="btn sm" href="#/history${kind ? `?kind=${kind}` : ''}" style="margin-left:auto">Xem tất cả</a></div>${
       shown.length
         ? shown
             .map((r) => {

@@ -7,10 +7,10 @@ const { readLinks } = await import(new URL('../web/comment-links.js', import.met
 const { ITEMS } = await import(new URL('../web/nav.js', import.meta.url).href);
 
 test('both platforms open the same screen under their own path, so old links keep working', () => {
-  const collect = ITEMS.find((it) => it.label === 'Thu thập comment');
+  const collect = ITEMS.find((it) => it.label === 'Collect Comments');
   const tt = collect.platforms.tiktok[0];
   const yt = collect.platforms.youtube[0];
-  assert.deepEqual([tt[0], tt[1], yt[0], yt[1]], ['/tiktok/comments', 'Thu thập bình luận', '/comments', 'Thu thập bình luận']);
+  assert.deepEqual([tt[0], tt[1], yt[0], yt[1]], ['/tiktok/comments', 'Theo link', '/comments', 'Theo link']);
   assert.equal(String(tt[2]), String(yt[2]), 'one module');
   assert.ok(!fs.existsSync('web/views/comments.js') && !fs.existsSync('web/views/tiktok/comments.js'));
 });

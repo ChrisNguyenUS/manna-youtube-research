@@ -56,7 +56,7 @@ function card(o, i, open, runId) {
         </div>
       </div>
       <div class="row ci-opp-acts">
-        ${o.ideaId ? `<a class="btn" href="#/board">${icon('check')} Đã ở Bảng ý tưởng (thẻ #${o.ideaId})</a>` : `<button type="button" class="btn primary" data-approve="${o.id}">${icon('check')} Duyệt → Bảng ý tưởng</button>`}
+        ${o.ideaId ? `<a class="btn" href="#/board">${icon('check')} Đã ở Idea Board (thẻ #${o.ideaId})</a>` : `<button type="button" class="btn primary" data-approve="${o.id}">${icon('check')} Duyệt → Idea Board</button>`}
         ${o.ideaId ? '' : `<button type="button" class="btn" data-status="${o.id}" data-to="reviewed">Đã xem</button><button type="button" class="btn" data-status="${o.id}" data-to="on_hold">Tạm giữ</button><button type="button" class="btn danger" data-status="${o.id}" data-to="rejected">Bỏ</button>`}
         <a class="btn ghost" href="#/ci/lab/brief?run=${runId}&brief=${o.briefId}">${icon('plus')} Tạo biến thể từ brief</a>
       </div>
@@ -67,12 +67,12 @@ function card(o, i, open, runId) {
 export async function mount(root, params) {
   root.innerHTML = loading();
   const { runs, run } = await resolveRun(params);
-  if (!run) return noRuns(root, 'Cơ hội nội dung');
+  if (!run) return noRuns(root, 'Opportunities', { iconName: 'flame', sub: 'Ý tưởng nội dung có bằng chứng, duyệt để đưa sang Idea Board.' });
   const drawer = evidenceDrawer();
   let d = await ci.opportunities(run.id);
   const st = { status: 'active', brief: Number(params.brief) || 0, open: new Set(params.opp ? [Number(params.opp)] : []), picked: new Set(), summary: '' };
   const insightId = Number(params.insight) || 0;
-  root.innerHTML = `${runBar(d.run, runs, { title: 'Cơ hội nội dung', sub: 'Ý tưởng nội dung có bằng chứng, xếp theo điểm ưu tiên app tính. Duyệt để đưa sang Bảng ý tưởng.', iconName: 'bulb' })}<div data-body></div>`;
+  root.innerHTML = `${runBar(d.run, runs, { title: 'Opportunities', sub: 'Ý tưởng nội dung có bằng chứng, xếp theo điểm ưu tiên app tính. Duyệt để đưa sang Idea Board.', iconName: 'flame' })}<div data-body></div>`;
   const body = /** @type {HTMLElement} */ (root.querySelector('[data-body]'));
   function draw() {
     let list = d.opportunities.filter((o) => (st.status === 'all' || (st.status === 'active' ? !['rejected'].includes(o.status) : o.status === st.status)) && (!st.brief || o.briefId === st.brief) && (!insightId || o.insightId === insightId));
@@ -103,8 +103,8 @@ export async function mount(root, params) {
     }
     const ap = /** @type {HTMLButtonElement|null} */ (t.closest('[data-approve]'));
     if (ap) {
-      const r = await busy(ap, 'Đang đưa sang Bảng ý tưởng…', () => ci.approve(Number(ap.dataset.approve)));
-      if (r) toast(`Đã thêm vào Bảng ý tưởng (thẻ #${r.ideaId})`, '', { href: '#/board', label: 'Mở bảng' });
+      const r = await busy(ap, 'Đang đưa sang Idea Board…', () => ci.approve(Number(ap.dataset.approve)));
+      if (r) toast(`Đã thêm vào Idea Board (thẻ #${r.ideaId})`, '', { href: '#/board', label: 'Mở bảng' });
       return refresh();
     }
     const sb = /** @type {HTMLElement|null} */ (t.closest('[data-status]'));

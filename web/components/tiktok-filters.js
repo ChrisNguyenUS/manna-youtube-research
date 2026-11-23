@@ -11,7 +11,7 @@ const GROUPS = [
 // Same thresholds as dropdowns, for the insight setup: label, icon, what "off" says, and a one-line explanation.
 const SELECTS = {
   minPlays: ['Lượt xem tối thiểu', 'eye', 'Không lọc', 'Bỏ video ít view hơn mức này.'],
-  minLikes: ['Lượt tim tối thiểu', 'heart', 'Không lọc', 'Bỏ video ít tim hơn mức này.'],
+  minLikes: ['Like tối thiểu', 'heart', 'Không lọc', 'Bỏ video ít like hơn mức này.'],
   maxAgeDays: ['Thời gian đăng', 'calendar', 'Mọi lúc', 'Chỉ giữ video đăng trong khoảng này.'],
   minEngagement: ['Tỉ lệ tương tác tối thiểu', 'bars', 'Không lọc', 'Tương tác = (tim + comment + share + lưu) ÷ view.'],
 };

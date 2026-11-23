@@ -1,4 +1,4 @@
-// "Insight khách hàng" screen, the same on TikTok and YouTube: a form (topic, scale, the platform's video filters,
+// "Insight theo từ khoá" screen, the same on TikTok and YouTube: a form (topic, scale, the platform's video filters,
 // comment options), then the report (KPIs and five tabs on the shared insight workspace). What differs per platform
 // comes in `pf` (web/views/tiktok/insight.js, web/views/insight.js).
 import { records, tiktokInsight, jobs } from '../http/client.js';
@@ -6,6 +6,8 @@ import { historyList } from '../components/history-list.js';
 import { esc, icon, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, bindTips, setUrl, activeJob, watchJob, errorCallout } from '../lib.js';
 import { commentGroups, bindCommentGroups, insightContext, insightOverview, topicExplorer, commentBrowser, videoGallery } from '../components/index.js';
 import { scope } from '../dom.js';
+import { COMMENT_COUNTS } from '../search-options.js';
+import { exportMenu } from '../components/export-menu.js';
 
 /**
  * @typedef {{
@@ -36,7 +38,7 @@ export async function mountInsight(root, params, pf) {
     ['standard', 'bars', 'Nghiên cứu tiêu chuẩn', 'Đủ để lên kế hoạch content.', 10, 100],
     ['deep', 'target', 'Nghiên cứu chuyên sâu', 'Nhiều video, nhiều comment hơn.', 30, 300],
   ];
-  const seg = (name, values, cur) => `<div class="ix-seg" role="radiogroup" data-seg="${name}">${values.map((v) => `<button type="button" role="radio" aria-checked="${v === cur}" class="${v === cur ? 'on' : ''}" data-v="${v}">${v}</button>`).join('')}</div>`;
+  const seg = (name, values, cur, cap = Infinity, capWhy = '') => `<div class="ix-seg" role="radiogroup" data-seg="${name}">${values.map((v) => `<button type="button" role="radio" aria-checked="${v === cur}" class="${v === cur ? 'on' : ''}" data-v="${v}" ${v > cap ? `disabled title="${capWhy}"` : ''}>${v.toLocaleString('vi-VN')}</button>`).join('')}</div>`;
   const head = (n, ic, title, sub) => `<div class="ix-head"><span class="ix-ic">${icon(ic)}</span><div><h3>${n}. ${title}</h3>${sub ? `<p>${sub}</p>` : ''}</div></div>`;
   root.innerHTML = `
     <div class="page-head"><div><h1>${icon('message')} ${esc(pf.title)}</h1>
@@ -52,7 +54,7 @@ export async function mountInsight(root, params, pf) {
         <div class="ix-presets" data-presets></div>
         <div class="ix-scale">
           <div><div class="ix-flabel">Số video ${pf.label} <span class="ix-tip" data-tip="Số video top (qua bộ lọc) được đọc comment.">${icon('info')}</span></div>${seg('top', [5, 10, 20, 30], st.top)}</div>
-          <div><div class="ix-flabel">Comment mỗi video <span class="ix-tip" data-tip="${esc(pf.commentTip)}">${icon('info')}</span></div>${seg('commentsPerVideo', [100, 300], st.commentsPerVideo)}</div>
+          <div><div class="ix-flabel">Comment mỗi video <span class="ix-tip" data-tip="${esc(pf.commentTip)}">${icon('info')}</span></div>${seg('commentsPerVideo', COMMENT_COUNTS, st.commentsPerVideo, 300, 'Đọc theo từ khoá lấy tối đa 300 comment mỗi video')}</div>
           <div class="ix-volume" data-volume></div>
         </div></section>
 
@@ -294,7 +296,7 @@ export async function mountInsight(root, params, pf) {
     out.innerHTML = `
       <div class="card ix-rhead"><div><h2>${esc(d.keywords.join(', '))}</h2>
           <div class="muted small">Lập ${ago(rec.created_at)} · ${pf.countsLine(d)}</div></div>
-        <div class="head-actions"><a class="btn sm" href="${records.exportUrl(id, 'md')}">${icon('download')} Markdown</a><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div></div>
+        <div class="head-actions"><a class="btn sm primary" href="#/ci/runs?new=1&${pf.kind.startsWith('tiktok') ? 'tiktok' : 'youtube'}=${encodeURIComponent(d.videos.map((v) => v.id).filter(Boolean).join(','))}" title="Tạo New run từ comment của các video trong báo cáo này: nỗi đau, 5 Whys, cơ hội nội dung">${icon('pie')} Phân tích audience (AI)</a>${exportMenu([[records.exportUrl(id, 'md'), 'Markdown (.md)'], [records.exportUrl(id, 'csv'), 'Bảng comment (.csv)']], { sm: true })}</div></div>
       ${pf.reportExtra ? pf.reportExtra(d) : ''}
       <div class="tt-kpis ix-kpis">
         ${kpi('play', d.videos.length, 'Video đọc comment', 'Video top qua bộ lọc đã được đọc comment.')}
@@ -359,7 +361,7 @@ export async function mountInsight(root, params, pf) {
     } else if (tab === 'videos') tabOffFn = videoGallery(body, ctx, { video: o.video, onAllComments: (video) => go('comments', { video }) });
   }
 
-  const history = historyList(root.querySelector('[data-history]'), { kind: pf.kind, path: pf.path, title: `${icon('clock')} Báo cáo đã lập`, empty: 'Chưa có báo cáo nào', extra: (r) => pf.criteria(r.params ?? {}) });
+  const history = historyList(root.querySelector('[data-history]'), { kind: pf.kind, path: pf.path, empty: 'Chưa có báo cáo nào', extra: (r) => pf.criteria(r.params ?? {}) });
   history();
   if (params.id) show(params.id);
   else if (!params.q) activeJob(pf.kind).then((live) => live && follow(live.params, (onProgress) => watchJob(live.id, onProgress)));

@@ -1,8 +1,9 @@
-// Customer Intelligence → Lần phân tích & AI: create a run (choose data, see exactly what will be processed before it
+// Audience Insights → Lần phân tích & AI: create a run (choose data, see exactly what will be processed before it
 // runs — PRD Stage 0), the history of runs, each stage's status, and the AI usage of a run (PRD §8.6).
 import { ci } from '../../http/client.js';
 import { esc, icon, fmt, ago, toast, runJob, progressCard, updateProgress, errorCallout } from '../../lib.js';
 import { runChip, usd, PLATFORM_VI, loading, reload } from '../../components/ci.js';
+import { platformMark } from '../../components/find-shell.js';
 
 const PATH = '/ci/runs';
 const STAGES = [['ingest', 'Nhập & chuẩn hoá'], ['classify', 'Phân loại comment'], ['topics', 'Gom chủ đề & nỗi đau'], ['insights', 'Tổng hợp insight']];
@@ -15,24 +16,28 @@ https://facebook.com/post/1,user2,3,2026-11-02,Mất bao lâu thì tới lượt
 export async function mount(root, params) {
   root.innerHTML = loading();
   const runs = await ci.runs();
-  if (params.new || !runs.length) return createScreen(root, runs);
+  if (params.new || !runs.length) return createScreen(root, runs, params);
   return historyScreen(root, runs, Number(params.run) || runs[0].id, params.tab || 'stages');
 }
 
 function videoList(platform, list) {
-  if (!list.length) return `<div class="muted small">Chưa có video ${PLATFORM_VI[platform]} nào có comment. <a href="#${platform === 'tiktok' ? '/tiktok/comments' : '/comments'}">Thu thập comment</a></div>`;
+  if (!list.length) return `<div class="muted small">Chưa có video ${PLATFORM_VI[platform]} nào có comment. <a href="#${platform === 'tiktok' ? '/tiktok/comments' : '/comments'}">Collect Comments</a></div>`;
   return `<label class="check small"><input type="checkbox" data-all="${platform}"> Chọn tất cả (${list.length})</label>
     <div class="ci-vlist">${list.map((v) => `<label class="check ci-vrow"><input type="checkbox" data-v="${platform}" value="${esc(v.id)}"><span><b>${esc(v.caption || v.url || v.id)}</b><span class="muted small">${v.author ? `${esc(v.author)} · ` : ''}${fmt(v.total)} comment · ${ago(v.lastSeen)}</span></span></label>`).join('')}</div>`;
 }
 
-async function createScreen(root, runs) {
+/**
+ * @param {Element} root @param {any[]} runs
+ * @param {{tiktok?: string, youtube?: string}} [pick] video ids (comma separated) another screen hands over, ticked and previewed at once
+ */
+async function createScreen(root, runs, pick = {}) {
   const av = await ci.available();
-  root.innerHTML = `<div class="page-head"><div><h1>${icon('plus')} Lần phân tích mới</h1><p>Chọn dữ liệu, xem trước đúng những gì sẽ được xử lý, rồi chạy. App chỉ dùng comment bạn đã thu thập hoặc tự dán vào; không tự cào thêm.</p></div>${runs.length ? `<a class="btn" href="#${PATH}">${icon('back')} Lịch sử</a>` : ''}</div>
+  root.innerHTML = `<div class="page-head"><div><h1>${icon('plus')} New run</h1><p>Chọn dữ liệu, xem trước đúng những gì sẽ được xử lý, rồi chạy. App chỉ dùng comment bạn đã thu thập hoặc tự dán vào; không tự cào thêm.</p></div>${runs.length ? `<a class="btn" href="#${PATH}">${icon('back')} Lịch sử</a>` : ''}</div>
     <form class="ci-create" data-form>
       <section class="card card-pad"><div class="section-label" style="margin-top:0">1. Dữ liệu</div>
         <div class="ci-grid2">
-          <div><b class="ci-src-h">${icon('play')} TikTok</b>${videoList('tiktok', av.tiktok)}</div>
-          <div><b class="ci-src-h">${icon('play')} YouTube</b>${videoList('youtube', av.youtube)}</div>
+          <div><b class="ci-src-h">${platformMark('tiktok')} TikTok</b>${videoList('tiktok', av.tiktok)}</div>
+          <div><b class="ci-src-h">${platformMark('youtube')} YouTube</b>${videoList('youtube', av.youtube)}</div>
         </div>
         <details class="ci-manual"><summary><b>Facebook / nguồn khác: dán CSV hoặc JSON</b></summary>
           <div class="row" style="margin:8px 0"><label class="small">Nền tảng mặc định <select class="input" name="manualPlatform">${['facebook', 'instagram', 'tiktok', 'youtube', 'other'].map((p) => `<option value="${p}">${PLATFORM_VI[p]}</option>`).join('')}</select></label></div>
@@ -115,13 +120,23 @@ async function createScreen(root, runs) {
     if (t.closest('[data-only]')) create(false);
   });
   form.addEventListener('submit', (e) => (e.preventDefault(), create(true)));
+  // Videos handed over by Collect Comments, Video Analysis or an Insight report: ticked, then previewed straight away.
+  let picked = 0;
+  for (const p of /** @type {const} */ (['tiktok', 'youtube'])) {
+    const want = new Set(String(pick[p] ?? '').split(',').map((x) => x.trim()).filter(Boolean));
+    for (const el of form.querySelectorAll(`[data-v="${p}"]`)) if (want.has(/** @type {HTMLInputElement} */ (el).value)) ((/** @type {HTMLInputElement} */ (el).checked = true), picked++);
+  }
+  if (picked) {
+    form.querySelector('[data-v]:checked')?.closest('label')?.scrollIntoView({ block: 'nearest' });
+    preview();
+  }
 }
 
 async function historyScreen(root, runs, runId, tab) {
   const run = runs.find((r) => r.id === runId) ?? runs[0];
   const u = await ci.usage(run.id);
   const t = u.total;
-  root.innerHTML = `<div class="page-head"><div><h1>${icon('clock')} Lần phân tích & AI</h1><p>Lịch sử phân tích, trạng thái từng bước và chi phí AI thật (theo OpenRouter). Chạy lại chỉ bước cần thiết để tiết kiệm.</p></div><a class="btn primary" href="#${PATH}?new=1">${icon('plus')} Lần phân tích mới</a></div>
+  root.innerHTML = `<div class="page-head"><div><h1>${icon('list')} Runs</h1><p>Lịch sử phân tích, trạng thái từng bước và chi phí AI thật (theo OpenRouter). Chạy lại chỉ bước cần thiết để tiết kiệm.</p></div><a class="btn primary" href="#${PATH}?new=1">${icon('plus')} Lần phân tích mới</a></div>
     <div class="ci-split ci-split-runs">
       <aside class="card"><div class="card-head"><h3>Các lần phân tích</h3></div>${runs.map((r) => `<a class="ci-runrow ${r.id === run.id ? 'on' : ''}" href="#${PATH}?run=${r.id}&tab=${tab}"><b>${esc(r.title)}</b><span class="row small">${runChip(r.status)}<span class="muted">${fmt(r.analysable)} comment · ${usd(r.spentUsd)} · ${ago(r.createdAt)}</span></span></a>`).join('')}</aside>
       <section>
@@ -150,12 +165,12 @@ async function historyScreen(root, runs, runId, tab) {
           return `<div class="ci-stage"><span class="ci-stage-n">${i + 1}</span><div><b>${l}</b><div class="small muted">${detail || 'Chưa chạy'}${s.at ? ` · ${ago(s.at)}` : ''}</div>${s.error ? `<div class="small" style="color:var(--bad)">${esc(s.error)}</div>` : ''}${s.notes?.length ? `<div class="small muted">${s.notes.map(esc).join(' · ')}</div>` : ''}</div>
             <span class="badge ${STAGE_TONE[s.status] ?? 'plain'}">${STAGE_VI[s.status] ?? 'Chưa chạy'}</span>${k === 'ingest' ? '' : `<button type="button" class="btn sm" data-stage="${k}">${icon('refresh')} Chạy bước này</button>`}</div>`;
         }).join('')}</div></section>
-        <div class="muted small">Chạy lại "Gom chủ đề" sẽ viết lại nỗi đau, insight và xoá 5 Whys/brief/cơ hội của lần này. Thẻ đã đưa sang Bảng ý tưởng vẫn giữ.</div>`}
+        <div class="muted small">Chạy lại "Gom chủ đề" sẽ viết lại nỗi đau, insight và xoá 5 Whys/brief/cơ hội của lần này. Thẻ đã đưa sang Idea Board vẫn giữ.</div>`}
       </section>
     </div>`;
   const prog = /** @type {HTMLElement} */ (root.querySelector('[data-prog]'));
   const analyze = async (stage) => {
-    prog.innerHTML = progressCard('Customer Intelligence đang phân tích');
+    prog.innerHTML = progressCard('Audience Insights đang phân tích');
     try {
       await runJob('ci_analyze', { runId: run.id, stage, scope: 'new' }, (p) => updateProgress(prog, p));
       toast('Đã phân tích xong');
@@ -180,7 +195,7 @@ async function historyScreen(root, runs, runId, tab) {
       return;
     }
     if (el.closest('[data-del]')) {
-      if (!confirm(`Xoá hẳn “${run.title}” cùng mọi chủ đề, insight, 5 Whys, brief và cơ hội của nó? Không hoàn tác được. (Thẻ đã ở Bảng ý tưởng vẫn giữ.)`)) return;
+      if (!confirm(`Xoá hẳn “${run.title}” cùng mọi chủ đề, insight, 5 Whys, brief và cơ hội của nó? Không hoàn tác được. (Thẻ đã ở Idea Board vẫn giữ.)`)) return;
       await ci.remove(run.id);
       toast('Đã xoá lần phân tích');
       location.hash = `#${PATH}`;

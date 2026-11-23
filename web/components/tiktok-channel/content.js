@@ -5,7 +5,7 @@ import { on } from '../../dom.js';
 import { pct, captionText, groupOf } from './util.js';
 import { analyzeHref } from './videos.js';
 
-const COLORS = ['#7c5cff', '#f2a7c8', '#9fb7ff', '#c4b5fd', '#f6c08b', '#cbd5e1'];
+const COLORS = ['#e8590c', '#f6a76b', '#9fb7ff', '#c4b5fd', '#f6c08b', '#cbd5e1'];
 const lift = (x) => (x == null ? '' : x >= 1.2 ? 'tc-up' : x < 0.8 ? 'tc-down' : 'plain');
 
 /** Donut of how many videos fall in each group. @param {{label: string, count: number}[]} rows */

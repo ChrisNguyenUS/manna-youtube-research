@@ -39,16 +39,29 @@ export async function mount(root, params) {
     setUrl('/keywords', { id: rec.id }); // a reload or a copied link opens this result again
     const sel = new Set();
     out.innerHTML = `<div class="card"><div class="card-head"><h3>${rec.data.list.length} gợi ý cho "${esc(rec.data.seed)}"</h3>
-      <div class="row"><button class="btn sm" data-act="videos" disabled>${icon('search')} Tìm video</button><button class="btn sm" data-act="channels" disabled>${icon('users')} Tìm kênh</button><button class="btn sm" data-act="save" disabled title="Giữ các từ khoá đã tích trong Đã lưu">${icon('bookmark')} Lưu</button><button class="btn sm" data-act="ideas" disabled>${icon('bulb')} Chấm điểm</button><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div></div>
-      <table class="t"><thead><tr><th style="width:30px"></th><th>Từ khoá</th><th class="r" data-tip="Số lần xuất hiện qua các lần gõ thử">Xuất hiện</th><th></th></tr></thead><tbody>
+      <div class="row"><button class="btn sm primary" data-act="ideas" disabled title="Chấm điểm các từ khoá đã tích ngay ở tab Chấm điểm">${icon('trend')} Chấm điểm <span data-n></span></button><button class="btn sm" data-act="videos" disabled>${icon('search')} Tìm video</button><button class="btn sm" data-act="channels" disabled>${icon('users')} Tìm kênh</button><button class="btn sm" data-act="save" disabled title="Giữ các từ khoá đã tích trong Đã lưu">${icon('bookmark')} Lưu</button><a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} Export .csv</a></div></div>
+      <table class="t"><thead><tr><th style="width:30px"><input type="checkbox" data-all aria-label="Chọn tất cả" title="Chọn tất cả"></th><th>Từ khoá</th><th class="r" data-tip="Số lần xuất hiện qua các lần gõ thử">Xuất hiện</th><th></th></tr></thead><tbody>
       ${rec.data.list.map((k, i) => `<tr><td><input type="checkbox" data-k="${i}"></td><td><b>${esc(k.keyword)}</b></td><td class="r num">${k.hits}</td>
         <td class="actions"><a class="btn sm" href="#/videos?q=${encodeURIComponent(k.keyword)}&run=1">${icon('search')} Video</a></td></tr>`).join('')}</tbody></table></div>`;
     const btns = out.querySelectorAll('[data-act]');
     shown.off();
+    const sync = () => {
+      btns.forEach((b) => (b.disabled = !sel.size));
+      out.querySelector('[data-n]').textContent = sel.size ? `(${sel.size})` : '';
+    };
     shown.on(out, 'change', '[data-k]', (e, c) => {
       const kw = rec.data.list[c.dataset.k].keyword;
       c.checked ? sel.add(kw) : sel.delete(kw);
-      btns.forEach((b) => (b.disabled = !sel.size));
+      sync();
+    });
+    // Score takes at most 30 at a time: "all" ticks the first 30.
+    shown.on(out, 'change', '[data-all]', (e, c) => {
+      sel.clear();
+      out.querySelectorAll('[data-k]').forEach((x, i) => {
+        x.checked = c.checked && i < 30;
+        if (x.checked) sel.add(rec.data.list[x.dataset.k].keyword);
+      });
+      sync();
     });
     btns.forEach((b) => b.addEventListener('click', () => {
       const list = [...sel];
@@ -57,7 +70,7 @@ export async function mount(root, params) {
       else window.__go('/' + b.dataset.act, { q: list.join(', ') });
     }));
   }
-  const history = historyList(root.querySelector('[data-history]'), { kind: 'keywords', path: '/keywords', title: 'Đã lấy', empty: 'Chưa có' });
+  const history = historyList(root.querySelector('[data-history]'), { kind: 'keywords', path: '/keywords', empty: 'Chưa có' });
   history();
   if (params.id) show(params.id);
   else resumeJob('keywords', out, () => 'Đang lấy gợi ý', async (res) => (await show(res.id), history()));

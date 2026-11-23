@@ -1,10 +1,10 @@
-// "Nghiên cứu chủ đề" on TikTok, two screens in one view:
+// "Topic Research" on TikTok, two screens in one view:
 // 1. Setup: the search-screen form (topic, region, time, views, advanced) → related keywords TikTok itself suggests
 //    (picked as cards), the picked ones and the scan button on the side.
 // 2. Result: KPIs, "So sánh theo từ khoá" (one column per keyword) and "Tất cả video" (grid or list).
 //    Videos are ticked by hand on either tab; only the ticked ones go to the existing comment scraper.
 import { records, tiktokTopic } from '../../http/client.js';
-import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ageText, bindTips, activeJob, watchJob, isSaved, toggleSave, saveMany, errorCallout } from '../../lib.js';
+import { esc, icon, chips, bindChips, runJob, progressCard, updateProgress, toast, store, persist, fmt, ago, emptyState, ageText, bindTips, activeJob, watchJob, isSaved, toggleSave, saveMany, errorCallout, img } from '../../lib.js';
 import { savedTikTokVideo, savedKeyword } from '../../saved-items.js';
 import { scope } from '../../dom.js';
 import { tiktokLoginNotice } from '../../components/tiktok-login.js';
@@ -12,13 +12,14 @@ import { findHead, platformTabs, searchBar, section, fieldRows, checkRow, advanc
 import { resultHeader, kpiGrid, resultTabs, exportMenu, panel, closeMenusOnClick } from '../../components/research-result.js';
 import { findHistory, rerunRecord } from '../../components/find-history.js';
 import { TIKTOK_REGIONS, TIKTOK_COUNTRY, TIKTOK_AGE_CHIPS, TIKTOK_PLAYS_CHIPS, knownRegion } from '../../search-options.js';
+import { nextSteps, link } from '../../components/next-steps.js';
 
 const FORM = {
   topic: '', gl: '', minPlays: 100000, maxAgeDays: 0, sort: 'score', maxKeywords: 10, perKeyword: 10, topComments: 3, keepOffTopic: 0, keepPrevious: 1,
   // How the result is shown (never sent to the server).
   tab: 'overview', layout: 'grid', show: 10, vsort: 'rank', cmShow: 1, colw: 320,
 };
-const SORT_LABELS = { score: 'Tổng hợp', plays: 'Lượt xem', trending: 'View/ngày', fresh: 'Mới nhất' };
+const SORT_LABELS = { score: 'Tổng hợp', plays: 'View', trending: 'View/ngày', fresh: 'Mới nhất' };
 const INTENT_ORDER = ['time', 'cost', 'howto', 'interview', 'condition', 'experience', 'related'];
 const INTENT_LABELS = { time: 'Thời gian', cost: 'Chi phí', howto: 'Cách làm, giấy tờ', interview: 'Phỏng vấn', condition: 'Điều kiện', experience: 'Kinh nghiệm', related: 'Liên quan' };
 const SOURCE_LABELS = { topic: 'Chủ đề gốc', related: 'Người khác cũng tìm', suggest: 'Gợi ý khi gõ', manual: 'Bạn thêm' };
@@ -29,7 +30,7 @@ const VIEW_SORTS = {
   trending: ['View/ngày cao nhất', (v) => v.playsPerDay ?? 0],
   fresh: ['Mới đăng nhất', (v) => -(v.ageDays ?? 1e9)],
   gain: ['Tăng view từ lần trước', (v) => v.gain ?? -1],
-  likes: ['Nhiều tim nhất', (v) => v.likes],
+  likes: ['Nhiều like nhất', (v) => v.likes],
   comments: ['Nhiều bình luận nhất', (v) => v.comments],
 };
 // Scan settings shown as chip rows: [label, options [value, label]]. Defaults are FORM's.
@@ -67,6 +68,22 @@ const saveSel = (id, sel) => {
   }
 };
 
+/**
+ * Where a finished scan leads: the most-viewed videos to Video Analysis, their comments to Collect Comments, the
+ * biggest creator to Channel Analysis. @param {any[]} all the scan's videos
+ */
+function topicNextSteps(all) {
+  const top = [...all].sort((a, b) => (b.plays ?? 0) - (a.plays ?? 0)).filter((v) => v.url);
+  if (!top.length) return '';
+  const urls = (n) => top.slice(0, n).map((v) => v.url).join('\n');
+  const lead = top[0].author;
+  return nextSteps([
+    { href: link('/video', { videos: urls(5), run: 1 }), icon: 'play', label: 'Video Analysis 5 video top', hint: 'Script, số liệu và comment của 5 video nhiều view nhất', primary: true },
+    { href: link('/tiktok/comments', { videos: urls(10) }), icon: 'download', label: 'Collect comment 10 video top', hint: 'Mở Collect Comments với 10 link đã điền sẵn; bấm Thu thập để chạy' },
+    ...(lead ? [{ href: link('/tiktok/channel', { input: `@${lead}`, run: 1 }), icon: 'bars', label: `Channel Analysis @${lead}`, hint: 'Kênh có video nhiều view nhất trong kết quả' }] : []),
+  ]);
+}
+
 export async function mount(root, params) {
   const st = store('tt-topic-form', FORM);
   /** @type {{keyword: string, intent: string, selected: boolean, dropped?: string, sources: string[]}[]} */
@@ -87,7 +104,7 @@ export async function mount(root, params) {
   if (knownRegion(params.gl, TIKTOK_REGIONS)) st.gl = params.gl; // carried over from the YouTube side
   root.innerHTML = `
     <section data-setup>
-      ${findHead('compass', 'Nghiên cứu chủ đề', 'Khám phá video đang tăng trưởng, kênh nổi bật và nội dung hiệu quả trên TikTok và YouTube.')}
+      ${findHead('compass', 'Topic Research', 'Khám phá video đang tăng trưởng, kênh nổi bật và nội dung hiệu quả trên TikTok và YouTube.')}
       ${platformTabs('/tiktok/topic')}
       <div data-ttlogin></div>
       <div data-form>
@@ -355,7 +372,7 @@ export async function mount(root, params) {
     ['videos', `Video (${nVideos})`],
     ['keywords', `Từ khoá (${nKw})`],
     ['creators', `Kênh (${nCreators})`],
-    ...(hasComments ? [['comments', 'Bình luận']] : []),
+    ...(hasComments ? [['comments', 'Comment']] : []),
   ];
 
   /** @param {any} rec */
@@ -403,10 +420,11 @@ export async function mount(root, params) {
         { ic: 'layers', value: cols.length, label: 'Từ khoá', hint: junk.length && !showJunk ? `ẩn ${junk.length} từ khoá rác` : '' },
         { ic: 'play', value: all.length, label: 'Video', hint: [p.keepOffTopic ? 'đã gộp video trùng' : `đã gộp trùng · bỏ ${offTopic} lạc đề`, all.some((v) => v.carried) ? `${all.filter((v) => v.carried).length} giữ từ lần trước` : ''].filter(Boolean).join(' · ') },
         { ic: 'users', value: new Set(all.map((v) => v.author)).size, label: 'Kênh (creator)' },
-        { ic: 'eye', value: fmt(sum('plays')), label: 'Tổng lượt xem', hint: `${fresh30} video đăng ≤ 30 ngày`, tip: 'Cộng lượt xem của các video trong kết quả (video trùng tính một lần). N = nghìn, Tr = triệu.' },
-        { ic: 'heart', value: fmt(sum('likes')), label: 'Tổng lượt tim' },
-        { ic: 'message', value: fmt(sum('comments')), label: 'Tổng bình luận', hint: s?.newSincePrevious != null ? `${s.newSincePrevious} video mới so với lần trước` : '' },
+        { ic: 'eye', value: fmt(sum('plays')), label: 'Tổng view', hint: `${fresh30} video đăng ≤ 30 ngày`, tip: 'Cộng lượt xem của các video trong kết quả (video trùng tính một lần). N = nghìn, Tr = triệu.' },
+        { ic: 'heart', value: fmt(sum('likes')), label: 'Tổng like' },
+        { ic: 'message', value: fmt(sum('comments')), label: 'Tổng comment', hint: s?.newSincePrevious != null ? `${s.newSincePrevious} video mới so với lần trước` : '' },
       ])}
+      ${done ? topicNextSteps(all) : ''}
       <div class="card tt-results rr-body">
         ${resultTabs(tabs, st.tab)}
         <div class="tt-rbar" data-rbar><div class="row" data-controls></div></div>
@@ -512,7 +530,7 @@ export async function mount(root, params) {
 
   const gainBadge = (v) => (v.carried ? `<span class="tt-gain old" title="Lần quét này TikTok không trả về video này. Giữ từ lần quét ${esc(String(v.lastSeenAt).slice(0, 10))}, view tính đến hôm đó.">Lần trước</span>` : v.gain != null ? `<span class="tt-gain ${v.gain > 0 ? 'up' : ''}" title="Tăng ${fmt(v.gainPerDay)} view/ngày từ lần quét trước">+${fmt(v.gain)} view</span>` : v.isNew ? '<span class="tt-gain new" title="Lần quét trước chưa có video này">Mới</span>' : '');
   const commentsHtml = (list, n = 3) => (list?.length && n ? `<div class="tt-cm">${list.slice(0, n).map((c) => `<div class="tt-cm-row" title="${esc(c.text)}"><span class="tt-cm-likes">♥ ${fmt(c.likes)}</span> “${esc(c.text)}”</div>`).join('')}</div>` : '');
-  const cover = (v) => (v.cover ? `<img loading="lazy" src="${esc(v.cover)}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : '');
+  const cover = (v) => (v.cover ? `<img loading="lazy" src="${esc(img(v.cover))}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : '');
   const cb = (v) => `<input type="checkbox" class="tt-cb" data-sel="${esc(v.id)}" aria-label="Chọn video để lấy comment">`;
   /** What the on-topic rule left out of a column, so the user can check it. */
   const offTopicList = (c) => (c.offTopic ? `<details class="tt-off"><summary>Bỏ ${c.offTopic} video lạc đề</summary>${(c.offTopicVideos ?? []).map((v) => `<div class="small"><a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.caption || '(không có caption)')}</a> <span class="muted">· ${fmt(v.plays)} view · ${esc(v.reason)}</span></div>`).join('')}</details>` : '');
@@ -722,10 +740,10 @@ export async function mount(root, params) {
         <p class="tt-dr-cap">${esc(v.caption || '(không có caption)')}</p>
         ${v.hashtags?.length ? `<div>${v.hashtags.map((h) => `<span class="tag">#${esc(h)}</span>`).join('')}</div>` : ''}
         <div class="tt-dr-stats">
-          ${stat('Lượt xem', fmt(v.plays), v.carried ? `tính đến ${dateText(v.lastSeenAt)}` : '')}
+          ${stat('View', fmt(v.plays), v.carried ? `tính đến ${dateText(v.lastSeenAt)}` : '')}
           ${stat('View/ngày', fmt(v.playsPerDay))}
           ${stat('Tăng từ lần trước', v.gain != null ? `+${fmt(v.gain)}` : v.isNew ? 'Mới' : '–', v.gainPerDay != null ? `${fmt(v.gainPerDay)}/ngày` : '')}
-          ${stat('Tim', fmt(v.likes))}${stat('Bình luận', fmt(v.comments))}${stat('Chia sẻ', fmt(v.shares))}
+          ${stat('Like', fmt(v.likes))}${stat('Comment', fmt(v.comments))}${stat('Chia sẻ', fmt(v.shares))}
           ${stat('Lưu', fmt(v.saves))}${stat('Tỉ lệ tương tác', pct(v.engagementRate), '(tim + cmt + share + lưu) ÷ view')}${stat('Điểm tổng hợp', v.score != null ? fmt(v.score) : '–')}
         </div>
         <div class="tt-dr-sec">Nằm trong từ khoá</div>

@@ -1,15 +1,15 @@
 // "Đã lưu": the material kept for writing scripts and ads — customer quotes, TikTok videos, keywords, YouTube videos and channels.
 import { saved } from '../http/client.js';
-import { esc, icon, fmt, mult, ago, emptyState, ytVideo, thumb, ytChannel, toast, loadSaved, setUrl } from '../lib.js';
+import { esc, icon, fmt, mult, ago, emptyState, ytVideo, thumb, ytChannel, toast, loadSaved, setUrl, img } from '../lib.js';
 
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
 const q = (s) => encodeURIComponent(s);
-const img = (cls, src) => (src ? `<img class="${cls}" loading="lazy" src="${esc(src)}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : '');
+const picture = (cls, src) => (src ? `<img class="${cls}" loading="lazy" src="${esc(img(src))}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : '');
 
 /** Tab order, and how one item of each kind reads: main(s) → HTML, actions(s) → buttons, text(s) → what the search box looks in. */
 const KINDS = {
   quote: {
-    label: 'Câu chữ của khách', empty: 'Mở một báo cáo Insight khách hàng, tích các comment hay rồi bấm Lưu.',
+    label: 'Câu chữ của khách', empty: 'Mở một báo cáo Insight theo từ khoá, tích các comment hay rồi bấm Lưu.',
     text: (s) => `${s.data.text} ${s.data.source} ${(s.data.topics || []).join(' ')}`,
     main: (s) => `<div class="sv-text"><p class="sv-quote">“${esc(s.data.text)}”</p>
       <div class="sv-meta"><span>♥ ${fmt(s.data.likes ?? 0)}</span><span>${fmt(s.data.replies ?? 0)} trả lời</span>
@@ -19,33 +19,33 @@ const KINDS = {
     copy: (s) => `“${String(s.data.text).replace(/\s+/g, ' ').trim()}”`,
   },
   tiktok_video: {
-    label: 'Video TikTok', empty: 'Mở một video trong Tìm theo chủ đề hoặc Insight khách hàng rồi bấm Lưu video.',
+    label: 'Video TikTok', empty: 'Mở một video trong Topic Research hoặc Insight theo từ khoá rồi bấm Lưu video.',
     text: (s) => `${s.data.caption} ${s.data.author} ${(s.data.keywords || []).join(' ')}`,
-    main: (s) => `${img('sv-cover', s.data.cover)}<div class="sv-text"><a class="sv-title" href="${esc(s.data.url)}" target="_blank" rel="noopener">${esc(s.data.caption || '(không caption)')}</a>
-      <div class="sv-meta"><span>@${esc(s.data.author)}</span><span><b>${fmt(s.data.plays)}</b> view</span><span>${fmt(s.data.likes)} tim</span><span>${fmt(s.data.comments)} bình luận</span>
+    main: (s) => `${picture('sv-cover', s.data.cover)}<div class="sv-text"><a class="sv-title" href="${esc(s.data.url)}" target="_blank" rel="noopener">${esc(s.data.caption || '(không caption)')}</a>
+      <div class="sv-meta"><span>@${esc(s.data.author)}</span><span><b>${fmt(s.data.plays)}</b> view</span><span>${fmt(s.data.likes)} like</span><span>${fmt(s.data.comments)} comment</span>
         ${(s.data.keywords || []).map((k) => `<span class="tx-kw">${esc(k)}</span>`).join('')}</div></div>`,
     actions: (s) => `<a class="btn sm" href="#/tiktok/comments?videos=${q(s.data.url)}">${icon('message')} Comment</a>`,
   },
   keyword: {
-    label: 'Từ khoá', empty: 'Tích từ khoá ở Tìm theo chủ đề (TikTok) hoặc Gợi ý từ khoá (YouTube) rồi bấm Lưu.',
+    label: 'Từ khoá', empty: 'Tích từ khoá ở Topic Research (TikTok) hoặc Gợi ý từ khoá (YouTube) rồi bấm Lưu.',
     text: (s) => `${s.data.keyword} ${s.data.topic}`,
     main: (s) => `<div class="sv-text"><b>${esc(s.data.keyword)}</b><div class="sv-meta"><span class="badge plain">${s.data.platform === 'tiktok' ? 'TikTok' : 'YouTube'}</span>${s.data.topic ? `<span>Chủ đề: ${esc(s.data.topic)}</span>` : ''}</div></div>`,
     actions: (s) => (s.data.platform === 'tiktok'
-      ? `<a class="btn sm" href="#/tiktok/topic?q=${q(s.data.keyword)}&run=1">${icon('compass')} Tìm theo chủ đề</a><a class="btn sm" href="#/tiktok/insight?q=${q(s.data.keyword)}">${icon('message')} Insight</a>`
+      ? `<a class="btn sm" href="#/tiktok/topic?q=${q(s.data.keyword)}&run=1">${icon('compass')} Topic Research</a><a class="btn sm" href="#/tiktok/insight?q=${q(s.data.keyword)}">${icon('message')} Insight</a>`
       : `<a class="btn sm" href="#/videos?q=${q(s.data.keyword)}&run=1">${icon('search')} Tìm video</a><a class="btn sm" href="#/ideas?ideas=${q(s.data.keyword)}&run=1">${icon('bulb')} Chấm điểm</a>`),
     copy: (s) => s.data.keyword,
   },
   video: {
     label: 'Video YouTube', empty: 'Bấm biểu tượng dấu trang ở kết quả tìm video để lưu.',
     text: (s) => `${s.data.title} ${s.data.channelTitle}`,
-    main: (s) => `${img('sv-thumb', thumb(s.data.id))}<div class="sv-text"><a class="sv-title" href="${ytVideo(s.data.id)}" target="_blank" rel="noopener">${esc(s.data.title)}</a>
+    main: (s) => `${picture('sv-thumb', thumb(s.data.id))}<div class="sv-text"><a class="sv-title" href="${ytVideo(s.data.id)}" target="_blank" rel="noopener">${esc(s.data.title)}</a>
       <div class="sv-meta"><span>${esc(s.data.channelTitle)}</span><span><b>${fmt(s.data.views)}</b> view</span><span>${mult(s.data.viewSub)} sub</span></div></div>`,
     actions: (s) => `<a class="btn sm" href="#/comments?videos=${q(s.data.id)}">${icon('message')} Comment</a>`,
   },
   channel: {
     label: 'Kênh YouTube', empty: 'Bấm Lưu kênh ở Tìm kênh hoặc Phân tích kênh.',
     text: (s) => `${s.data.title} ${s.data.handle}`,
-    main: (s) => `${img('sv-avatar', s.data.avatar)}<div class="sv-text"><a class="sv-title" href="${ytChannel(s.data)}" target="_blank" rel="noopener">${esc(s.data.title || s.title)}</a>
+    main: (s) => `${picture('sv-avatar', s.data.avatar)}<div class="sv-text"><a class="sv-title" href="${ytChannel(s.data)}" target="_blank" rel="noopener">${esc(s.data.title || s.title)}</a>
       <div class="sv-meta"><span>${fmt(s.data.subs)} sub</span><span>trung vị ${fmt(s.data.medianViews)} view</span>${s.data.country ? `<span>${esc(s.data.country)}</span>` : ''}</div></div>`,
     actions: (s) => `<a class="btn sm" href="#/channel?input=${q(s.data.id)}">${icon('bars')} Phân tích</a>`,
   },
@@ -59,12 +59,12 @@ export async function mount(root, params) {
   let find = '';
   let armed = ''; // ref of the row whose delete button waits for a second click
 
-  root.innerHTML = `<div class="page-head"><div><h1>${icon('bookmark')} Đã lưu</h1><p>Chất liệu để viết kịch bản và quảng cáo: câu chữ thật của khách, video, từ khoá, kênh. Ghi chú được cho từng mục.</p></div>
-      <a class="btn" href="${saved.exportUrl()}" data-all>${icon('download')} Tải tất cả (Markdown)</a></div>
+  root.innerHTML = `<div class="page-head"><div><h1>${icon('bookmark')} Saved</h1><p>Chất liệu để viết kịch bản và quảng cáo: câu chữ thật của khách, video, từ khoá, kênh. Ghi chú được cho từng mục.</p></div>
+      <a class="btn" href="${saved.exportUrl()}" data-all>${icon('download')} Export tất cả .md</a></div>
     <div class="card"><div class="tabs sv-tabs" data-tabs></div>
       <div class="hist-bar"><label class="tt-searchmini hist-q">${icon('search')}<input data-q placeholder="Tìm trong mục đã lưu" autocomplete="off"></label><span class="spacer"></span>
         <span class="muted small" data-count></span>
-        <button type="button" class="btn sm" data-copyall>${icon('doc')} Chép Markdown</button><a class="btn sm" data-dl>${icon('download')} Tải Markdown</a></div>
+        <button type="button" class="btn sm" data-copyall>${icon('doc')} Chép Markdown</button><a class="btn sm" data-dl>${icon('download')} Export .md</a></div>
       <div data-body></div></div>`;
   const body = root.querySelector('[data-body]');
   const shown = () => all.filter((s) => s.kind === tab && (!find || fold(KINDS[tab].text(s)).includes(fold(find))));
