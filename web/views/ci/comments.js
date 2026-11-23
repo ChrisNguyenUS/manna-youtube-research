@@ -1,4 +1,4 @@
-// Customer Intelligence → Bình luận & Câu hỏi: every comment of the run with its labels (PRD §8.3). Original words
+// Audience Insights → Bình luận & Câu hỏi: every comment of the run with its labels (PRD §8.3). Original words
 // always shown, AI summary kept apart; the owner corrects labels or marks comments irrelevant (stored apart from the AI).
 import { ci } from '../../http/client.js';
 import { esc, icon, fmt, toast } from '../../lib.js';
@@ -11,11 +11,11 @@ const DIMS = ['intent', 'pain', 'emotion', 'objection', 'buying_signal', 'experi
 export async function mount(root, params) {
   root.innerHTML = loading();
   const { runs, run } = await resolveRun(params);
-  if (!run) return noRuns(root, 'Bình luận & Câu hỏi');
+  if (!run) return noRuns(root, 'Questions', { iconName: 'message', sub: 'Câu hỏi và câu chữ gốc của khách, có nhãn do AI gắn.' });
   const drawer = evidenceDrawer();
   const st = { tab: params.tab || 'all', q: '', source: '', dim: '', value: '', pain: params.pain || '', sort: '', page: 0, picked: new Set() };
   let d = await ci.comments(run.id, { tab: st.tab, pain: st.pain });
-  root.innerHTML = `${runBar(d.run, runs, { title: 'Bình luận & Câu hỏi', sub: 'Câu chữ gốc của khách, nhãn do AI gắn (bạn sửa được) và tóm tắt AI tách riêng.', iconName: 'message' })}
+  root.innerHTML = `${runBar(d.run, runs, { title: 'Questions', sub: 'Câu chữ gốc của khách, nhãn do AI gắn (bạn sửa được) và tóm tắt AI tách riêng.', iconName: 'message' })}
     ${stageHint(d.run, 'classify')}<div data-body></div>`;
   const body = /** @type {HTMLElement} */ (root.querySelector('[data-body]'));
   let seq = 0;
@@ -39,7 +39,7 @@ export async function mount(root, params) {
       </div>
       <div class="card">
         <div class="card-head"><span class="sub">${fmt(d.total)} comment${st.picked.size ? ` · đã chọn ${st.picked.size}` : ''}</span>
-          <div class="row">${st.picked.size ? `<button type="button" class="btn sm" data-bulk-irrelevant>Đánh dấu không liên quan</button><button type="button" class="btn sm ghost" data-bulk-clear>Bỏ chọn</button>` : ''}<a class="btn sm" href="${ci.exportUrl(run.id, 'csv')}">${icon('download')} CSV</a></div></div>
+          <div class="row">${st.picked.size ? `<button type="button" class="btn sm" data-bulk-irrelevant>Đánh dấu không liên quan</button><button type="button" class="btn sm ghost" data-bulk-clear>Bỏ chọn</button>` : ''}<a class="btn sm" href="${ci.exportUrl(run.id, 'csv')}">${icon('download')} Export .csv</a></div></div>
         <div class="ci-list">${d.rows.length ? d.rows.map((c) => `<div class="ci-cm-wrap">${commentRow(c, { select: true })}<div class="ci-cm-acts">${c.pains.length ? `<span class="small muted">${c.pains.map((p) => `<a href="#/ci/topics?run=${run.id}&pain=${p.id}">${esc(p.title)}</a>`).join(' · ')}</span>` : ''}
           <button type="button" class="btn sm ghost" data-relabel="${esc(c.ref)}">${icon('edit')} Sửa nhãn</button><button type="button" class="btn sm ghost" data-irrelevant="${esc(c.ref)}" data-on="${c.irrelevant ? 1 : 0}">${c.irrelevant ? 'Dùng lại' : 'Không liên quan'}</button></div></div>`).join('') : '<div class="card-pad muted">Không có comment nào khớp.</div>'}</div>
         ${pages > 1 ? `<div class="ci-pager"><button type="button" class="btn sm" data-page="${st.page - 1}" ${st.page === 0 ? 'disabled' : ''}>${icon('back')} Trước</button><span class="small muted">Trang ${st.page + 1}/${pages}</span><button type="button" class="btn sm" data-page="${st.page + 1}" ${st.page + 1 >= pages ? 'disabled' : ''}>Sau ${icon('chevron')}</button></div>` : ''}

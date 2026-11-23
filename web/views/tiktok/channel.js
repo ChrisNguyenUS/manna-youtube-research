@@ -1,7 +1,7 @@
 // "Phân tích kênh" (TikTok): a channel dashboard built from one tiktok_channel record. All numbers come from that
 // record; the dashboard modules live in web/components/tiktok-channel/.
 import { records } from '../../http/client.js';
-import { esc, icon, runJob, activeJob, watchJob, progressCard, updateProgress, errorCallout, toast, fmt, ago, setUrl, bindTips, followLabel, isFollowing, toggleFollow } from '../../lib.js';
+import { esc, icon, runJob, activeJob, watchJob, progressCard, updateProgress, errorCallout, toast, fmt, ago, setUrl, bindTips, followLabel, isFollowing, toggleFollow, img } from '../../lib.js';
 import { scope } from '../../dom.js';
 import { historyList } from '../../components/history-list.js';
 import { tiktokLoginNotice } from '../../components/tiktok-login.js';
@@ -9,19 +9,20 @@ import { section, num, pct, fullDate } from '../../components/tiktok-channel/uti
 import { performanceChart, postingHeatmap } from '../../components/tiktok-channel/charts.js';
 import { videoTable } from '../../components/tiktok-channel/videos.js';
 import { patternsModule, hashtagModule, captionModule, commentModule } from '../../components/tiktok-channel/content.js';
+import { nextSteps, link } from '../../components/next-steps.js';
 
 const KIND = 'tiktok_channel';
 const PATH = '/tiktok/channel';
-const NAV = [['overview', 'Tổng quan'], ['performance', 'Hiệu suất'], ['timing', 'Giờ đăng'], ['videos', 'Video'], ['content', 'Mẫu nội dung'], ['hashtags', 'Hashtag'], ['captions', 'Caption'], ['comments', 'Bình luận'], ['library', 'Thư viện video']];
+const NAV = [['overview', 'Tổng quan'], ['performance', 'Hiệu suất'], ['timing', 'Giờ đăng'], ['videos', 'Video'], ['content', 'Mẫu nội dung'], ['hashtags', 'Hashtag'], ['captions', 'Caption'], ['comments', 'Comment'], ['library', 'Thư viện video']];
 
 /** KPI card: label with a definition on hover, a big number, one line of context. */
 const kpi = (ic, label, value, hint, tip) => `<div class="tc-kpi" data-tip="${esc(tip)}"><div class="tc-kpi-label">${icon(ic)}${label}</div><div class="tc-kpi-value">${value}</div><div class="tc-kpi-hint">${hint}</div></div>`;
 
 export async function mount(root, params) {
   root.innerHTML = `<div class="tc">
-    <div class="tc-top"><div><h1>Phân tích kênh TikTok</h1><p>Hiệu suất, video nổi bật, giờ đăng, hashtag và caption của một kênh, tính từ số liệu công khai.</p></div>
-      <form class="tc-form" data-form><input class="input" data-input placeholder="@tenkenh hoặc link kênh / video" value="${esc(params.input || '')}" aria-label="Kênh TikTok">
-        <button class="btn primary" type="submit">${icon('bars')} Phân tích</button></form></div>
+    <div class="page-head"><div><h1>${icon('bars')} Channel Analysis</h1><p>Hiệu suất, video nổi bật, giờ đăng, hashtag và caption của một kênh, tính từ số liệu công khai.</p></div></div>
+      <form class="card card-pad tc-form" data-form><input class="input" data-input placeholder="@tenkenh hoặc link kênh / video" value="${esc(params.input || '')}" aria-label="Kênh TikTok">
+        <button class="btn primary" type="submit">${icon('bars')} Phân tích</button></form>
     <div data-login></div>
     <div data-prog></div>
     <div data-out></div>
@@ -31,7 +32,7 @@ export async function mount(root, params) {
   const prog = /** @type {HTMLElement} */ (root.querySelector('[data-prog]'));
   const out = /** @type {HTMLElement} */ (root.querySelector('[data-out]'));
   const offLogin = tiktokLoginNotice(root.querySelector('[data-login]'));
-  const history = historyList(root.querySelector('[data-history]'), { kind: KIND, path: PATH, title: `${icon('clock')} Kênh đã phân tích`, empty: 'Chưa phân tích kênh nào' });
+  const history = historyList(root.querySelector('[data-history]'), { kind: KIND, path: PATH, empty: 'Chưa phân tích kênh nào' });
 
   async function follow(title, job) {
     prog.innerHTML = progressCard(title);
@@ -63,21 +64,28 @@ export async function mount(root, params) {
     input.value = `@${p.username}`;
     out.innerHTML = `
       <div class="card tc-head">
-        ${p.avatar ? `<img class="tc-avatar" src="${esc(p.avatar)}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : '<span class="tc-avatar"></span>'}
+        ${p.avatar ? `<img class="tc-avatar" src="${esc(img(p.avatar))}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : '<span class="tc-avatar"></span>'}
         <div class="tc-id"><h2>${esc(p.nickname || p.username)}${p.verified ? ' <span class="badge tc-up">Đã xác minh</span>' : ''}</h2>
           <a href="${esc(p.url)}" target="_blank" rel="noopener">@${esc(p.username)} ${icon('ext')}</a>${p.bio ? `<p>${esc(p.bio.slice(0, 160))}</p>` : ''}</div>
         <div class="tc-meta"><span title="${esc(fullDate(d.analyzedAt))}">Phân tích ${ago(rec.created_at)} · ${fullDate(d.analyzedAt)}</span><span>Nhịp đăng: <b>${rate}</b>${s.lastPostDays != null ? ` · video mới nhất ${s.lastPostDays < 1 ? 'trong 24 giờ' : `${Math.round(s.lastPostDays)} ngày`} trước` : ''}</span></div>
         <div class="tc-actions">
           <button class="btn sm ${isFollowing('tiktok', ref) ? 'on' : ''}" data-follow>${followLabel('tiktok', ref)}</button>
-          <details class="tc-menu"><summary class="btn sm">${icon('download')} Xuất báo cáo</summary><div><a href="${records.exportUrl(rec.id, 'md')}">Markdown (.md)</a><a href="${records.exportUrl(rec.id, 'csv')}">Bảng video (.csv)</a></div></details>
+          <details class="tc-menu"><summary class="btn sm">${icon('download')} Export</summary><div><a href="${records.exportUrl(rec.id, 'md')}">Markdown (.md)</a><a href="${records.exportUrl(rec.id, 'csv')}">Bảng video (.csv)</a></div></details>
           <button class="btn sm primary" data-rerun>${icon('refresh')} Phân tích lại</button></div>
       </div>
+      ${(() => {
+        const top = [...vids].filter((v) => v.url).sort((a, b) => (b.outlierScore ?? 0) - (a.outlierScore ?? 0) || (b.plays ?? 0) - (a.plays ?? 0)).slice(0, 5).map((v) => v.url);
+        return top.length ? nextSteps([
+          { href: link('/video', { videos: top.join('\n'), run: 1 }), icon: 'play', label: `Video Analysis ${top.length} video nổi bật`, hint: 'Script, số liệu và comment của các video vượt trung vị kênh nhiều nhất', primary: true },
+          { href: link('/tiktok/comments', { videos: top.join('\n') }), icon: 'download', label: 'Collect comment các video này', hint: 'Mở Collect Comments với link đã điền sẵn' },
+        ]) : '';
+      })()}
       ${p.private ? '<div class="callout">Kênh để riêng tư, không xem được video.</div>' : ''}
       ${s.baselineBiased ? '<div class="callout">Lần này trang kênh không trả video mới nhất, chỉ có video tìm thấy qua tìm kiếm (thường là video nổi). View trung vị có thể cao hơn thực tế, nên số video "nổi bật" ít hơn thực tế. Bấm Phân tích lại để thử lấy lại.</div>' : ''}
       <nav class="tc-nav" aria-label="Các phần của báo cáo">${NAV.map(([k, l]) => `<button type="button" data-go="${k}">${l}</button>`).join('')}</nav>
       <div class="tc-kpis" data-sec="overview">
-        ${kpi('users', 'Follower', fmt(s.followers), `${fmt(s.likes)} tim cả kênh`, 'Số người theo dõi kênh lúc phân tích. App chưa lưu số cũ nên chưa so sánh được tăng trưởng.')}
-        ${kpi('eye', 'Tổng lượt xem', fmt(totalPlays), `của ${d.videos.length} video đã lấy`, 'Cộng lượt xem các video app lấy được, không phải tổng lượt xem cả kênh (TikTok không công bố số này).')}
+        ${kpi('users', 'Follower', fmt(s.followers), `${fmt(s.likes)} like cả kênh`, 'Số người theo dõi kênh lúc phân tích. App chưa lưu số cũ nên chưa so sánh được tăng trưởng.')}
+        ${kpi('eye', 'Tổng view', fmt(totalPlays), `của ${d.videos.length} video đã lấy`, 'Cộng lượt xem các video app lấy được, không phải tổng lượt xem cả kênh (TikTok không công bố số này).')}
         ${kpi('play', 'Số video', fmt(s.videoCount), `đã lấy ${d.videos.length} video`, 'Số video kênh đang có trên TikTok; phân tích dựa trên các video đã lấy.')}
         ${kpi('bars', 'View trung vị / video', fmt(s.medianPlays), `trung bình ${fmt(avg)} · bằng ${pct(s.playsPerFollower)} follower`, `Lượt xem của video ở giữa khi xếp ${s.baselineSample} video mới nhất (đã đăng từ ${s.minAge} ngày, bỏ video ghim). Trung vị không bị vài video viral kéo lệch như trung bình.`)}
         ${kpi('heart', 'Tỷ lệ tương tác', pct(s.medianEngagement), 'trung vị mỗi video', '(Tim + bình luận + chia sẻ + lưu) ÷ lượt xem, lấy trung vị các video.')}
@@ -93,7 +101,7 @@ export async function mount(root, params) {
         ${section('hashtags', 'Hashtag', '<div data-tags></div>', { sub: 'Hashtag dùng nhiều chưa chắc là hashtag đi cùng video nhiều view' })}
         ${section('captions', 'Caption', captionModule(d))}
       </div>
-      ${section('comments', 'Bình luận', commentModule(d))}`;
+      ${section('comments', 'Comment', commentModule(d))}`;
     shown.off();
     shown.add(bindTips(out));
     const table = videoTable(/** @type {HTMLElement} */ (out.querySelector('[data-videos]')), d);

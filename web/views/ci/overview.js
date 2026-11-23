@@ -1,5 +1,6 @@
-// Customer Intelligence → Toàn cảnh: what the run's customers ask, fear and want, at a glance (PRD §8.1).
+// Audience Insights → Toàn cảnh: what the run's customers ask, fear and want, at a glance (PRD §8.1).
 import { ci } from '../../http/client.js';
+import { nextSteps } from '../../components/next-steps.js';
 import { esc, icon, fmt } from '../../lib.js';
 import { resolveRun, noRuns, runBar, bindRunBar, stageHint, commentRow, stateChip, strengthChip, pct, loading, LABEL_VI, evidenceDrawer, bindRefs, reload } from '../../components/ci.js';
 
@@ -27,20 +28,25 @@ const kpi = (ic, value, label, tip, hint = '') => `<div class="ci-kpi" title="${
 export async function mount(root, params) {
   root.innerHTML = loading();
   const { runs, run } = await resolveRun(params);
-  if (!run) return noRuns(root, 'Toàn cảnh khách hàng');
+  if (!run) return noRuns(root, 'Overview', { sub: 'Khách đang hỏi gì, lo gì và nên làm nội dung gì tiếp. Cần một lần phân tích comment trước.' });
   const o = await ci.overview(run.id);
   const k = o.kpis;
   const drawer = evidenceDrawer();
-  root.innerHTML = `${runBar(o.run, runs, { title: 'Toàn cảnh khách hàng', sub: 'Khách đang hỏi gì, lo gì và nên làm nội dung gì tiếp — mọi con số do app đếm từ comment.' })}
+  root.innerHTML = `${runBar(o.run, runs, { title: 'Overview', sub: 'Khách đang hỏi gì, lo gì và nên làm nội dung gì tiếp — mọi con số do app đếm từ comment.' })}
     ${stageHint(o.run, 'classify') || stageHint(o.run, 'topics')}
     <div class="ci-kpis">
       ${kpi('play', fmt(k.sources), 'Video / bài', 'Số video/bài đăng nguồn trong lần phân tích')}
-      ${kpi('message', fmt(k.comments), 'Bình luận', 'Comment hợp lệ (đã bỏ trùng, comment rỗng và comment bạn đánh dấu không liên quan). Không phải số người.', `${k.uniqueCommenters == null ? 'Không rõ số người' : `${fmt(k.uniqueCommenters)} người`}`)}
+      ${kpi('message', fmt(k.comments), 'Comment', 'Comment hợp lệ (đã bỏ trùng, comment rỗng và comment bạn đánh dấu không liên quan). Không phải số người.', `${k.uniqueCommenters == null ? 'Không rõ số người' : `${fmt(k.uniqueCommenters)} người`}`)}
       ${kpi('layers', fmt(k.topics), 'Chủ đề', 'Nhóm vấn đề rộng do AI gom; bạn có thể gộp/tách')}
       ${kpi('help', fmt(k.questions), 'Câu hỏi', 'Comment có ý định hỏi, tìm thông tin hoặc xin gợi ý')}
       ${kpi('target', fmt(k.pains), 'Nỗi đau', 'Vấn đề cụ thể khách thể hiện, mỗi nỗi đau có comment làm bằng chứng')}
       ${kpi('heart', fmt(k.buyingSignals), 'Tín hiệu mua', 'Comment hỏi giá, dịch vụ, tư vấn hoặc bước tiếp. Like không được tính là tín hiệu mua.')}
     </div>
+    ${nextSteps([
+      { href: `#/ci/topics?run=${run.id}`, icon: 'alert', label: 'Xem Pain Points', hint: 'Nỗi đau và câu hỏi theo chủ đề, có comment làm bằng chứng' },
+      ...(k.pains ? [{ href: `#/ci/lab/whys?run=${run.id}`, icon: 'flask', label: 'Đào 5 Whys', hint: 'Vì sao khách gặp vấn đề này: nguyên nhân gốc của một insight' }] : []),
+      ...(o.opportunities.length ? [{ href: `#/ci/lab/opportunities?run=${run.id}`, icon: 'flame', label: `Duyệt ${o.opportunities.length} cơ hội → Idea Board`, hint: 'Ý tưởng có bằng chứng, duyệt để thành thẻ ở Idea Board', primary: true }] : []),
+    ])}
     <div class="ci-grid3">
       <section class="card"><div class="card-head"><h3>Phân bổ chủ đề</h3>${o.unclassified ? `<span class="sub">${fmt(o.unclassified)} comment chưa vào chủ đề nào</span>` : ''}</div>
         <div class="card-pad">${o.topics.length ? donut(o.topics, k.comments) : '<div class="muted">Chưa gom chủ đề.</div>'}</div></section>

@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import { KINDS, recordHref, jobHref } from '../web/kinds.js';
 
 test('5W1H is a known result kind that opens on its own screen', () => {
-  assert.deepEqual(KINDS.comment_5w1h, { label: '5W1H comment (AI)', path: '/tiktok/5w1h', icon: 'target', platform: 'tiktok' });
+  assert.deepEqual(KINDS.comment_5w1h, { label: '5W1H comment (AI)', path: '/tiktok/5w1h', icon: 'doc', platform: 'tiktok' });
   assert.equal(recordHref({ id: 7, kind: 'comment_5w1h' }), '#/tiktok/5w1h?id=7');
   assert.equal(jobHref({ kind: 'comment_5w1h', status: 'succeeded', result: { id: 9 } }), '#/tiktok/5w1h?id=9');
 });
@@ -27,7 +27,7 @@ test('the report screen says who wrote what, and labels every idea as lacking an
   assert.match(src, /Nhận định do AI viết, số đếm do app tính/);
   assert.match(src, /Chưa có tiền lệ outlier/);
   assert.match(src, /không đủ dữ liệu/i);
-  assert.match(src, /Chưa nhập API key OpenRouter/);
+  assert.match(src, /location\.replace\('#\/ci\/lab\/brief'\)/, 'without an id the old screen sends you to 5W1H Brief');
 });
 
 test('the report is a tab strip with one panel and uppercase field labels', () => {

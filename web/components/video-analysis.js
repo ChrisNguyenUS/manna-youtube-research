@@ -1,9 +1,10 @@
 // Result of a "Phân tích video" batch: the compare table (when there is more than one video), and under it the chosen
 // video's header and its Script, Comment and Thông số tabs. Gets the record and an export-link builder; never calls
 // the server. Comments use the shared comment explorer (embedded mode), never a second implementation.
-import { esc, icon, fmt, full, dur, emptyState, toast, isSaved, toggleSave, metric, store, persist } from '../lib.js';
+import { esc, icon, fmt, full, dur, emptyState, toast, isSaved, toggleSave, metric, store, persist, img } from '../lib.js';
 import { insightContext, commentBrowser } from './insight-workspace.js';
 import { savedTikTokVideo } from '../saved-items.js';
+import { exportMenu } from './export-menu.js';
 
 const NOTES = { none: 'Video không có phụ đề', off: 'Không lấy script', setup: 'Chưa cài Chromium nên chưa lấy được script', changed: 'Nền tảng đã đổi giao diện, chưa đọc được script', unsupported: 'YouTube chưa lấy được lời thoại' };
 const OPENING_SECONDS = 5;
@@ -19,7 +20,7 @@ const clock = (sec) => {
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
 const titleOf = (e) => e.video?.caption || e.video?.title || e.link;
 const channelOf = (e) => (e.video?.author ? `@${e.video.author}` : e.video?.channelTitle || '');
-const cover = (v) => (v?.cover ? `<img loading="lazy" src="${esc(v.cover)}" referrerpolicy="no-referrer" alt="" onerror="this.removeAttribute('src')">` : '');
+const cover = (v) => (v?.cover ? `<img loading="lazy" src="${esc(img(v.cover))}" referrerpolicy="no-referrer" alt="" onerror="this.removeAttribute('src')">` : '');
 const ER_TIP = 'Tương tác công khai ước tính = (thích + bình luận + chia sẻ + lưu) ÷ lượt xem. Tính từ số công khai, không phải số liệu trong TikTok Studio.';
 
 /** Sortable columns: [key, heading, value for sorting, cell HTML, platforms, tooltip]. Missing numbers show as "–", never 0. */
@@ -27,8 +28,8 @@ const COLS = [
   ['date', 'Ngày đăng', (e) => Date.parse(e.video?.createdAt || e.video?.publishedAt || '') || 0, (e) => day(e.video?.createdAt || e.video?.publishedAt)],
   ['dur', 'Dài', (e) => e.video?.durationSec ?? -1, (e) => dur(e.video?.durationSec)],
   ['views', 'View', (e) => e.row?.views ?? -1, (e) => fmt(e.row?.views)],
-  ['likes', 'Thích', (e) => e.video?.likes ?? -1, (e) => fmt(e.video?.likes)],
-  ['comments', 'Bình luận', (e) => e.video?.comments ?? -1, (e) => fmt(e.video?.comments), null, 'Số bình luận TikTok báo cho video (không phải số đã đọc)'],
+  ['likes', 'Like', (e) => e.video?.likes ?? -1, (e) => fmt(e.video?.likes)],
+  ['comments', 'Comment', (e) => e.video?.comments ?? -1, (e) => fmt(e.video?.comments), null, 'Số bình luận TikTok báo cho video (không phải số đã đọc)'],
   ['shares', 'Chia sẻ', (e) => e.video?.shares ?? -1, (e) => fmt(e.video?.shares), 'tiktok'],
   ['saves', 'Lưu', (e) => e.video?.saves ?? -1, (e) => fmt(e.video?.saves), 'tiktok'],
   ['er', 'Tương tác', (e) => e.row?.engagementRate ?? -1, (e) => pct(e.row?.engagementRate), null, ER_TIP],
@@ -132,7 +133,7 @@ export function videoAnalysis(box, { exportUrl }) {
     const tiktok = rec.data.platform === 'tiktok';
     const card = (l, val, tip = '') => `<div class="va-kpi" ${tip ? `data-tip="${esc(tip)}"` : ''}><span>${l}${tip ? ' ⓘ' : ''}</span><b>${val}</b></div>`;
     return `<div class="card-pad"><div class="va-kpis">
-        ${card('Lượt xem', full(e.row?.views))}${card('Thích', full(v.likes))}${card('Bình luận', full(v.comments), 'Số TikTok báo cho video')}
+        ${card('View', full(e.row?.views))}${card('Like', full(v.likes))}${card('Comment', full(v.comments), 'Số TikTok báo cho video')}
         ${tiktok ? card('Chia sẻ', full(v.shares)) + card('Lưu', full(v.saves)) : ''}
         ${card('Tương tác công khai (ước tính)', pct(e.row?.engagementRate), ER_TIP)}
         ${card('View/ngày', fmt(e.row?.viewsPerDay), metric('viewsPerDay').formula)}${card('Thời lượng', dur(v.durationSec))}${card('Ngày đăng', day(v.createdAt || v.publishedAt))}</div>
@@ -143,7 +144,7 @@ export function videoAnalysis(box, { exportUrl }) {
 
   function commentsTab(body, e) {
     if (e.commentsNote) return void (body.innerHTML = `<div class="card-pad"><div class="callout">Không lấy được bình luận của video này: ${esc(e.commentsNote)}</div></div>`);
-    if (!e.comments.length) return void (body.innerHTML = `<div class="card-pad">${emptyState(rec.data.params.comments ? 'Video chưa có bình luận có chữ' : 'Chưa thu thập bình luận', rec.data.params.comments ? '' : ' Lần chạy này tắt phần bình luận. Chạy lại với 100 hoặc 300 comment gốc, hoặc mở Thu thập bình luận.')}</div>`);
+    if (!e.comments.length) return void (body.innerHTML = `<div class="card-pad">${emptyState(rec.data.params.comments ? 'Video chưa có bình luận có chữ' : 'Chưa thu thập bình luận', rec.data.params.comments ? '' : ' Lần chạy này tắt phần bình luận. Chạy lại với 100 hoặc 300 comment gốc, hoặc mở Collect Comments.')}</div>`);
     // The shared explorer, fed with this one video (no record id: saved quotes must not link to an insight report).
     const ctx = insightContext({ id: undefined, title: titleOf(e), data: { comments: e.comments, videos: [{ ...e.video, rank: sel + 1 }], keywords: [] } }, e.groups);
     const parents = e.comments.filter((c) => !c.parentId).length;
@@ -174,13 +175,15 @@ export function videoAnalysis(box, { exportUrl }) {
         <a class="va-dcover" href="${esc(v.url)}" target="_blank" rel="noopener" title="Mở video gốc">${cover(v)}${v.durationSec ? `<span class="va-dur">${dur(v.durationSec)}</span>` : ''}</a>
         <div class="va-dinfo"><div class="va-dtitle" title="${esc(titleOf(e))}">${esc(titleOf(e))}</div>
           <div class="small muted">${esc(channelOf(e))} · đăng ${day(v.createdAt || v.publishedAt)} · dài ${dur(v.durationSec)}</div>
-          <div class="va-minis">${stat('Lượt xem', fmt(e.row?.views))}${stat('Thích', fmt(v.likes))}${stat('Bình luận', fmt(v.comments))}${tiktok ? stat('Chia sẻ', fmt(v.shares)) + stat('Lưu', fmt(v.saves)) : ''}</div></div>
+          <div class="va-minis">${stat('View', fmt(e.row?.views))}${stat('Like', fmt(v.likes))}${stat('Comment', fmt(v.comments))}${tiktok ? stat('Chia sẻ', fmt(v.shares)) + stat('Lưu', fmt(v.saves)) : ''}</div></div>
         <div class="va-dacts">${switcher}
-          <div class="row"><a class="btn sm" href="${esc(v.url)}" target="_blank" rel="noopener">${icon('ext')} Mở video</a>
+          <div class="row"><a class="btn sm primary" href="#/bricks?record=${esc(rec.id)}" title="AI tách video thành các element (topic, góc, hook, cách kể, CTA) và lưu vào Swipe File">${icon('layers')} Breakdown</a>
+            ${e.comments.length && v.id ? `<a class="btn sm" href="#/ci/runs?new=1&${tiktok ? 'tiktok' : 'youtube'}=${encodeURIComponent(v.id)}" title="Tạo New run từ comment của video này">${icon('pie')} Phân tích audience</a>` : ''}
+            <a class="btn sm" href="${esc(v.url)}" target="_blank" rel="noopener">${icon('ext')} Mở video</a>
             ${tiktok ? `<button type="button" class="btn sm ${saved ? 'on' : ''}" data-save>${icon('bookmark')} ${saved ? 'Đã lưu' : 'Lưu video'}</button>` : ''}
-            <details class="tc-menu"><summary class="btn sm">${icon('download')} Xuất</summary><div><a href="${exportUrl('md', { video: sel + 1 })}">Markdown video này</a>${n > 1 ? `<a href="${exportUrl('md')}">Markdown cả ${n} video</a>` : ''}<a href="${exportUrl('csv')}">Bảng số liệu (.csv)</a></div></details></div></div>
+            <details class="tc-menu"><summary class="btn sm">${icon('download')} Export</summary><div><a href="${exportUrl('md', { video: sel + 1 })}">Markdown video này</a>${n > 1 ? `<a href="${exportUrl('md')}">Markdown cả ${n} video</a>` : ''}<a href="${exportUrl('csv')}">Bảng số liệu (.csv)</a></div></details></div></div>
       </div>
-      <div class="tabs" role="tablist">${[['script', `Script${e.script ? ` (${e.script.segments} đoạn)` : ''}`], ['comments', `Bình luận (${fmt(e.comments.length)})`], ['stats', 'Thông số']].map(([k, l]) => `<button type="button" role="tab" class="tab ${tab === k ? 'on' : ''}" aria-selected="${tab === k}" data-vtab="${k}">${l}</button>`).join('')}</div>
+      <div class="tabs" role="tablist">${[['script', `Script${e.script ? ` (${e.script.segments} đoạn)` : ''}`], ['comments', `Comment (${fmt(e.comments.length)})`], ['stats', 'Thông số']].map(([k, l]) => `<button type="button" role="tab" class="tab ${tab === k ? 'on' : ''}" aria-selected="${tab === k}" data-vtab="${k}">${l}</button>`).join('')}</div>
       <div data-vbody></div></div>`;
   }
 
@@ -204,7 +207,7 @@ export function videoAnalysis(box, { exportUrl }) {
     // One video: its header says everything the table would, so the table is left out.
     box.innerHTML = `${n > 1 ? `<div class="card va-compare"><div class="card-head"><h3>${icon('columns')} So sánh ${n} video</h3>
         <div class="row"><span class="small muted">${ok < n ? `${n - ok} video lỗi · ` : ''}Bấm một dòng để xem chi tiết</span>${colMenu()}
-          <a class="btn sm" href="${exportUrl('md')}">${icon('download')} Markdown cả lô</a><a class="btn sm" href="${exportUrl('csv')}">${icon('download')} CSV</a><a class="btn sm" href="#/bricks?record=${esc(rec.id)}">${icon('target')} Bóc gạch</a></div></div>${table()}</div>` : ''}${detail()}`;
+          ${exportMenu([[exportUrl('md'), 'Markdown cả lô (.md)'], [exportUrl('csv'), 'Bảng video (.csv)']], { sm: true })}<a class="btn sm primary" href="#/bricks?record=${esc(rec.id)}">${icon('layers')} Breakdown cả lô</a></div></div>${table()}</div>` : ''}${detail()}`;
     fillTab();
   }
 

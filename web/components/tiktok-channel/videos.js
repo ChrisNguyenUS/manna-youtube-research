@@ -6,7 +6,7 @@ import { num, pct, ddmm, fullDate, cover, inRange, RANGES, seg } from './util.js
 
 const PAGE = 15;
 const COLS = [
-  ['plays', 'Lượt xem'], ['likes', 'Tim'], ['comments', 'Bình luận'], ['shares', 'Chia sẻ'], ['engagementRate', 'Tương tác'], ['outlierScore', '× trung vị'], ['createdAt', 'Ngày đăng'],
+  ['plays', 'View'], ['likes', 'Like'], ['comments', 'Comment'], ['shares', 'Chia sẻ'], ['engagementRate', 'Tương tác'], ['outlierScore', '× trung vị'], ['createdAt', 'Ngày đăng'],
 ];
 const val = (v, k) => (k === 'createdAt' ? Date.parse(v.createdAt || '') || 0 : v[k] ?? -Infinity);
 const tiktokLinks = (list) => list.map((v) => v.url).join('\n');
@@ -85,7 +85,7 @@ export function videoTable(el, data) {
             <div class="tc-badges">${v.standout && !v.pinned ? `<span class="badge tc-hi">${icon('flame')} Nổi bật</span>` : ''}${v.pinned ? '<span class="badge plain">Video ghim</span>' : ''}${v.young ? '<span class="badge plain">Mới đăng, view còn đang lên</span>' : ''}<span class="badge plain">${v.from === 'search' ? 'Lấy qua tìm kiếm' : 'Lấy từ trang kênh'}</span></div>
             <p class="muted small">Đăng ${fullDate(v.createdAt)} · dài ${dur(v.durationSec)}${v.musicTitle ? ` · nhạc: ${esc(v.musicTitle)}` : ''}</p></div></div>
           <div class="tc-d-grid">
-            ${[['Lượt xem', full(v.plays)], ['× trung vị kênh', mult(v.outlierScore)], ['Tim', full(v.likes)], ['Bình luận', full(v.comments)], ['Chia sẻ', full(v.shares)], ['Lưu', full(v.saves)], ['Tương tác', pct(v.engagementRate)], ['Tuổi', v.ageDays == null ? '–' : `${num(v.ageDays)} ngày`]].map(([l, x]) => `<div><span>${l}</span><b>${x}</b></div>`).join('')}
+            ${[['View', full(v.plays)], ['× trung vị kênh', mult(v.outlierScore)], ['Like', full(v.likes)], ['Comment', full(v.comments)], ['Chia sẻ', full(v.shares)], ['Lưu', full(v.saves)], ['Tương tác', pct(v.engagementRate)], ['Tuổi', v.ageDays == null ? '–' : `${num(v.ageDays)} ngày`]].map(([l, x]) => `<div><span>${l}</span><b>${x}</b></div>`).join('')}
           </div>
           <p class="tc-note">× trung vị kênh = lượt xem ÷ ${fmt(s.medianPlays)} (view trung vị của kênh). Tương tác = (tim + bình luận + chia sẻ + lưu) ÷ lượt xem.</p>
           ${v.hashtags?.length ? `<div class="chips">${v.hashtags.map((h) => `<span class="tag">#${esc(h)}</span>`).join('')}</div>` : ''}

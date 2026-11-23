@@ -8,6 +8,7 @@ import { createInnertubeSource } from './sources/innertube/index.js';
 import { createTikTokSource } from './sources/tiktok/index.js';
 import { createRunner } from './jobs/runner.js';
 import { makeEnrich, recordsFor } from './features/shared.js';
+import { makeThumbs } from './features/thumbs.js';
 import { makeVideoSearch } from './features/video-search.js';
 import { makeChannelSearch } from './features/channel-search.js';
 import { makeChannelAnalysis, makeCompareChannels, makeChannelHistory } from './features/channel-analysis.js';
@@ -138,9 +139,25 @@ export function createApp({ config = loadConfig(), source, store, tiktok, llm, k
   handlers.follow_refresh = (p, ctx) => features.follows.refresh(p, ctx.progress);
   handlers.batch_refresh = (p, ctx) => features.ideas.refresh(p, ctx.progress);
   handlers.ci_analyze = (p, ctx) => features.ci.analyze(p, ctx.progress);
+  // TikTok images in a finished result are kept on this computer before their links expire (src/features/thumbs.js).
+  const thumbs = makeThumbs({ dir: path.join(config.dataDir, 'thumbs') });
+  for (const [kind, run] of Object.entries(handlers)) {
+    if (!kind.startsWith('tiktok') && kind !== 'video_analysis' && kind !== 'follow_refresh' && kind !== 'brick_extract') continue;
+    handlers[kind] = async (p, ctx) => {
+      const out = await run(p, ctx);
+      try {
+        const ids = [out?.id, ...(Array.isArray(out?.jobs) ? out.jobs.map((/** @type {any} */ j) => j?.id) : [])].filter((x) => x != null);
+        for (const id of ids) thumbs.warm(store.records.get(ws, id)?.data);
+        if (!ids.length) thumbs.warm(out);
+      } catch {
+        // keeping pictures never fails the job
+      }
+      return out;
+    };
+  }
   const runner = createRunner({ jobsRepo: store.jobs, handlers, onCancelled: (job) => store.records.removeByJob(job.id) });
   return {
-    config, store, source, tiktok, llm, features, runner, ws, settings, close: async () => { await tiktok.close(); await source.close?.(); },
+    config, store, source, tiktok, llm, features, runner, ws, settings, thumbs, close: async () => { await tiktok.close(); await source.close?.(); },
     /** Set by the entry point (src/main.js): stops jobs, closes Chromium and exits. Null when nothing owns the process (tests, CLI). */
     shutdown: /** @type {null | (() => void)} */ (null),
   };

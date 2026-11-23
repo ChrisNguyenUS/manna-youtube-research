@@ -7,12 +7,12 @@ const { ITEMS, GROUPS } = await import(new URL('../web/nav.js', import.meta.url)
 
 const view = () => fs.readFileSync('web/views/bricks.js', 'utf8');
 
-test('Thư viện gạch is the third entry of Mổ xẻ and has its client and job label', () => {
-  assert.deepEqual(GROUPS.find((g) => g.key === 'dissect').items.map((it) => it.label), ['Phân tích video', 'Phân tích kênh', 'Thư viện gạch']);
-  assert.equal(ITEMS.find((it) => it.label === 'Thư viện gạch').tabs[0][0], '/bricks');
+test('Swipe File is the third entry of Analyze and has its client and job label', () => {
+  assert.deepEqual(GROUPS.find((g) => g.key === 'dissect').items.map((it) => it.label), ['Video Analysis', 'Channel Analysis', 'Swipe File']);
+  assert.equal(ITEMS.find((it) => it.label === 'Swipe File').tabs[0][0], '/bricks');
   const client = fs.readFileSync('web/http/client.js', 'utf8');
   for (const name of ['list:', 'get:', 'update:', 'remove:', 'exportUrl:']) assert.ok(client.slice(client.indexOf('export const bricks')).includes(name), name);
-  assert.match(fs.readFileSync('web/lib.js', 'utf8'), /brick_extract: 'Bóc gạch video'/);
+  assert.match(fs.readFileSync('web/lib.js', 'utf8'), /brick_extract: 'Breakdown video'/);
 });
 
 test('the detail has the reference tabs, in order, with uppercase field labels', () => {

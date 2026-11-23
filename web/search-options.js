@@ -25,6 +25,26 @@ export const TIKTOK_AGE_CHIPS = [
   { v: 365, label: '1 năm' },
   { v: 0, label: 'Mọi lúc' },
 ];
+/**
+ * Comments per video: the same choices on every screen that reads comments. A screen whose source cannot go that high
+ * shows the chip locked, with the reason as its tooltip, so the set never changes between screens.
+ */
+export const COMMENT_COUNTS = [100, 300, 1000];
+/** Replies read under each comment, on both platforms. */
+export const REPLIES_PER_COMMENT = 20;
+/**
+ * The comment-count buttons. Buttons carry data-<attr>="n"; a locked one is disabled, so click handlers never see it.
+ * @param {string} attr @param {number} cur @param {{cap?: number, capWhy?: string, none?: boolean, cls?: string}} [o]
+ */
+export function commentCountSeg(attr, cur, { cap = 1000, capWhy = '', none = false, cls = 'cx-seg' } = {}) {
+  const vals = [...(none ? [0] : []), ...COMMENT_COUNTS];
+  return `<div class="${cls}" role="group" aria-label="Số comment mỗi video">${vals
+    .map((v) => {
+      const locked = v > cap;
+      return `<button type="button" data-${attr}="${v}" class="${v === cur ? 'on' : ''}" ${locked ? `disabled title="${capWhy}"` : ''}>${v ? v.toLocaleString('vi-VN') : 'Không lấy'}</button>`;
+    })
+    .join('')}</div>`;
+}
 export const TIKTOK_PLAYS_CHIPS = [0, 10_000, 100_000, 1_000_000].map((v) => ({ v, label: v ? `≥ ${fmt(v)}` : 'Không lọc' }));
 
 export const REGIONS = [

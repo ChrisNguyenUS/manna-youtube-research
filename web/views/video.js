@@ -1,12 +1,13 @@
 // "Phân tích video": paste up to 10 links per platform → numbers, script and comments of each, side by side.
 // TikTok and YouTube links share the box; each platform runs as its own job and shows its own result block.
-// TikTok comments already collected anywhere in the app (Thu thập bình luận, earlier analyses, Insight) are reused when
+// TikTok comments already collected anywhere in the app (Collect Comments, earlier analyses, Insight) are reused when
 // the dataset allows it (core/tiktok/comment-reuse.js); the form says, per video, what will happen.
 import { records, tiktokCommentData } from '../http/client.js';
-import { esc, icon, runJob, watchJob, activeJob, progressCard, updateProgress, errorCallout, toast, store, persist, setUrl, bindTips, fmt, ago, emptyState } from '../lib.js';
+import { esc, icon, runJob, watchJob, activeJob, progressCard, updateProgress, errorCallout, toast, store, persist, setUrl, bindTips, fmt, ago, emptyState, img } from '../lib.js';
 import { scope } from '../dom.js';
 import { videoAnalysis } from '../components/video-analysis.js';
 import { MAX_PER_PLATFORM as MAX, readVideoLinks } from '../video-links.js';
+import { commentCountSeg } from '../search-options.js';
 
 const KINDS = { tiktok: 'tiktok_video_analysis', youtube: 'video_analysis' };
 const NAMES = { tiktok: 'TikTok', youtube: 'YouTube' };
@@ -31,7 +32,7 @@ export async function mount(root, params) {
   if (!['auto', 'tiktok', 'youtube'].includes(st.platform)) st.platform = 'auto';
   if (params.videos) st.videos = params.videos;
   root.innerHTML = `
-    <div class="page-head va-head"><div><h1>${icon('bars')} Phân tích video</h1>
+    <div class="page-head va-head"><div><h1>${icon('play')} Video Analysis</h1>
       <p>Số liệu, script và bình luận của video TikTok hoặc YouTube, đặt cạnh nhau để so. Dán chung một ô; mỗi nền tảng chạy thành một lần riêng.</p></div></div>
     <div class="card va-form" data-form>
       <div class="va-input"><textarea class="input" data-links rows="2" placeholder="Dán link video TikTok hoặc YouTube, mỗi dòng một link (tối đa ${MAX} mỗi nền tảng)" aria-label="Link video">${esc(st.videos)}</textarea>
@@ -44,12 +45,12 @@ export async function mount(root, params) {
         <label class="check"><input type="checkbox" data-k="script" ${st.script ? 'checked' : ''}> Lấy script</label>
         <span class="va-sep"></span>
         <span class="small muted">Comment gốc mỗi video</span>
-        <div class="cx-seg" role="group" aria-label="Số comment gốc mỗi video">${[[0, 'Không lấy'], [100, '100'], [300, '300']].map(([v, l]) => `<button type="button" data-comments="${v}" class="${st.comments === v ? 'on' : ''}">${l}</button>`).join('')}</div>
+        ${commentCountSeg('comments', st.comments, { none: true, cap: 300, capWhy: 'Phân tích video đọc tối đa 300 comment gốc mỗi video' })}
         <label class="check" data-cm-opt><input type="checkbox" data-k="replies" ${st.replies ? 'checked' : ''}> Lấy cả trả lời</label>
-        <label class="check" data-cm-opt data-tt-opt data-tip="Video đã có đủ comment (từ Thu thập bình luận, lần phân tích trước hoặc Insight) thì dùng lại, không gọi TikTok. Thiếu thì lấy mới."><input type="checkbox" data-k="reuse" ${st.reuse ? 'checked' : ''}> Dùng lại comment đã thu thập</label>
+        <label class="check" data-cm-opt data-tt-opt data-tip="Video đã có đủ comment (từ Collect Comments, lần phân tích trước hoặc Insight) thì dùng lại, không gọi TikTok. Thiếu thì lấy mới."><input type="checkbox" data-k="reuse" ${st.reuse ? 'checked' : ''}> Dùng lại comment đã thu thập</label>
         <span class="spacer"></span>
         <span class="muted small" data-eta></span>
-        <button type="button" class="btn primary" data-run>${icon('bars')} Phân tích video</button>
+        <button type="button" class="btn primary" data-run>${icon('play')} Phân tích video</button>
       </div>
       <ul class="va-reuse" data-known></ul>
     </div>
@@ -194,14 +195,14 @@ export async function mount(root, params) {
   }
   function renderHistory() {
     const rows = hist.list.slice(0, hist.limit);
-    histBox.innerHTML = `<button type="button" class="va-hhead" data-htoggle aria-expanded="${hist.open}"><h3>${icon('clock')} Lần phân tích trước</h3><span class="sub">${hist.list.length}</span>${icon('chevron')}</button>
+    histBox.innerHTML = `<button type="button" class="va-hhead" data-htoggle aria-expanded="${hist.open}"><h3>${icon('clock')} Recent</h3><span class="sub">${hist.list.length}</span>${icon('chevron')}</button>
       ${hist.open ? (rows.length ? rows.map((r) => {
         const first = r.items.find((x) => !x.error) ?? r.items[0] ?? {};
         const scripts = r.items.filter((x) => x.script === true).length;
         const parents = r.items.reduce((a, x) => a + x.parents, 0);
         const replies = r.items.reduce((a, x) => a + x.replies, 0);
         return `<div class="cc-hrow ${PLATFORMS.some((p) => String(blocks[p].shownId) === String(r.id)) ? 'on' : ''}">
-          ${first.cover ? `<img src="${esc(first.cover)}" referrerpolicy="no-referrer" alt="" onerror="this.removeAttribute('src')">` : '<span class="cc-noimg"></span>'}
+          ${first.cover ? `<img src="${esc(img(first.cover))}" referrerpolicy="no-referrer" alt="" onerror="this.removeAttribute('src')">` : '<span class="cc-noimg"></span>'}
           <div class="cc-vtext"><a href="#${PATH}?id=${r.id}"><span class="tag">${NAMES[r.platform] ?? ''}</span> <b>${esc(first.caption || first.url || r.title)}</b>${r.items.length > 1 ? ` <span class="muted">+${r.items.length - 1} video</span>` : ''}</a>
             <span class="muted small">${first.author ? `@${esc(first.author)} · ` : ''}${ago(r.createdAt)}</span></div>
           <span class="cc-hnums">${r.params?.script === false ? '<span class="muted">không lấy script</span>' : `script ${scripts}/${r.items.length}`} · ${r.params?.comments ? `${fmt(parents)} gốc + ${fmt(replies)} trả lời` : '<span class="muted">không lấy comment</span>'}

@@ -119,8 +119,8 @@ export async function mount(root, params) {
 
   function render() {
     root.innerHTML = `
-      <div class="page-head"><div><h1>${icon('target')} Soulprint</h1><p>Hồ sơ gốc của content: bạn chơi game nào, nói cho ai, các trụ nội dung là gì. Mọi tính năng AI đọc hồ sơ này.</p></div>
-        <div class="row"><a class="btn" href="${soulprint.exportUrl()}">${icon('download')} Markdown</a><button type="button" class="btn primary" data-save>${icon('check')} Lưu${state.dirty ? ' *' : ''}</button></div></div>
+      <div class="page-head"><div><h1>${icon('fingerprint')} Soulprint</h1><p>Hồ sơ gốc của content: bạn chơi game nào, nói cho ai, các trụ nội dung là gì. Mọi tính năng AI đọc hồ sơ này.</p></div>
+        <div class="row"><a class="btn" href="${soulprint.exportUrl()}">${icon('download')} Export .md</a><button type="button" class="btn primary" data-save>${icon('check')} Lưu${state.dirty ? ' *' : ''}</button></div></div>
       <div class="fw-tabs" role="tablist">${TABS.map(([k, t, i]) => `<button type="button" class="fw-tab ${state.tab === k ? 'on' : ''}" role="tab" aria-selected="${state.tab === k}" data-tab="${k}">${icon(i)}<span>${t}</span></button>`).join('')}</div>
       <div data-err></div>
       <div data-body>${state.tab === 'form' ? formHtml() : state.tab === 'brainstorm' ? brainstormHtml() : importHtml()}</div>`;

@@ -8,7 +8,7 @@
 //   ⓘ how long it takes (secondary)
 // Switching platform carries what was typed and the region; each platform keeps its own settings.
 import { esc, icon } from '../lib.js';
-import { findItem, firstPath, platformOf, PLATFORM_LABELS } from '../nav.js';
+import { findItem, platformOf, PLATFORM_LABELS } from '../nav.js';
 
 /** Platform marks (filled, unlike the stroke icons): a play button and a note. @param {'tiktok'|'youtube'} p */
 export const platformMark = (p) =>
@@ -18,17 +18,22 @@ export const platformMark = (p) =>
 
 /** @param {string} ic @param {string} title @param {string} line one sentence, HTML allowed */
 export const findHead = (ic, title, line) =>
-  `<div class="page-head"><div><h1>${icon(ic)} ${esc(title)}</h1><p>${line}</p></div><button type="button" class="btn" data-goto-history>${icon('clock')} Lịch sử</button></div>`;
+  `<div class="page-head"><div><h1>${icon(ic)} ${esc(title)}</h1><p>${line}</p></div><button type="button" class="btn" data-goto-history>${icon('clock')} History</button></div>`;
 
-/** TikTok | YouTube for the screen at `path`; the platform without this screen shows greyed out. @param {string} path */
+/**
+ * TikTok | YouTube for the screen at `path`: the other platform's screen in the same place of the entry (Search → Video
+ * opens the other Video); a platform without that screen shows greyed out (Search → Kênh on TikTok). @param {string} path
+ */
 export function platformTabs(path) {
   const item = findItem(path);
   const cur = platformOf(item, path) ?? item.only;
+  const at = item.platforms ? item.platforms[cur].findIndex((t) => t[0] === path) : -1;
+  const target = (k) => (item.platforms ? item.platforms[k][at]?.[0] : null);
   return `<div class="rs-plat" role="group" aria-label="Nền tảng">${Object.entries(PLATFORM_LABELS)
     .map(([k, l]) => {
       const inner = `${platformMark(/** @type {any} */ (k))}<span>${l}</span>`;
       if (k === cur) return `<span class="on" aria-current="true">${inner}</span>`;
-      if (item.platforms) return `<a href="#${firstPath(item, k)}" data-plat="${k}" title="Chạy bằng thuật toán ${l}">${inner}</a>`;
+      if (target(k)) return `<a href="#${target(k)}" data-plat="${k}" title="Chạy bằng thuật toán ${l}">${inner}</a>`;
       return `<span class="off" aria-disabled="true" title="Chưa có bản ${l} cho mục này">${inner}<small>chưa có</small></span>`;
     })
     .join('')}</div>`;
@@ -91,6 +96,13 @@ export function bindShell(root, { carry, changed }) {
     input.value = '';
     input.dispatchEvent(new Event('change'));
     input.focus();
+  });
+  // The tabs above the page (Search: Video | Kênh) take what was typed along, like the platform switch.
+  root.parentElement?.querySelector('.page-tabs')?.addEventListener('click', (e) => {
+    const a = /** @type {HTMLAnchorElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('a[href^="#/"]'));
+    if (!a || a.classList.contains('on')) return;
+    e.preventDefault();
+    window.__go(String(a.getAttribute('href')).slice(1), Object.fromEntries(Object.entries(carry()).filter(([, v]) => v)));
   });
   root.querySelector('[data-goto-history]')?.addEventListener('click', () => root.querySelector('[data-history]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   const sync = () => {

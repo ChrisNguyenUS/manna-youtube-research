@@ -1,5 +1,5 @@
 // vidIQ-style keyword score card.
-import { esc, fmt, full, mult, dur, ageText, thumb, ytVideo, icon, chips, bindChips, isSaved, toggleSave, store, persist, median, emptyState, bindTips, metric } from '../lib.js';
+import { esc, fmt, full, mult, dur, ageText, thumb, ytVideo, icon, chips, bindChips, isSaved, toggleSave, store, persist, median, emptyState, bindTips, metric, img } from '../lib.js';
 // ---------- keyword score card (vidIQ-style) ----------
 const GOOD = '#2f9e44', MID = '#f08c00', BAD = '#c92a2a';
 const goodColor = (goodness) => (goodness >= 60 ? GOOD : goodness >= 40 ? MID : BAD);
@@ -7,7 +7,7 @@ const goodColor = (goodness) => (goodness >= 60 ? GOOD : goodness >= 40 ? MID : 
 export const VERDICT = {
   open: ['good', 'Ít người làm gần đây', 'Có người xem nhưng ít video trong 1 năm qua: cửa còn mở.'],
   competitive: ['plain', 'Đã có người làm', 'Cần góc nhìn mới hoặc làm tốt hơn top hiện tại.'],
-  saturated: ['warn', 'Nhiều người làm, đang thắng', 'Ngách nóng: nhiều video mới vượt kênh. Vào được nhưng phải khác biệt.'],
+  saturated: ['warn', 'Nhiều người làm, đang thắng', 'Ngách nóng: nhiều video mới là outlier. Vào được nhưng phải khác biệt.'],
   low_demand: ['bad', 'Ít người xem', 'Video top có rất ít view.'],
 };
 
@@ -45,7 +45,7 @@ export function scoreCard(r, { onRelated = true } = {}) {
       <div class="score-overall">Điểm tổng<div style="color:${goodColor(r.overall)}">${esc(r.bands.overall.label.toUpperCase())}</div></div>
       ${bar('Volume (ước tính)', r.volume, r.bands.volume.label, r.volume, 'Nhu cầu ước tính từ view của video top, KHÔNG phải lượng tìm kiếm thật:\n' + breakdown(r.parts.volume))}
       ${bar('Competition', r.competition, r.bands.competition.label, 100 - r.competition, 'Độ cạnh tranh (cao = khó):\n' + breakdown(r.parts.competition))}
-      <div class="verdict"><span class="badge ${vcls}">${esc(vlabel)}</span> <span class="muted small">${esc(vwhy)} ${r.recentYear}/${n} video trong 1 năm, ${r.strong}/${n} vượt kênh.</span></div>
+      <div class="verdict"><span class="badge ${vcls}">${esc(vlabel)}</span> <span class="muted small">${esc(vwhy)} ${r.recentYear}/${n} video trong 1 năm, ${r.strong}/${n} outlier.</span></div>
     </div>
     <div class="score-section">Thống kê top ${n} kết quả</div>
     <div class="card-pad score-stats">
@@ -62,7 +62,7 @@ export function scoreCard(r, { onRelated = true } = {}) {
       ${r.recent30 ? stat('Video mới 30 ngày', `${r.recent30.count}${r.recent30.count >= 40 ? '+' : ''}`, 'Số video đăng trong 30 ngày qua khớp từ khoá (tối đa 40)') + stat('VPH trung vị video mới', r.recent30.medianVph == null ? '–' : fmt(r.recent30.medianVph), 'View mỗi giờ của video đăng trong 30 ngày qua') : ''}
     </div>
     ${r.topChannels?.length ? `<div class="score-section">Top kênh cho từ khoá này</div><div class="card-pad" style="padding-top:8px">${r.topChannels
-      .map((c) => `<div class="row" style="gap:8px;margin:6px 0">${c.avatar ? `<img src="${esc(c.avatar)}" referrerpolicy="no-referrer" alt="" style="width:26px;height:26px;border-radius:50%">` : ''}
+      .map((c) => `<div class="row" style="gap:8px;margin:6px 0">${c.avatar ? `<img src="${esc(img(c.avatar))}" referrerpolicy="no-referrer" alt="" style="width:26px;height:26px;border-radius:50%">` : ''}
         <a href="#/channel?input=${encodeURIComponent(c.id)}" style="font-weight:600">${esc(c.title)}</a><span class="muted small">${fmt(c.subs)} sub</span><span class="spacer"></span><span class="small muted">${c.count} video</span></div>`)
       .join('')}</div>` : ''}
     ${onRelated && r.related?.length ? `<div class="score-section row between"><span>Từ khoá liên quan</span><button class="btn sm" data-score-related disabled>Chấm điểm đã chọn</button></div>

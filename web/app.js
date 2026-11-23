@@ -1,6 +1,6 @@
-import { status as statusApi, shutdown, jobs as jobsApi } from './http/client.js';
+import { status as statusApi, shutdown, jobs as jobsApi, tiktokLogin } from './http/client.js';
 import { icon, refreshJobs, loadSaved, loadFollows, loadMetrics, esc, toast, store, persist, leaveView } from './lib.js';
-import { HOME, SOULPRINT, GROUPS, ALIASES, PLATFORM_LABELS, has, platformOf, tabsFor, firstPath, findItem } from './nav.js';
+import { HOME, SOULPRINT, SETTINGS, GROUPS, ALIASES, PLATFORM_LABELS, has, platformOf, tabsFor, firstPath, findItem } from './nav.js';
 
 function parseHash() {
   const h = location.hash.replace(/^#/, '') || '/';
@@ -28,6 +28,7 @@ function renderNav(path = navPath) {
       return `<button type="button" class="nav-group" data-nav-group="${g.key}" aria-expanded="${open}"><span>${esc(g.title)}</span>${icon('chevron')}</button>
         ${open ? `<div class="nav-list">${g.items.map((it) => navItem(it, path)).join('')}</div>` : ''}`;
     }).join('');
+  document.getElementById('nav-foot').innerHTML = navItem(SETTINGS, path);
 }
 document.getElementById('nav').addEventListener('click', (e) => {
   const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-nav-group]'));
@@ -43,8 +44,9 @@ let routeSeq = 0;
 async function route() {
   const { path, params } = parseHash();
   if (ALIASES[path]) {
-    const qs = new URLSearchParams(params).toString();
-    return void location.replace('#' + ALIASES[path] + (qs ? '?' + qs : ''));
+    const [to, own] = ALIASES[path].split('?');
+    const qs = new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(own || '')), ...params }).toString();
+    return void location.replace('#' + to + (qs ? '?' + qs : ''));
   }
   const item = findItem(path);
   const shown = tabsFor(item, path);
@@ -88,11 +90,24 @@ export function go(path, params = {}) {
 window.__go = go;
 
 let stopped = false;
+// TikTok sign-in, for the status bar: read at start, every few minutes and right after a sign-in (not every 5 seconds).
+let ttLogin = /** @type {{loggedIn?: boolean, expiresAt?: string}|null} */ (null);
+async function readLogin() {
+  ttLogin = await tiktokLogin.get().catch(() => null);
+  status();
+}
+const ttText = () => {
+  if (!ttLogin) return '';
+  const expired = ttLogin.expiresAt && Date.parse(ttLogin.expiresAt) <= Date.now();
+  return ttLogin.loggedIn && !expired
+    ? '<span><span class="dot"></span>TikTok: <b>đã đăng nhập</b></span>'
+    : `<span><span class="dot warn"></span>TikTok: <b>${expired ? 'phiên hết hạn' : 'chưa đăng nhập'}</b> <button type="button" class="sb-link" data-tt-login>Đăng nhập</button></span>`;
+};
 async function status() {
   if (stopped) return;
   try {
     const s = await statusApi.get();
-    document.getElementById('statusbar').innerHTML = `<span><span class="dot"></span>YouTube: <b>${s.failures ? 'có lỗi' : 'ổn'}</b></span>
+    document.getElementById('statusbar').innerHTML = `<span><span class="dot ${s.failures ? 'warn' : ''}"></span>YouTube: <b>${s.failures ? 'có lỗi' : 'ổn'}</b></span>${ttText()}
       <span>Khu vực: <b>${esc(s.gl)}</b></span><span>Request: <b>${s.requests}</b>${s.failures ? ` · lỗi <b>${s.failures}</b>` : ''}</span>
       <span>Việc nền: <b>${s.running ? s.running + ' đang chạy' : 'rảnh'}</b></span>
       <span class="right">Không cần key · miễn phí · dữ liệu lưu trên máy</span>`;
@@ -140,7 +155,9 @@ window.addEventListener('unhandledrejection', (e) => toast(e.reason?.message || 
 await Promise.all([loadSaved(), loadFollows(), loadMetrics()]);
 route();
 refreshJobs();
-status();
+readLogin();
+window.addEventListener('tiktok-login', readLogin);
+setInterval(() => document.hidden || readLogin(), 5 * 60000);
 // The status bar only matters while the window is looked at: no polling in a hidden tab, a fresh read when it comes back.
 setInterval(() => document.hidden || status(), 5000);
 document.addEventListener('visibilitychange', () => document.hidden || stopped || (status(), refreshJobs()));

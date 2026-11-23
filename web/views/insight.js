@@ -1,4 +1,4 @@
-// Insight khách hàng on YouTube: the shared insight screen (web/views/insight-view.js) with YouTube's search filters:
+// Insight theo từ khoá on YouTube: the shared insight screen (web/views/insight-view.js) with YouTube's search filters:
 // region, upload date, and duration (long form and Shorts are different audiences, so the duration is always asked).
 import { mountInsight } from './insight-view.js';
 import { chips, esc, icon } from '../lib.js';
@@ -26,7 +26,7 @@ const YOUTUBE = {
   formKey: 'yt-insight-form',
   form: FORM,
   label: 'YouTube',
-  title: 'Insight khách hàng (YouTube)',
+  title: 'Insight theo từ khoá (YouTube)',
   intro: 'Đọc comment của các video YouTube đang hot cho từ khoá để biết khán giả đang hỏi gì, sợ gì, ai đang cân nhắc thuê dịch vụ, và câu chữ thật của họ.',
   placeholder: 'Ví dụ: định cư mỹ, phỏng vấn quốc tịch',
   help: 'Thị trường Việt thì dùng từ khoá tiếng Việt; từ khoá tiếng Anh trả về video nước ngoài. Nhiều từ khoá thì cách nhau bằng dấu phẩy. Video “hot” = nhiều view mỗi ngày nhất.',

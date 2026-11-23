@@ -64,7 +64,7 @@ export const tiktokLogin = {
   start: () => api('/tiktok/login', { method: 'POST', body: {} }),
   logout: () => api('/tiktok/login', { method: 'DELETE', body: {} }),
 };
-/** "Tìm theo chủ đề": related keywords for a topic (about 10 seconds). */
+/** "Topic Research": related keywords for a topic (about 10 seconds). */
 export const tiktokTopic = {
   /** @param {string} topic @param {number} [limit] */
   keywords: (topic, limit) => api('/tiktok/topic/keywords', { method: 'POST', body: { topic, limit } }),
@@ -93,7 +93,7 @@ export const follows = {
 /** Snapshots of a YouTube channel's public numbers, one per saved analysis (oldest first). @param {string} id */
 export const channelHistory = (id) => api(`/channels/${encodeURIComponent(id)}/history`);
 /** Shared TikTok comment dataset (every screen that collected comments). */
-/** YouTube comments already collected (Lấy comment, Phân tích video, Insight, Nghiên cứu chủ đề). */
+/** YouTube comments already collected (Lấy comment, Phân tích video, Insight, Topic Research). */
 export const youtubeCommentData = {
   videos: () => api('/youtube/comment-videos'),
   /** @param {string[]} ids */
@@ -106,7 +106,7 @@ export const youtubeCommentData = {
 export const tiktokCommentData = {
   /** Videos with collected comments, with counts and the reports holding them. */
   videos: () => api('/tiktok/comment-videos'),
-  /** "Thu thập bình luận" runs, newest first. */
+  /** "Collect Comments" runs, newest first. */
   collections: () => api('/tiktok/comment-collections'),
   /** How much of each video is already collected, and whether it can be reused for `max` parent comments. @param {string[]} ids @param {{max?: number, replies?: boolean}} [want] */
   coverage: (ids, { max = 100, replies = true } = {}) => api(`/tiktok/comment-coverage?ids=${encodeURIComponent(ids.join(','))}&max=${max}&replies=${replies}`),
@@ -190,7 +190,7 @@ export const ideas = {
   reviewUrl: (batchId) => `${BASE}/ideas/batches/${batchId}/review.md`,
 };
 
-/** Customer Intelligence: runs, topics & pains, comments, Content Lab (5 Whys, 5W1H, opportunities), AI usage. */
+/** Audience Insights: runs, topics & pains, comments, Content Lab (5 Whys, 5W1H, opportunities), AI usage. */
 export const ci = {
   available: () => api('/ci/available'),
   preview: (body) => api('/ci/preview', { method: 'POST', body }),

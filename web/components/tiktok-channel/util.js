@@ -1,10 +1,10 @@
 // Small helpers shared by the TikTok channel dashboard modules. Everything is computed from the saved report.
-import { esc, median } from '../../lib.js';
+import { esc, median, img } from '../../lib.js';
 
 export const METRICS = {
-  plays: { label: 'Lượt xem', short: 'view' },
-  likes: { label: 'Tim', short: 'tim' },
-  comments: { label: 'Bình luận', short: 'comment' },
+  plays: { label: 'View', short: 'view' },
+  likes: { label: 'Like', short: 'tim' },
+  comments: { label: 'Comment', short: 'comment' },
   shares: { label: 'Chia sẻ', short: 'share' },
 };
 export const RANGES = [['7', '7 ngày'], ['30', '30 ngày'], ['90', '90 ngày'], ['all', 'Tất cả']];
@@ -21,7 +21,7 @@ export const ddmm = (iso) => {
 };
 export const fullDate = (iso) => (iso ? new Date(iso).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–');
 /** Cover image. TikTok cover links expire after some days; an expired one falls back to a plain tile. */
-export const cover = (v, cls = '') => (v.cover ? `<img class="${cls}" loading="lazy" src="${esc(v.cover)}" referrerpolicy="no-referrer" alt="" onerror="this.removeAttribute('src');this.classList.add('tc-noimg')">` : `<span class="${cls} tc-noimg"></span>`);
+export const cover = (v, cls = '') => (v.cover ? `<img class="${cls}" loading="lazy" src="${esc(img(v.cover))}" referrerpolicy="no-referrer" alt="" onerror="this.removeAttribute('src');this.classList.add('tc-noimg')">` : `<span class="${cls} tc-noimg"></span>`);
 /** Caption without hashtags and mentions (same rule as the server's phrase mining). */
 export const captionText = (c) => String(c || '').replace(/[#@][\p{L}\p{N}_.]+/gu, ' ').replace(/\s+/g, ' ').trim();
 /** Within the last `range` days of the analysis ('all' keeps everything). */

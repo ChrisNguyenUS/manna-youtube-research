@@ -2,6 +2,14 @@ import { jobs, saved as savedApi, metrics, tiktokLogin, follows as followsApi } 
 import { jobHref } from './kinds.js';
 // Shared helpers for all views.
 
+/**
+ * Where an image loads from: a TikTok cover or avatar goes through the app's kept copy (/api/v1/thumb), because TikTok's own
+ * links expire within hours; any other image loads as it is. @param {unknown} url
+ */
+export const img = (url) => {
+  const u = String(url ?? '');
+  return /^https:\/\/[^/]*(tiktokcdn(-[a-z0-9]+)?\.com|ibyteimg\.com|byteimg\.com|muscdn\.com)\//i.test(u) ? `/api/v1/thumb?u=${encodeURIComponent(u)}` : u;
+};
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 /** Vietnamese short numbers: 5,8 N · 364 N · 1,2 Tr · 2,3 Tỷ */
@@ -77,6 +85,8 @@ const P = {
   layers: '<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  fingerprint: '<path d="M7 18.5c1.4-2 2-4.2 2-6.5a3 3 0 0 1 6 0c0 3-.5 5.7-1.6 8"/><path d="M4.6 15.5c.3-1.1.4-2.3.4-3.5a7 7 0 0 1 14 0c0 2-.2 4-.7 6"/><path d="M12 12c0 3.2-1 6.2-3 8.5"/>',
+  alert: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>',
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
   filter: '<path d="M3 5h18l-7 8v6l-4 2v-8z"/>',
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
@@ -180,9 +190,18 @@ const lastStatus = new Map();
 /** A job ended while no open screen was following it: say so, with a link to the result. */
 function announce(j) {
   const name = `${LABELS[j.kind] || j.kind}: ${j.title}`;
-  if (j.status === 'succeeded') toast(`Xong · ${name}`, '', { href: jobHref(j), label: 'Xem' });
+  if (j.status === 'succeeded') toast(`Xong · ${name}`, '', { href: jobHref(j), label: 'Mở kết quả' });
   else if (j.status === 'failed') toast(`Lỗi · ${name}. ${j.error || ''}`, 'error', { href: jobHref(j), label: 'Mở' });
+  else return;
+  // Looking at another window: the tab title says so until you come back.
+  if (document.hidden) {
+    const mark = j.status === 'succeeded' ? '✓ Xong' : '⚠ Lỗi';
+    document.title = `${mark} · ${document.title.replace(/^(✓ Xong|⚠ Lỗi) · /, '')}`;
+  }
 }
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) document.title = document.title.replace(/^(✓ Xong|⚠ Lỗi) · /, '');
+});
 
 let jobsTimer = null;
 document.addEventListener('click', (e) => {
@@ -225,7 +244,7 @@ export async function refreshJobs() {
     /* server restarting */
   }
 }
-const LABELS = { ci_analyze: 'Customer Intelligence', batch_refresh: 'Cập nhật số liệu lô', tiktok_channel: 'Phân tích kênh TikTok', follow_refresh: 'Kiểm tra kênh theo dõi', tiktok_topic: 'Tìm theo chủ đề TikTok', tiktok_video_analysis: 'Phân tích video TikTok', video_analysis: 'Phân tích video YouTube', tiktok_search: 'Tìm video TikTok', brick_extract: 'Bóc gạch video', video_deep_dive: 'Đào sâu video', tiktok_insight: 'Insight TikTok', youtube_insight: 'Insight YouTube', tiktok_comments: 'Thu thập bình luận', comment_5w1h: 'Phân tích 5W1H (AI)', video_search: 'Tìm video', channel_search: 'Tìm kênh', channel_analysis: 'Phân tích kênh', research: 'Nghiên cứu chủ đề', research_comments: 'Đọc comment', comments: 'Lấy comment', idea_check: 'Chấm điểm từ khoá', keyword_score: 'Chấm điểm từ khoá liên quan', keywords: 'Từ khoá' };
+const LABELS = { ci_analyze: 'Audience Insights', batch_refresh: 'Cập nhật số liệu lô', tiktok_channel: 'Channel Analysis TikTok', follow_refresh: 'Cập nhật Watchlist', tiktok_topic: 'Topic Research TikTok', tiktok_video_analysis: 'Video Analysis TikTok', video_analysis: 'Video Analysis YouTube', tiktok_search: 'Video Search TikTok', brick_extract: 'Breakdown video', video_deep_dive: 'Đào sâu video', tiktok_insight: 'Insight TikTok', youtube_insight: 'Insight YouTube', tiktok_comments: 'Collect Comments TikTok', comment_5w1h: 'Phân tích 5W1H (AI)', video_search: 'Video Search YouTube', channel_search: 'Channel Search', channel_analysis: 'Channel Analysis YouTube', research: 'Topic Research', research_comments: 'Đọc comment', comments: 'Collect Comments YouTube', idea_check: 'Chấm điểm từ khoá', keyword_score: 'Chấm điểm từ khoá liên quan', keywords: 'Gợi ý từ khoá' };
 
 /**
  * An error and the ways out of it: sign in to TikTok when that is what is missing, run the job again when there was one.
@@ -408,17 +427,17 @@ export async function loadFollows() {
 /** @param {'youtube'|'tiktok'} platform @param {string} ref YouTube channel id | TikTok username (lower case) */
 export const isFollowing = (platform, ref) => followKeys.has(`${platform}:${ref}`);
 /** The label of a follow button. */
-export const followLabel = (platform, ref) => `${icon('eye')} ${isFollowing(platform, ref) ? 'Đang theo dõi' : 'Theo dõi'}`;
+export const followLabel = (platform, ref) => `${icon('eye')} ${isFollowing(platform, ref) ? 'Trong Watchlist' : 'Thêm vào Watchlist'}`;
 /** Follow or unfollow; updates `btn` (label and .on). @param {'youtube'|'tiktok'} platform @param {string} ref @param {string} title @param {any} data @param {HTMLElement} [btn] */
 export async function toggleFollow(platform, ref, title, data, btn) {
   if (isFollowing(platform, ref)) {
     await followsApi.remove({ platform, ref });
     followKeys.delete(`${platform}:${ref}`);
-    toast('Đã bỏ theo dõi');
+    toast('Đã bỏ khỏi Watchlist');
   } else {
     await followsApi.add({ platform, ref, title, data });
     followKeys.add(`${platform}:${ref}`);
-    toast('Đã theo dõi kênh', '', { href: '#/follows', label: 'Mở Theo dõi' });
+    toast('Đã thêm vào Watchlist', '', { href: '#/follows', label: 'Mở Watchlist' });
   }
   if (btn) {
     btn.classList.toggle('on', isFollowing(platform, ref));

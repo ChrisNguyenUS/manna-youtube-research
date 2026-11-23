@@ -2,13 +2,13 @@
 // (groups = /tiktok/insight/:id/topics, the report's own rule and counts), and the views built on it:
 // a comment browser (Comments and Questions tabs), the topic explorer, the video gallery and the overview.
 // Everything shown comes from the comments stored with the report; commenter names are never stored.
-import { esc, icon, fmt, store, persist, emptyState, toast, isSaved, toggleSave, saveMany } from '../lib.js';
+import { esc, icon, fmt, store, persist, emptyState, toast, isSaved, toggleSave, saveMany, img } from '../lib.js';
 import { savedTikTokVideo } from '../saved-items.js';
 import { commentExplorer } from './comment-explorer.js';
 
 export const COMMENT_SORTS = {
   attention: ['Được chú ý nhất (tim + trả lời)', (c) => (c.likes ?? 0) + (c.replies ?? 0)],
-  likes: ['Nhiều tim nhất', (c) => c.likes ?? 0],
+  likes: ['Nhiều like nhất', (c) => c.likes ?? 0],
   replies: ['Nhiều trả lời nhất', (c) => c.replies ?? 0],
   newest: ['Mới nhất', (c) => Date.parse(c.createdAt) || 0],
 };
@@ -23,7 +23,7 @@ const fullDate = (iso) => {
   return Number.isNaN(d.getTime()) ? '–' : d.toLocaleDateString('vi-VN');
 };
 const opt = (v, label, cur) => `<option value="${esc(v)}" ${String(v) === String(cur) ? 'selected' : ''}>${esc(label)}</option>`;
-const cover = (v, cls = '') => (v?.cover ? `<img class="${cls}" loading="lazy" src="${esc(v.cover)}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : '');
+const cover = (v, cls = '') => (v?.cover ? `<img class="${cls}" loading="lazy" src="${esc(img(v.cover))}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : '');
 
 /** Delegated listeners on one element; returns off(). */
 function listen(box) {
@@ -214,8 +214,8 @@ export function videoGallery(box, ctx, o) {
             <button type="button" class="btn sm ${isSaved(saveKind, v.id) ? 'on' : ''}" data-vsave="${esc(v.id)}">${icon('bookmark')} ${isSaved(saveKind, v.id) ? 'Đã lưu' : 'Lưu video'}</button></div></div>
         <p class="tt-dr-cap">${esc(v.caption || '(không caption)')}</p>
         <div class="tt-dr-stats">${yt
-          ? `${stat('Lượt xem', fmt(v.views))}${stat('View/ngày', fmt(v.viewsPerDay))}${stat('Like', fmt(v.likes))}${stat('Sub kênh', fmt(v.channelSubs))}${stat('Vượt kênh', v.viewSub != null ? `${v.viewSub}×` : '–')}${stat('Comment đã đọc', fmt(cm.length))}`
-          : `${stat('Lượt xem', fmt(v.plays))}${stat('Tim', fmt(v.likes))}${stat('Bình luận', fmt(v.comments))}${stat('Chia sẻ', fmt(v.shares))}${stat('Lưu', fmt(v.saves))}${stat('Comment đã đọc', fmt(cm.length))}`}</div>
+          ? `${stat('View', fmt(v.views))}${stat('View/ngày', fmt(v.viewsPerDay))}${stat('Like', fmt(v.likes))}${stat('Sub kênh', fmt(v.channelSubs))}${stat('Outlier', v.viewSub != null ? `${v.viewSub}×` : '–')}${stat('Comment đã đọc', fmt(cm.length))}`
+          : `${stat('View', fmt(v.plays))}${stat('Like', fmt(v.likes))}${stat('Comment', fmt(v.comments))}${stat('Chia sẻ', fmt(v.shares))}${stat('Lưu', fmt(v.saves))}${stat('Comment đã đọc', fmt(cm.length))}`}</div>
         <div class="tt-dr-sec">Comment được chú ý nhất</div>
         ${cm.slice(0, 8).map((c) => `<div class="tt-dr-cm"><span class="tt-cm-likes">♥ ${fmt(c.likes ?? 0)}</span> ${esc(c.text)}</div>`).join('') || '<div class="small muted">Chưa đọc comment nào của video này.</div>'}
         ${cm.length ? `<button type="button" class="btn" data-vall="${esc(v.id)}">${icon('message')} Xem cả ${cm.length} comment trong tab Comment</button>` : ''}

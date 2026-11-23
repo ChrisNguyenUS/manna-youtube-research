@@ -127,7 +127,7 @@ export function videoTable(el, d, list, { canGrow }) {
           <p class="tc-d-cap"><b>${esc(v.title)}</b></p>
           <div class="tc-badges"><span class="badge plain">${FORMATS[v.format]}</span>${v.standout ? `<span class="badge tc-hi">${icon('flame')} Nổi bật</span>` : ''}${v.category ? `<span class="badge plain">${esc(v.category)}</span>` : ''}</div>
           <div class="tc-d-grid">
-            ${[['View', full(v.views)], ['× trung vị', times(v.score)], ['Thích', v.likes == null ? 'chưa có' : full(v.likes)], ['Bình luận', v.comments == null ? 'chưa có' : full(v.comments)],
+            ${[['View', full(v.views)], ['× trung vị', times(v.score)], ['Like', v.likes == null ? 'chưa có' : full(v.likes)], ['Comment', v.comments == null ? 'chưa có' : full(v.comments)],
               ['Tương tác', pct(v.rate)], ['Dài', v.durationSec ? dur(v.durationSec) : '–'], ['Đăng', v.publishedAt ? fullDate(v.publishedAt) : v.published || '–'], ['View/ngày (cả đời video)', v.viewsPerDay != null ? fmt(v.viewsPerDay) : '–']]
               .map(([l, x]) => `<div><span>${l}</span><b>${x}</b></div>`).join('')}
           </div>

@@ -15,7 +15,7 @@ export async function mount(root, params) {
   if (params.q) st.keywords = params.q;
   if (knownRegion(params.gl, REGIONS)) st.gl = params.gl; // carried over from the TikTok side
   root.innerHTML = `
-    ${findHead('search', 'Tìm video', 'Video theo từ khoá, lọc theo thời gian đăng, độ dài, khu vực. Cột <b>Vượt kênh</b> = view ÷ sub: video thắng nhờ nội dung, không nhờ kênh to.')}
+    ${findHead('search', 'Video Search', 'Video theo từ khoá, lọc theo thời gian đăng, độ dài, khu vực. Cột <b>Outlier</b> = view ÷ sub: video thắng nhờ nội dung, không nhờ kênh to.')}
     ${platformTabs('/videos')}
     <div data-form>
       ${searchBar({ key: 'keywords', value: st.keywords, label: 'Từ khoá', placeholder: 'Từ khoá, cách nhau bằng dấu phẩy. VD: kể chuyện lịch sử, chuyện đêm khuya', button: `<button class="btn primary lg" data-run>${icon('search')} Tìm video</button>` })}
@@ -105,7 +105,7 @@ export async function mount(root, params) {
       </div>
       <div class="row" style="margin:14px 0 0"><span class="muted small">Tìm ${ago(rec.created_at)} · "${esc(d.keywords.join(', '))}"${d.regions?.length > 1 ? ` · 🌐 ${d.regions.length} nước: ${esc(d.regions.join(', '))}` : ''}</span><span class="spacer"></span>
         <a class="btn sm" href="#/ideas?ideas=${encodeURIComponent(d.keywords.join('\n'))}&run=1" data-tip="Điểm Volume / Competition kiểu vidIQ cho từ khoá này">${icon('bulb')} Chấm điểm từ khoá</a>
-        <a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} CSV</a></div>
+        <a class="btn sm" href="${records.exportUrl(id, 'csv')}">${icon('download')} Export .csv</a></div>
       <div data-results style="margin-top:14px"></div>`;
     mountVideoResults(out.querySelector('[data-results]'), d.videos, {
       key: 'vf-videos',

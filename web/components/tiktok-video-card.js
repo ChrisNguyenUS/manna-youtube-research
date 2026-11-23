@@ -1,9 +1,9 @@
 // Card for one TikTok video. Covers are expiring CDN links: on error the image hides and a grey box with ▶ shows.
-import { esc, fmt, ageText, icon, isSaved } from '../lib.js';
+import { esc, fmt, ageText, icon, isSaved, img } from '../lib.js';
 
 export function tiktokVideoCard(v, { selected = new Set() } = {}) {
   return `<div class="vcard tt-card" data-id="${esc(v.id)}">
-    <div class="img tt-cover">${v.cover ? `<img loading="lazy" src="${esc(v.cover)}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : ''}
+    <div class="img tt-cover">${v.cover ? `<img loading="lazy" src="${esc(img(v.cover))}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">` : ''}
       ${v.hotScore != null ? `<span class="ov mult" data-tip="Hot score = tương tác ÷ (ngày + 2)">Hot ${fmt(v.hotScore)}</span>` : ''}
       ${v.onTopic === false ? '<span class="ov rank" style="background:var(--muted)">Lạc đề</span>' : ''}
       <label class="ov sel" title="Chọn video này để lấy comment"><input type="checkbox" data-sel="${esc(v.id)}" ${selected.has(v.id) ? 'checked' : ''}> Chọn</label></div>

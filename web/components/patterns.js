@@ -1,6 +1,6 @@
 // Title pattern table and phrase chips.
 import { esc, fmt, full, mult, dur, ageText, thumb, ytVideo, icon, chips, bindChips, isSaved, toggleSave, store, persist, median, emptyState, bindTips, metric } from '../lib.js';
-export function patternList(patterns, { valueLabel = 'vượt kênh' } = {}) {
+export function patternList(patterns, { valueLabel = 'outlier' } = {}) {
   if (!patterns?.length) return emptyState('Chưa đủ dữ liệu');
   return `<table class="t"><thead><tr><th>Mẫu</th><th class="r">Số video</th><th class="r" data-tip="Trung vị ${valueLabel} của nhóm chia trung vị chung. >1 = mẫu này đang ăn hơn mức trung bình.">Hiệu quả</th><th>Ví dụ tốt nhất</th></tr></thead><tbody>
     ${patterns

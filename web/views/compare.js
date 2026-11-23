@@ -2,7 +2,7 @@ import { records, compareChannels } from '../http/client.js';
 import { esc, icon, fmt, mult, ago, emptyState, ytVideo, ytChannel, ageText } from '../lib.js';
 
 export async function mount(root, params) {
-  root.innerHTML = `<div class="page-head"><div><h1>${icon('columns')} So sánh kênh</h1>
+  root.innerHTML = `<div class="page-head"><div><h1>${icon('columns')} Compare</h1>
     <p>Đặt 2–4 kênh cạnh nhau: người theo dõi, view trung vị, tỉ lệ video nổi bật, nhịp đăng, độ dài, từ khoá.</p></div>
     <div class="head-actions"><button class="btn primary" data-go disabled>${icon('columns')} So sánh</button></div></div>
     <div class="card" data-pick></div><div data-out style="margin-top:14px"></div>`;
